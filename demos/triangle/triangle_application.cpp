@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <set>
 #include "triangle_application.h"
 
 static const int screen_width = 800;
@@ -65,7 +66,9 @@ void TriangleApplication::InitVulkan()
 {
     CreateInstance();
     SetupDebugCallback();
+	CreateSurface();
 	PickPhysicalDevice();
+	CreateLogicalDevice();
 }
 
 
@@ -147,7 +150,7 @@ void TriangleApplication::SetupDebugCallback()
     if(!enable_validation_layers)
         return;
 
-    vk::DebugReportCallbackCreateInfoEXT create_info(vk::DebugReportFlagBitsEXT::eError | vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::eDebug | vk::DebugReportFlagBitsEXT::eInformation,
+    vk::DebugReportCallbackCreateInfoEXT create_info(vk::DebugReportFlagBitsEXT::eError | vk::DebugReportFlagBitsEXT::eWarning,
                                                      DebugCallback);
 	debug_report_callback = instance.createDebugReportCallbackEXT(create_info);
 }
@@ -192,6 +195,9 @@ QueueFamilyIndices TriangleApplication::FindQueueFamilies(vk::PhysicalDevice phy
 		if(queue_family.queueCount > 0 && queue_family.queueFlags & vk::QueueFlagBits::eGraphics)
 			indices.graphics_family = i;
 
+		if(queue_family.queueCount > 0 && physical_device.getSurfaceSupportKHR(static_cast<uint32_t>(i), surface))
+			indices.present_family = i;
+
 		if(indices.IsComplete())
 			break;
 
@@ -205,19 +211,56 @@ void TriangleApplication::CreateLogicalDevice()
 {
 	QueueFamilyIndices queue_family_indices = FindQueueFamilies(physical_device);
 
-	vk::DeviceQueueCreateInfo queue_create_info;
-	queue_create_info.queueFamilyIndex = static_cast<uint32_t>(queue_family_indices.graphics_family);
-	queue_create_info.queueCount = 1;
+	std::vector<vk::DeviceQueueCreateInfo> queue_create_infos;
+	std::set<int> unique_queue_families = { queue_family_indices.graphics_family, queue_family_indices.present_family };
 
-	float queue_priority = 1.0f;
-	queue_create_info.setPQueuePriorities(&queue_priority);
+	for(int queue_family : unique_queue_families)
+	{
+		vk::DeviceQueueCreateInfo queue_create_info;
+		queue_create_info.queueFamilyIndex = static_cast<uint32_t>(queue_family);
+		queue_create_info.queueCount = 1;
+
+		float queue_priority = 1.0f;
+		queue_create_info.setPQueuePriorities(&queue_priority);
+
+		queue_create_infos.push_back(queue_create_info);
+	}
 
 	vk::PhysicalDeviceFeatures features;
 
 	vk::DeviceCreateInfo create_info;
-	create_info.setQueueCreateInfoCount(1);
-	create_info.setPQueueCreateInfos(&queue_create_info);
+	create_info.setQueueCreateInfoCount(static_cast<uint32_t>(queue_create_infos.size()));
+	create_info.setPQueueCreateInfos(queue_create_infos.data());
 	create_info.setPEnabledFeatures(&features);
+
+	create_info.setEnabledExtensionCount(0);
+
+	if(enable_validation_layers)
+	{
+		create_info.setEnabledLayerCount(static_cast<uint32_t>(validation_layers.size()));
+		create_info.setPpEnabledLayerNames(validation_layers.data());
+	}
+	else
+	{
+		create_info.setEnabledLayerCount(0);
+	}
+
+	device = physical_device.createDevice(create_info);
+
+	graphics_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.graphics_family), 0);
+	present_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.present_family), 0);
+}
+
+void TriangleApplication::CreateSurface()
+{
+	VkSurfaceKHR c_surface;
+	if(glfwCreateWindowSurface(static_cast<VkInstance>(instance), window, nullptr, &c_surface) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create window surface!");
+	}
+
+	surface = vk::SurfaceKHR(c_surface);
+
 }
 
 void TriangleApplication::MainLoop()
@@ -234,8 +277,12 @@ void TriangleApplication::MainLoop()
 
 void TriangleApplication::Cleanup()
 {
+	device.destroy();
+
 	if(enable_validation_layers)
 		instance.destroyDebugReportCallbackEXT(debug_report_callback);
+
+	vkDestroySurfaceKHR(static_cast<VkInstance>(instance), static_cast<VkSurfaceKHR>(surface), 0);
 
     instance.destroy(nullptr);
 

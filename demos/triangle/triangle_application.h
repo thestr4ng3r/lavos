@@ -9,10 +9,12 @@
 struct QueueFamilyIndices
 {
 	int graphics_family = -1;
+	int present_family = -1;
 
 	bool IsComplete()
 	{
-		return graphics_family >= 0;
+		return graphics_family >= 0
+				&& present_family >= 0;
 	}
 };
 
@@ -26,8 +28,14 @@ class TriangleApplication
 
 		vk::Instance instance;
 		vk::DebugReportCallbackEXT debug_report_callback;
+
+		vk::SurfaceKHR surface;
+
 		vk::PhysicalDevice physical_device;
 		vk::Device device;
+
+		vk::Queue graphics_queue;
+		vk::Queue present_queue;
 
         void InitWindow();
 
@@ -41,6 +49,8 @@ class TriangleApplication
 		void PickPhysicalDevice();
 		QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice physical_device);
 		void CreateLogicalDevice();
+
+		void CreateSurface();
 
         void MainLoop();
         void Cleanup();
