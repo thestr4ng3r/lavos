@@ -37,6 +37,11 @@ class TriangleApplication
 		vk::Queue graphics_queue;
 		vk::Queue present_queue;
 
+		vk::SwapchainKHR swapchain;
+		vk::Format swapchain_image_format;
+		vk::Extent2D swapchain_extent;
+		std::vector<vk::Image> swapchain_images;
+
         void InitWindow();
 
         void InitVulkan();
@@ -45,12 +50,17 @@ class TriangleApplication
 		bool CheckValidationLayerSupport();
 		void CreateInstance();
 
+		bool CheckDeviceExtensionSupport(vk::PhysicalDevice physical_device);
 		bool IsPhysicalDeviceSuitable(vk::PhysicalDevice physical_device);
 		void PickPhysicalDevice();
 		QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice physical_device);
 		void CreateLogicalDevice();
 
 		void CreateSurface();
+		vk::SurfaceFormatKHR ChooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &available_formats);
+		vk::PresentModeKHR ChoosePresentMode(const std::vector<vk::PresentModeKHR> &available_present_modes);
+		vk::Extent2D ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities);
+		void CreateSwapchain();
 
         void MainLoop();
         void Cleanup();

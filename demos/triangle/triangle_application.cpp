@@ -10,6 +10,10 @@ static const std::vector<const char *> validation_layers = {
         "VK_LAYER_LUNARG_standard_validation"
 };
 
+static const std::vector<const char *> device_extensions = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
 static const bool enable_validation_layers =
 #ifdef NDEBUG
     false;
@@ -69,6 +73,7 @@ void TriangleApplication::InitVulkan()
 	CreateSurface();
 	PickPhysicalDevice();
 	CreateLogicalDevice();
+	CreateSwapchain();
 }
 
 
@@ -155,10 +160,37 @@ void TriangleApplication::SetupDebugCallback()
 	debug_report_callback = instance.createDebugReportCallbackEXT(create_info);
 }
 
+bool TriangleApplication::CheckDeviceExtensionSupport(vk::PhysicalDevice physical_device)
+{
+	auto available_extensions = physical_device.enumerateDeviceExtensionProperties();
+
+	std::set<std::string> required_extensions(device_extensions.begin(), device_extensions.end());
+
+	for(const auto &extension : available_extensions)
+		required_extensions.erase(extension.extensionName);
+
+	return required_extensions.empty();
+}
+
 bool TriangleApplication::IsPhysicalDeviceSuitable(vk::PhysicalDevice physical_device)
 {
 	auto props = physical_device.getProperties();
 	auto features = physical_device.getFeatures();
+
+
+	// extensions
+
+	if(!CheckDeviceExtensionSupport(physical_device))
+		return false;
+
+
+	// surface
+
+	auto surface_formats = physical_device.getSurfaceFormatsKHR(surface);
+	auto surface_present_modes = physical_device.getSurfacePresentModesKHR(surface);
+
+	if(surface_formats.empty() || surface_present_modes.empty())
+		return false;
 
 	return true;
 }
@@ -233,7 +265,8 @@ void TriangleApplication::CreateLogicalDevice()
 	create_info.setPQueueCreateInfos(queue_create_infos.data());
 	create_info.setPEnabledFeatures(&features);
 
-	create_info.setEnabledExtensionCount(0);
+	create_info.setEnabledExtensionCount(static_cast<uint32_t>(device_extensions.size()));
+	create_info.setPpEnabledExtensionNames(device_extensions.data());
 
 	if(enable_validation_layers)
 	{
@@ -263,6 +296,101 @@ void TriangleApplication::CreateSurface()
 
 }
 
+vk::SurfaceFormatKHR TriangleApplication::ChooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &available_formats)
+{
+	const auto preferred_format = vk::Format::eB8G8R8A8Unorm;
+	const auto preferred_color_space = vk::ColorSpaceKHR::eSrgbNonlinear;
+
+	if(available_formats.size() == 1 && available_formats[0].format == vk::Format::eUndefined)
+		return { preferred_format, preferred_color_space };
+
+	for(const auto &format : available_formats)
+	{
+		if(format.format == preferred_format && format.colorSpace == preferred_color_space)
+			return format;
+	}
+
+	return available_formats[0];
+}
+
+vk::PresentModeKHR TriangleApplication::ChoosePresentMode(const std::vector<vk::PresentModeKHR> &available_present_modes)
+{
+	vk::PresentModeKHR best_mode = vk::PresentModeKHR::eFifo;
+
+	for(const auto &present_mode : available_present_modes)
+	{
+		if(present_mode == vk::PresentModeKHR::eMailbox)
+			return present_mode;
+
+		if(present_mode == vk::PresentModeKHR::eImmediate)
+			best_mode = present_mode;
+	}
+
+	return best_mode;
+}
+
+vk::Extent2D TriangleApplication::ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities)
+{
+	if(capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+		return capabilities.currentExtent;
+
+	vk::Extent2D extent(screen_width, screen_width);
+	extent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, extent.width));
+	extent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, extent.height));
+	return extent;
+}
+
+void TriangleApplication::CreateSwapchain()
+{
+	auto surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
+	auto surface_formats = physical_device.getSurfaceFormatsKHR(surface);
+	auto surface_present_modes = physical_device.getSurfacePresentModesKHR(surface);
+
+	auto surface_format = ChooseSurfaceFormat(surface_formats);
+	auto present_mode = ChoosePresentMode(surface_present_modes);
+	auto extent = ChooseSwapExtent(surface_capabilities);
+
+	uint32_t image_count = surface_capabilities.minImageCount + 1;
+	if(surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount)
+		image_count = surface_capabilities.maxImageCount;
+
+	vk::SwapchainCreateInfoKHR create_info;
+	create_info.surface = surface;
+	create_info.minImageCount = image_count;
+	create_info.imageFormat = surface_format.format;
+	create_info.imageColorSpace = surface_format.colorSpace;
+	create_info.imageExtent = extent;
+	create_info.imageArrayLayers = 1;
+	create_info.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
+
+	auto queue_family_indices = FindQueueFamilies(physical_device);
+	uint32_t queue_family_indices_array[] = {static_cast<uint32_t>(queue_family_indices.graphics_family),
+											 static_cast<uint32_t>(queue_family_indices.present_family)};
+
+	if(queue_family_indices.graphics_family != queue_family_indices.present_family)
+	{
+		create_info.imageSharingMode = vk::SharingMode::eConcurrent;
+		create_info.queueFamilyIndexCount = 2;
+		create_info.pQueueFamilyIndices = queue_family_indices_array;
+	}
+	else
+	{
+		create_info.imageSharingMode = vk::SharingMode::eExclusive;
+	}
+
+	create_info.preTransform = surface_capabilities.currentTransform;
+	create_info.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+	create_info.presentMode = present_mode;
+	create_info.clipped = VK_TRUE;
+	create_info.oldSwapchain = vk::SwapchainKHR(nullptr);
+
+	swapchain = device.createSwapchainKHR(create_info);
+	swapchain_images = device.getSwapchainImagesKHR(swapchain);
+
+	swapchain_image_format = surface_format.format;
+	swapchain_extent = extent;
+}
+
 void TriangleApplication::MainLoop()
 {
     while(true)
@@ -277,13 +405,14 @@ void TriangleApplication::MainLoop()
 
 void TriangleApplication::Cleanup()
 {
+	device.destroySwapchainKHR(swapchain);
+
 	device.destroy();
 
 	if(enable_validation_layers)
 		instance.destroyDebugReportCallbackEXT(debug_report_callback);
 
-	vkDestroySurfaceKHR(static_cast<VkInstance>(instance), static_cast<VkSurfaceKHR>(surface), 0);
-
+	instance.destroySurfaceKHR(surface);
     instance.destroy(nullptr);
 
     glfwDestroyWindow(window);
