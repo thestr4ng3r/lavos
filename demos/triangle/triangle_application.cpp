@@ -74,6 +74,7 @@ void TriangleApplication::InitVulkan()
 	PickPhysicalDevice();
 	CreateLogicalDevice();
 	CreateSwapchain();
+	CreateImageViews();
 }
 
 
@@ -391,6 +392,21 @@ void TriangleApplication::CreateSwapchain()
 	swapchain_extent = extent;
 }
 
+void TriangleApplication::CreateImageViews()
+{
+	swapchain_image_views.resize(swapchain_images.size());
+
+	for(size_t i=0; i<swapchain_images.size(); i++)
+	{
+		vk::ImageViewCreateInfo create_info;
+		create_info.setImage(swapchain_images[i]);
+		create_info.setViewType(vk::ImageViewType::e2D);
+		create_info.setFormat(swapchain_image_format);
+		create_info.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+		swapchain_image_views[i] = device.createImageView(create_info);
+	}
+}
+
 void TriangleApplication::MainLoop()
 {
     while(true)
@@ -405,6 +421,9 @@ void TriangleApplication::MainLoop()
 
 void TriangleApplication::Cleanup()
 {
+	for(const auto &image_view : swapchain_image_views)
+		device.destroyImageView(image_view);
+
 	device.destroySwapchainKHR(swapchain);
 
 	device.destroy();

@@ -41,6 +41,7 @@ class TriangleApplication
 		vk::Format swapchain_image_format;
 		vk::Extent2D swapchain_extent;
 		std::vector<vk::Image> swapchain_images;
+		std::vector<vk::ImageView> swapchain_image_views;
 
         void InitWindow();
 
@@ -61,6 +62,7 @@ class TriangleApplication
 		vk::PresentModeKHR ChoosePresentMode(const std::vector<vk::PresentModeKHR> &available_present_modes);
 		vk::Extent2D ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities);
 		void CreateSwapchain();
+		void CreateImageViews();
 
         void MainLoop();
         void Cleanup();
