@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <set>
+#include <fstream>
 #include "triangle_application.h"
 
 static const int screen_width = 800;
@@ -46,6 +47,23 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugReportFlagsEXT flags,
     return VK_FALSE;
 }
 
+std::vector<char> ReadFile(const std::string &filename)
+{
+	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+	if(!file.is_open())
+		throw std::runtime_error("failed to open file!");
+
+	size_t size = static_cast<size_t>(file.tellg());
+	std::vector<char> buffer(size);
+
+	file.seekg(0);
+	file.read(buffer.data(), size);
+	file.close();
+
+	return buffer;
+}
+
 void TriangleApplication::Run()
 {
     InitWindow();
@@ -75,6 +93,7 @@ void TriangleApplication::InitVulkan()
 	CreateLogicalDevice();
 	CreateSwapchain();
 	CreateImageViews();
+	CreatePipeline();
 }
 
 
@@ -407,6 +426,82 @@ void TriangleApplication::CreateImageViews()
 	}
 }
 
+vk::ShaderModule TriangleApplication::CreateShaderModule(const std::vector<char> &code)
+{
+	vk::ShaderModuleCreateInfo create_info;
+	create_info.setCodeSize(code.size());
+	create_info.setPCode(reinterpret_cast<const uint32_t *>(code.data()));
+	return device.createShaderModule(create_info);
+}
+
+void TriangleApplication::CreatePipeline()
+{
+	auto vert_shader_module = CreateShaderModule(ReadFile("glsl/triangle.vert.spv"));
+	auto frag_shader_module = CreateShaderModule(ReadFile("glsl/triangle.frag.spv"));
+
+	vk::PipelineShaderStageCreateInfo shader_stages[] = {
+			vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
+											  vk::ShaderStageFlagBits::eVertex,
+											  vert_shader_module,
+											  "main"),
+			vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
+											  vk::ShaderStageFlagBits::eFragment,
+											  frag_shader_module,
+											  "main")
+	};
+
+	vk::PipelineVertexInputStateCreateInfo vertex_input_info;
+
+	vk::PipelineInputAssemblyStateCreateInfo input_assembly_info;
+	input_assembly_info.setTopology(vk::PrimitiveTopology::eTriangleList);
+
+	vk::Viewport viewport(0.0f, 0.0f, swapchain_extent.width, swapchain_extent.height, 0.0f, 1.0f);
+	vk::Rect2D scissor({0, 0}, swapchain_extent);
+
+	vk::PipelineViewportStateCreateInfo viewport_state_info;
+	viewport_state_info.setViewportCount(1);
+	viewport_state_info.setPViewports(&viewport);
+	viewport_state_info.setScissorCount(1);
+	viewport_state_info.setPScissors(&scissor);
+
+
+	vk::PipelineRasterizationStateCreateInfo rasterizer_info;
+	rasterizer_info.setDepthClampEnable(VK_FALSE);
+	rasterizer_info.setRasterizerDiscardEnable(VK_FALSE);
+	rasterizer_info.setPolygonMode(vk::PolygonMode::eFill);
+	rasterizer_info.setLineWidth(1.0f);
+	rasterizer_info.setCullMode(vk::CullModeFlagBits::eBack);
+	rasterizer_info.setFrontFace(vk::FrontFace::eClockwise);
+	rasterizer_info.setDepthBiasEnable(VK_FALSE);
+
+
+	vk::PipelineMultisampleStateCreateInfo multisample_info;
+	multisample_info.setSampleShadingEnable(VK_FALSE);
+	multisample_info.setRasterizationSamples(vk::SampleCountFlagBits::e1);
+
+
+	vk::PipelineColorBlendAttachmentState color_blend_attachment;
+	color_blend_attachment.setColorWriteMask(vk::ColorComponentFlagBits::eR
+											 | vk::ColorComponentFlagBits::eG
+											 | vk::ColorComponentFlagBits::eB
+											 | vk::ColorComponentFlagBits::eA);
+	color_blend_attachment.setBlendEnable(VK_FALSE);
+
+	vk::PipelineColorBlendStateCreateInfo color_blend_info;
+	color_blend_info.setLogicOpEnable(VK_FALSE);
+	color_blend_info.setAttachmentCount(1);
+	color_blend_info.setPAttachments(&color_blend_attachment);
+
+
+	vk::PipelineLayoutCreateInfo pipeline_layout_info;
+	pipeline_layout = device.createPipelineLayout(pipeline_layout_info);
+
+
+
+	device.destroyShaderModule(vert_shader_module);
+	device.destroyShaderModule(frag_shader_module);
+}
+
 void TriangleApplication::MainLoop()
 {
     while(true)
@@ -421,6 +516,8 @@ void TriangleApplication::MainLoop()
 
 void TriangleApplication::Cleanup()
 {
+	device.destroyPipelineLayout(pipeline_layout);
+
 	for(const auto &image_view : swapchain_image_views)
 		device.destroyImageView(image_view);
 

@@ -43,6 +43,8 @@ class TriangleApplication
 		std::vector<vk::Image> swapchain_images;
 		std::vector<vk::ImageView> swapchain_image_views;
 
+		vk::PipelineLayout pipeline_layout;
+
         void InitWindow();
 
         void InitVulkan();
@@ -63,6 +65,9 @@ class TriangleApplication
 		vk::Extent2D ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities);
 		void CreateSwapchain();
 		void CreateImageViews();
+
+		vk::ShaderModule CreateShaderModule(const std::vector<char> &code);
+		void CreatePipeline();
 
         void MainLoop();
         void Cleanup();
