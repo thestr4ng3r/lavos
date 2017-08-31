@@ -426,6 +426,33 @@ void TriangleApplication::CreateImageViews()
 	}
 }
 
+void TriangleApplication::CreateRenderPasses()
+{
+	vk::AttachmentDescription color_attachment;
+	color_attachment.setFormat(swapchain_image_format);
+	color_attachment.setSamples(vk::SampleCountFlagBits::e1);
+	color_attachment.setLoadOp(vk::AttachmentLoadOp::eClear);
+	color_attachment.setStoreOp(vk::AttachmentStoreOp::eStore);
+	color_attachment.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
+	color_attachment.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare);
+	color_attachment.setInitialLayout(vk::ImageLayout::eUndefined);
+	color_attachment.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+
+	vk::AttachmentReference color_attachment_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
+
+	vk::SubpassDescription subpass;
+	subpass.setColorAttachmentCount(1);
+	subpass.setPColorAttachments(&color_attachment_ref);
+
+	vk::RenderPassCreateInfo render_pass_info;
+	render_pass_info.setAttachmentCount(1);
+	render_pass_info.setPAttachments(&color_attachment);
+	render_pass_info.setSubpassCount(1);
+	render_pass_info.setPSubpasses(&subpass);
+
+	render_pass = device.createRenderPass(render_pass_info);
+}
+
 vk::ShaderModule TriangleApplication::CreateShaderModule(const std::vector<char> &code)
 {
 	vk::ShaderModuleCreateInfo create_info;
@@ -497,6 +524,26 @@ void TriangleApplication::CreatePipeline()
 	pipeline_layout = device.createPipelineLayout(pipeline_layout_info);
 
 
+	vk::GraphicsPipelineCreateInfo pipeline_info;
+	pipeline_info.setStageCount(2);
+	pipeline_info.setPStages(shader_stages);
+	pipeline_info.setPVertexInputState(&vertex_input_info);
+	pipeline_info.setPInputAssemblyState(&input_assembly_info);
+	pipeline_info.setPViewportState(&viewport_state_info);
+	pipeline_info.setPRasterizationState(&rasterizer_info);
+	pipeline_info.setPMultisampleState(&multisample_info);
+	pipeline_info.setPDepthStencilState(nullptr);
+	pipeline_info.setPColorBlendState(&color_blend_info);
+	pipeline_info.setPDynamicState(nullptr);
+
+	pipeline_info.setLayout(pipeline_layout);
+
+	pipeline_info.setRenderPass(render_pass);
+	pipeline_info.setSubpass(0);
+
+
+	pipeline = device.createGraphicsPipeline(nullptr, pipeline_info);
+
 
 	device.destroyShaderModule(vert_shader_module);
 	device.destroyShaderModule(frag_shader_module);
@@ -516,7 +563,9 @@ void TriangleApplication::MainLoop()
 
 void TriangleApplication::Cleanup()
 {
+	device.destroyPipeline(pipeline);
 	device.destroyPipelineLayout(pipeline_layout);
+	device.destroyRenderPass(render_pass);
 
 	for(const auto &image_view : swapchain_image_views)
 		device.destroyImageView(image_view);
