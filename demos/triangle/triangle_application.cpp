@@ -78,9 +78,12 @@ void TriangleApplication::InitWindow()
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     window = glfwCreateWindow(screen_width, screen_height, "Triangle", nullptr, nullptr);
+
+	glfwSetWindowUserPointer(window, this);
+	glfwSetWindowSizeCallback(window, TriangleApplication::OnWindowResized);
 }
 
 
@@ -376,7 +379,10 @@ vk::Extent2D TriangleApplication::ChooseSwapExtent(const vk::SurfaceCapabilities
 	if(capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 		return capabilities.currentExtent;
 
-	vk::Extent2D extent(screen_width, screen_width);
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+
+	vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 	extent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, extent.width));
 	extent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, extent.height));
 	return extent;
@@ -446,6 +452,20 @@ void TriangleApplication::CreateImageViews()
 						.setFormat(swapchain_image_format)
 						.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)));
 	}
+}
+
+void TriangleApplication::RecreateSwapchain()
+{
+	device.waitIdle();
+
+	CleanupSwapchain();
+
+	CreateSwapchain();
+	CreateImageViews();
+	CreateRenderPasses();
+	CreatePipeline();
+	CreateFramebuffers();
+	CreateCommandBuffers();
 }
 
 void TriangleApplication::CreateRenderPasses()
@@ -664,15 +684,12 @@ void TriangleApplication::MainLoop()
 	device.waitIdle();
 }
 
-void TriangleApplication::Cleanup()
+void TriangleApplication::CleanupSwapchain()
 {
-	device.destroySemaphore(image_available_semaphore);
-	device.destroySemaphore(render_finished_semaphore);
-
-	device.destroyCommandPool(command_pool);
-
 	for(vk::Framebuffer framebuffer : swapchain_framebuffers)
 		device.destroyFramebuffer(framebuffer);
+
+	device.freeCommandBuffers(command_pool, command_buffers);
 
 	device.destroyPipeline(pipeline);
 	device.destroyPipelineLayout(pipeline_layout);
@@ -682,6 +699,16 @@ void TriangleApplication::Cleanup()
 		device.destroyImageView(image_view);
 
 	device.destroySwapchainKHR(swapchain);
+}
+
+void TriangleApplication::Cleanup()
+{
+	CleanupSwapchain();
+	
+	device.destroySemaphore(image_available_semaphore);
+	device.destroySemaphore(render_finished_semaphore);
+
+	device.destroyCommandPool(command_pool);
 
 	device.destroy();
 
@@ -698,6 +725,17 @@ void TriangleApplication::Cleanup()
 void TriangleApplication::DrawFrame()
 {
 	auto image_index_result = device.acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphore, nullptr);
+
+	if(image_index_result.result == vk::Result::eErrorOutOfDateKHR)
+	{
+		RecreateSwapchain();
+		return;
+	}
+	else if(image_index_result.result != vk::Result::eSuccess && image_index_result.result != vk::Result::eSuboptimalKHR)
+	{
+		throw std::runtime_error("failed to acquire swap chain image!");
+	}
+
 	uint32_t image_index = image_index_result.value;
 
 	vk::Semaphore wait_semaphores[] = { image_available_semaphore };
@@ -716,12 +754,30 @@ void TriangleApplication::DrawFrame()
 				  .setPSignalSemaphores(signal_semaphores),
 			nullptr);
 
-	present_queue.presentKHR(vk::PresentInfoKHR()
+	auto present_result = present_queue.presentKHR(vk::PresentInfoKHR()
 		.setWaitSemaphoreCount(1)
 		.setPWaitSemaphores(signal_semaphores)
 		.setSwapchainCount(1)
 		.setPSwapchains(&swapchain)
 		.setPImageIndices(&image_index));
 
+	if(present_result == vk::Result::eErrorOutOfDateKHR || present_result == vk::Result::eSuboptimalKHR)
+	{
+		RecreateSwapchain();
+	}
+	else if(present_result != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to present swap chain image!");
+	}
+
 	present_queue.waitIdle();
+}
+
+void TriangleApplication::OnWindowResized(GLFWwindow *window, int width, int height)
+{
+	if(width == 0 || height == 0)
+		return;
+
+	auto *app = reinterpret_cast<TriangleApplication *>(glfwGetWindowUserPointer(window));
+	app->RecreateSwapchain();
 }

@@ -75,6 +75,8 @@ class TriangleApplication
 		void CreateSwapchain();
 		void CreateImageViews();
 
+		void RecreateSwapchain();
+
 		void CreateRenderPasses();
 
 		vk::ShaderModule CreateShaderModule(const std::vector<char> &code);
@@ -88,9 +90,14 @@ class TriangleApplication
 		void CreateSemaphores();
 
         void MainLoop();
+
+		void CleanupSwapchain();
         void Cleanup();
 
 		void DrawFrame();
+
+
+		static void OnWindowResized(GLFWwindow *window, int width, int height);
 };
 
 #endif
