@@ -290,30 +290,30 @@ void TriangleApplication::CreateLogicalDevice()
 
 	for(int queue_family : unique_queue_families)
 	{
-		vk::DeviceQueueCreateInfo queue_create_info;
-		queue_create_info.queueFamilyIndex = static_cast<uint32_t>(queue_family);
-		queue_create_info.queueCount = 1;
-
 		float queue_priority = 1.0f;
-		queue_create_info.setPQueuePriorities(&queue_priority);
 
-		queue_create_infos.push_back(queue_create_info);
+		auto queue_info = vk::DeviceQueueCreateInfo()
+			.setQueueFamilyIndex(static_cast<uint32_t>(queue_family))
+			.setQueueCount(1)
+			.setPQueuePriorities(&queue_priority);
+
+		queue_create_infos.push_back(queue_info);
 	}
 
 	vk::PhysicalDeviceFeatures features;
 
-	vk::DeviceCreateInfo create_info;
-	create_info.setQueueCreateInfoCount(static_cast<uint32_t>(queue_create_infos.size()));
-	create_info.setPQueueCreateInfos(queue_create_infos.data());
-	create_info.setPEnabledFeatures(&features);
-
-	create_info.setEnabledExtensionCount(static_cast<uint32_t>(device_extensions.size()));
-	create_info.setPpEnabledExtensionNames(device_extensions.data());
+	auto create_info = vk::DeviceCreateInfo()
+		.setQueueCreateInfoCount(static_cast<uint32_t>(queue_create_infos.size()))
+		.setPQueueCreateInfos(queue_create_infos.data())
+		.setPEnabledFeatures(&features)
+		.setEnabledExtensionCount(static_cast<uint32_t>(device_extensions.size()))
+		.setPpEnabledExtensionNames(device_extensions.data());
 
 	if(enable_validation_layers)
 	{
-		create_info.setEnabledLayerCount(static_cast<uint32_t>(validation_layers.size()));
-		create_info.setPpEnabledLayerNames(validation_layers.data());
+		create_info
+			.setEnabledLayerCount(static_cast<uint32_t>(validation_layers.size()))
+			.setPpEnabledLayerNames(validation_layers.data());
 	}
 	else
 	{
@@ -396,14 +396,14 @@ void TriangleApplication::CreateSwapchain()
 	if(surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount)
 		image_count = surface_capabilities.maxImageCount;
 
-	vk::SwapchainCreateInfoKHR create_info;
-	create_info.surface = surface;
-	create_info.minImageCount = image_count;
-	create_info.imageFormat = surface_format.format;
-	create_info.imageColorSpace = surface_format.colorSpace;
-	create_info.imageExtent = extent;
-	create_info.imageArrayLayers = 1;
-	create_info.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
+	auto create_info = vk::SwapchainCreateInfoKHR()
+		.setSurface(surface)
+		.setMinImageCount(image_count)
+		.setImageFormat(surface_format.format)
+		.setImageColorSpace(surface_format.colorSpace)
+		.setImageExtent(extent)
+		.setImageArrayLayers(1)
+		.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
 
 	auto queue_family_indices = FindQueueFamilies(physical_device);
 	uint32_t queue_family_indices_array[] = {static_cast<uint32_t>(queue_family_indices.graphics_family),
@@ -411,20 +411,20 @@ void TriangleApplication::CreateSwapchain()
 
 	if(queue_family_indices.graphics_family != queue_family_indices.present_family)
 	{
-		create_info.imageSharingMode = vk::SharingMode::eConcurrent;
-		create_info.queueFamilyIndexCount = 2;
-		create_info.pQueueFamilyIndices = queue_family_indices_array;
+		create_info.setImageSharingMode(vk::SharingMode::eConcurrent)
+			.setQueueFamilyIndexCount(2)
+			.setPQueueFamilyIndices(queue_family_indices_array);
 	}
 	else
 	{
-		create_info.imageSharingMode = vk::SharingMode::eExclusive;
+		create_info.setImageSharingMode(vk::SharingMode::eExclusive);
 	}
 
-	create_info.preTransform = surface_capabilities.currentTransform;
-	create_info.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-	create_info.presentMode = present_mode;
-	create_info.clipped = VK_TRUE;
-	create_info.oldSwapchain = vk::SwapchainKHR(nullptr);
+	create_info.setPreTransform(surface_capabilities.currentTransform)
+		.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+		.setPresentMode(present_mode)
+		.setClipped(VK_TRUE)
+		.setOldSwapchain(vk::SwapchainKHR(nullptr));
 
 	swapchain = device.createSwapchainKHR(create_info);
 	swapchain_images = device.getSwapchainImagesKHR(swapchain);
@@ -439,38 +439,38 @@ void TriangleApplication::CreateImageViews()
 
 	for(size_t i=0; i<swapchain_images.size(); i++)
 	{
-		vk::ImageViewCreateInfo create_info;
-		create_info.setImage(swapchain_images[i]);
-		create_info.setViewType(vk::ImageViewType::e2D);
-		create_info.setFormat(swapchain_image_format);
-		create_info.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
-		swapchain_image_views[i] = device.createImageView(create_info);
+		swapchain_image_views[i] = device.createImageView(
+				vk::ImageViewCreateInfo()
+						.setImage(swapchain_images[i])
+						.setViewType(vk::ImageViewType::e2D)
+						.setFormat(swapchain_image_format)
+						.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)));
 	}
 }
 
 void TriangleApplication::CreateRenderPasses()
 {
-	vk::AttachmentDescription color_attachment;
-	color_attachment.setFormat(swapchain_image_format);
-	color_attachment.setSamples(vk::SampleCountFlagBits::e1);
-	color_attachment.setLoadOp(vk::AttachmentLoadOp::eClear);
-	color_attachment.setStoreOp(vk::AttachmentStoreOp::eStore);
-	color_attachment.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
-	color_attachment.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare);
-	color_attachment.setInitialLayout(vk::ImageLayout::eUndefined);
-	color_attachment.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+	 auto color_attachment = vk::AttachmentDescription()
+		.setFormat(swapchain_image_format)
+		.setSamples(vk::SampleCountFlagBits::e1)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eStore)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
 	vk::AttachmentReference color_attachment_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
 
-	vk::SubpassDescription subpass;
-	subpass.setColorAttachmentCount(1);
-	subpass.setPColorAttachments(&color_attachment_ref);
+	auto subpass = vk::SubpassDescription()
+		.setColorAttachmentCount(1)
+		.setPColorAttachments(&color_attachment_ref);
 
 	auto subpass_dependency = vk::SubpassDependency()
 			.setSrcSubpass(VK_SUBPASS_EXTERNAL)
 			.setDstSubpass(0)
 			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-					//.setSrcAccessMask(0)
+			//.setSrcAccessMask(0)
 			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
 
@@ -486,10 +486,10 @@ void TriangleApplication::CreateRenderPasses()
 
 vk::ShaderModule TriangleApplication::CreateShaderModule(const std::vector<char> &code)
 {
-	vk::ShaderModuleCreateInfo create_info;
-	create_info.setCodeSize(code.size());
-	create_info.setPCode(reinterpret_cast<const uint32_t *>(code.data()));
-	return device.createShaderModule(create_info);
+	return device.createShaderModule(
+			vk::ShaderModuleCreateInfo()
+					.setCodeSize(code.size())
+					.setPCode(reinterpret_cast<const uint32_t *>(code.data())));
 }
 
 void TriangleApplication::CreatePipeline()
@@ -508,69 +508,66 @@ void TriangleApplication::CreatePipeline()
 											  "main")
 	};
 
-	vk::PipelineVertexInputStateCreateInfo vertex_input_info;
+	auto vertex_input_info = vk::PipelineVertexInputStateCreateInfo();
 
-	vk::PipelineInputAssemblyStateCreateInfo input_assembly_info;
-	input_assembly_info.setTopology(vk::PrimitiveTopology::eTriangleList);
+	auto input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo()
+		.setTopology(vk::PrimitiveTopology::eTriangleList);
 
 	vk::Viewport viewport(0.0f, 0.0f, swapchain_extent.width, swapchain_extent.height, 0.0f, 1.0f);
 	vk::Rect2D scissor({0, 0}, swapchain_extent);
 
-	vk::PipelineViewportStateCreateInfo viewport_state_info;
-	viewport_state_info.setViewportCount(1);
-	viewport_state_info.setPViewports(&viewport);
-	viewport_state_info.setScissorCount(1);
-	viewport_state_info.setPScissors(&scissor);
+	auto viewport_state_info = vk::PipelineViewportStateCreateInfo()
+		.setViewportCount(1)
+		.setPViewports(&viewport)
+		.setScissorCount(1)
+		.setPScissors(&scissor);
+
+	auto rasterizer_info = vk::PipelineRasterizationStateCreateInfo()
+		.setDepthClampEnable(VK_FALSE)
+		.setRasterizerDiscardEnable(VK_FALSE)
+		.setPolygonMode(vk::PolygonMode::eFill)
+		.setLineWidth(1.0f)
+		.setCullMode(vk::CullModeFlagBits::eBack)
+		.setFrontFace(vk::FrontFace::eClockwise)
+		.setDepthBiasEnable(VK_FALSE);
 
 
-	vk::PipelineRasterizationStateCreateInfo rasterizer_info;
-	rasterizer_info.setDepthClampEnable(VK_FALSE);
-	rasterizer_info.setRasterizerDiscardEnable(VK_FALSE);
-	rasterizer_info.setPolygonMode(vk::PolygonMode::eFill);
-	rasterizer_info.setLineWidth(1.0f);
-	rasterizer_info.setCullMode(vk::CullModeFlagBits::eBack);
-	rasterizer_info.setFrontFace(vk::FrontFace::eClockwise);
-	rasterizer_info.setDepthBiasEnable(VK_FALSE);
+	auto multisample_info = vk::PipelineMultisampleStateCreateInfo()
+		.setSampleShadingEnable(VK_FALSE)
+		.setRasterizationSamples(vk::SampleCountFlagBits::e1);
 
 
-	vk::PipelineMultisampleStateCreateInfo multisample_info;
-	multisample_info.setSampleShadingEnable(VK_FALSE);
-	multisample_info.setRasterizationSamples(vk::SampleCountFlagBits::e1);
+	auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
+		.setColorWriteMask(vk::ColorComponentFlagBits::eR
+						   | vk::ColorComponentFlagBits::eG
+						   | vk::ColorComponentFlagBits::eB
+						   | vk::ColorComponentFlagBits::eA)
+		.setBlendEnable(VK_FALSE);
+
+	auto color_blend_info = vk::PipelineColorBlendStateCreateInfo()
+		.setLogicOpEnable(VK_FALSE)
+		.setAttachmentCount(1)
+		.setPAttachments(&color_blend_attachment);
 
 
-	vk::PipelineColorBlendAttachmentState color_blend_attachment;
-	color_blend_attachment.setColorWriteMask(vk::ColorComponentFlagBits::eR
-											 | vk::ColorComponentFlagBits::eG
-											 | vk::ColorComponentFlagBits::eB
-											 | vk::ColorComponentFlagBits::eA);
-	color_blend_attachment.setBlendEnable(VK_FALSE);
-
-	vk::PipelineColorBlendStateCreateInfo color_blend_info;
-	color_blend_info.setLogicOpEnable(VK_FALSE);
-	color_blend_info.setAttachmentCount(1);
-	color_blend_info.setPAttachments(&color_blend_attachment);
-
-
-	vk::PipelineLayoutCreateInfo pipeline_layout_info;
+	auto pipeline_layout_info = vk::PipelineLayoutCreateInfo();
 	pipeline_layout = device.createPipelineLayout(pipeline_layout_info);
 
 
-	vk::GraphicsPipelineCreateInfo pipeline_info;
-	pipeline_info.setStageCount(2);
-	pipeline_info.setPStages(shader_stages);
-	pipeline_info.setPVertexInputState(&vertex_input_info);
-	pipeline_info.setPInputAssemblyState(&input_assembly_info);
-	pipeline_info.setPViewportState(&viewport_state_info);
-	pipeline_info.setPRasterizationState(&rasterizer_info);
-	pipeline_info.setPMultisampleState(&multisample_info);
-	pipeline_info.setPDepthStencilState(nullptr);
-	pipeline_info.setPColorBlendState(&color_blend_info);
-	pipeline_info.setPDynamicState(nullptr);
-
-	pipeline_info.setLayout(pipeline_layout);
-
-	pipeline_info.setRenderPass(render_pass);
-	pipeline_info.setSubpass(0);
+	auto pipeline_info = vk::GraphicsPipelineCreateInfo()
+		.setStageCount(2)
+		.setPStages(shader_stages)
+		.setPVertexInputState(&vertex_input_info)
+		.setPInputAssemblyState(&input_assembly_info)
+		.setPViewportState(&viewport_state_info)
+		.setPRasterizationState(&rasterizer_info)
+		.setPMultisampleState(&multisample_info)
+		.setPDepthStencilState(nullptr)
+		.setPColorBlendState(&color_blend_info)
+		.setPDynamicState(nullptr)
+		.setLayout(pipeline_layout)
+		.setRenderPass(render_pass)
+		.setSubpass(0);
 
 
 	pipeline = device.createGraphicsPipeline(nullptr, pipeline_info);
