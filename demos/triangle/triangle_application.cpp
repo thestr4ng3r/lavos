@@ -704,7 +704,7 @@ void TriangleApplication::CleanupSwapchain()
 void TriangleApplication::Cleanup()
 {
 	CleanupSwapchain();
-	
+
 	device.destroySemaphore(image_available_semaphore);
 	device.destroySemaphore(render_finished_semaphore);
 
