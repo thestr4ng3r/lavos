@@ -15,12 +15,12 @@ static const std::vector<const char *> device_extensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-static const bool enable_validation_layers =
-#ifdef NDEBUG
+static const bool enable_validation_layers = true;
+/*#ifdef NDEBUG
     false;
 #else
 	true;
-#endif
+#endif*/
 
 VkResult vkCreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
 										const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
@@ -93,7 +93,12 @@ void TriangleApplication::InitVulkan()
 	CreateLogicalDevice();
 	CreateSwapchain();
 	CreateImageViews();
+	CreateRenderPasses();
 	CreatePipeline();
+	CreateFramebuffers();
+	CreateCommandPool();
+	CreateCommandBuffers();
+	CreateSemaphores();
 }
 
 
@@ -116,7 +121,14 @@ std::vector<const char *> TriangleApplication::GetRequiredExtensions()
 
 bool TriangleApplication::CheckValidationLayerSupport()
 {
+	std::cout << "Available Layers:" << std::endl;
+
     auto layers_available = vk::enumerateInstanceLayerProperties();
+
+	for(const auto &layer_props : layers_available)
+	{
+		std::cout << "\t" << layer_props.layerName << std::endl;
+	}
 
     for(const char *layer_name : validation_layers)
     {
@@ -162,10 +174,20 @@ void TriangleApplication::CreateInstance()
 
     // layers
 
-    if(enable_validation_layers && !CheckValidationLayerSupport())
-        throw std::runtime_error("validation layers requested, but not available!");
+	if(enable_validation_layers)
+	{
+		if(!CheckValidationLayerSupport())
+			throw std::runtime_error("validation layers requested, but not available!");
 
-    create_info.setEnabledLayerCount(0);
+		create_info.setEnabledLayerCount(static_cast<uint32_t>(validation_layers.size()));
+		create_info.setPpEnabledLayerNames(validation_layers.data());
+	}
+	else
+	{
+    	create_info.setEnabledLayerCount(0);
+	}
+
+
 
     instance = vk::createInstance(create_info);
 }
@@ -444,13 +466,22 @@ void TriangleApplication::CreateRenderPasses()
 	subpass.setColorAttachmentCount(1);
 	subpass.setPColorAttachments(&color_attachment_ref);
 
-	vk::RenderPassCreateInfo render_pass_info;
-	render_pass_info.setAttachmentCount(1);
-	render_pass_info.setPAttachments(&color_attachment);
-	render_pass_info.setSubpassCount(1);
-	render_pass_info.setPSubpasses(&subpass);
+	auto subpass_dependency = vk::SubpassDependency()
+			.setSrcSubpass(VK_SUBPASS_EXTERNAL)
+			.setDstSubpass(0)
+			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+					//.setSrcAccessMask(0)
+			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
 
-	render_pass = device.createRenderPass(render_pass_info);
+	render_pass = device.createRenderPass(
+			vk::RenderPassCreateInfo()
+				.setAttachmentCount(1)
+				.setPAttachments(&color_attachment)
+				.setSubpassCount(1)
+				.setPSubpasses(&subpass)
+				.setDependencyCount(1)
+				.setPDependencies(&subpass_dependency));
 }
 
 vk::ShaderModule TriangleApplication::CreateShaderModule(const std::vector<char> &code)
@@ -549,6 +580,78 @@ void TriangleApplication::CreatePipeline()
 	device.destroyShaderModule(frag_shader_module);
 }
 
+void TriangleApplication::CreateFramebuffers()
+{
+	swapchain_framebuffers.resize(swapchain_image_views.size());
+
+	for(size_t i=0; i<swapchain_image_views.size(); i++)
+	{
+		vk::ImageView attachments[] = {
+			swapchain_image_views[i]
+		};
+
+		auto framebuffer_info = vk::FramebufferCreateInfo()
+			.setRenderPass(render_pass)
+			.setAttachmentCount(1)
+			.setPAttachments(attachments)
+			.setWidth(swapchain_extent.width)
+			.setHeight(swapchain_extent.height)
+			.setLayers(1);
+
+		swapchain_framebuffers[i] = device.createFramebuffer(framebuffer_info);
+	}
+}
+
+void TriangleApplication::CreateCommandPool()
+{
+	auto queue_family_indices = FindQueueFamilies(physical_device);
+
+	auto command_pool_info = vk::CommandPoolCreateInfo()
+		.setQueueFamilyIndex(static_cast<uint32_t>(queue_family_indices.graphics_family));
+
+	command_pool = device.createCommandPool(command_pool_info);
+}
+
+void TriangleApplication::CreateCommandBuffers()
+{
+	command_buffers = device.allocateCommandBuffers(
+			vk::CommandBufferAllocateInfo()
+					.setCommandPool(command_pool)
+					.setLevel(vk::CommandBufferLevel::ePrimary)
+					.setCommandBufferCount(static_cast<uint32_t>(swapchain_image_views.size())));
+
+	for(size_t i=0; i<command_buffers.size(); i++)
+	{
+		const auto &command_buffer = command_buffers[i];
+
+		command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
+
+		vk::ClearValue clear_color_value = vk::ClearColorValue(std::array<float, 4>{{ 0.0f, 0.0f, 0.0f, 1.0f }});
+
+		command_buffer.beginRenderPass(
+				vk::RenderPassBeginInfo()
+					.setRenderPass(render_pass)
+					.setFramebuffer(swapchain_framebuffers[i])
+					.setRenderArea(vk::Rect2D({ 0, 0 }, swapchain_extent))
+					.setClearValueCount(1)
+					.setPClearValues(&clear_color_value),
+				vk::SubpassContents::eInline);
+
+		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+		command_buffer.draw(3, 1, 0, 0);
+
+		command_buffer.endRenderPass();
+
+		command_buffer.end();
+	}
+}
+
+void TriangleApplication::CreateSemaphores()
+{
+	image_available_semaphore = device.createSemaphore(vk::SemaphoreCreateInfo());
+	render_finished_semaphore = device.createSemaphore(vk::SemaphoreCreateInfo());
+}
+
 void TriangleApplication::MainLoop()
 {
     while(true)
@@ -556,13 +659,24 @@ void TriangleApplication::MainLoop()
         if(glfwWindowShouldClose(window))
             break;
 
-
         glfwPollEvents();
+
+		DrawFrame();
     }
+
+	device.waitIdle();
 }
 
 void TriangleApplication::Cleanup()
 {
+	device.destroySemaphore(image_available_semaphore);
+	device.destroySemaphore(render_finished_semaphore);
+
+	device.destroyCommandPool(command_pool);
+
+	for(vk::Framebuffer framebuffer : swapchain_framebuffers)
+		device.destroyFramebuffer(framebuffer);
+
 	device.destroyPipeline(pipeline);
 	device.destroyPipelineLayout(pipeline_layout);
 	device.destroyRenderPass(render_pass);
@@ -582,4 +696,35 @@ void TriangleApplication::Cleanup()
 
     glfwDestroyWindow(window);
     glfwTerminate();
+}
+
+void TriangleApplication::DrawFrame()
+{
+	auto image_index_result = device.acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphore, nullptr);
+	uint32_t image_index = image_index_result.value;
+
+	vk::Semaphore wait_semaphores[] = { image_available_semaphore };
+	vk::PipelineStageFlags wait_stages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+
+	vk::Semaphore signal_semaphores[] = { render_finished_semaphore };
+
+	graphics_queue.submit(
+			vk::SubmitInfo()
+				  .setWaitSemaphoreCount(1)
+				  .setPWaitSemaphores(wait_semaphores)
+				  .setPWaitDstStageMask(wait_stages)
+				  .setCommandBufferCount(1)
+				  .setPCommandBuffers(&command_buffers[image_index])
+				  .setSignalSemaphoreCount(1)
+				  .setPSignalSemaphores(signal_semaphores),
+			nullptr);
+
+	present_queue.presentKHR(vk::PresentInfoKHR()
+		.setWaitSemaphoreCount(1)
+		.setPWaitSemaphores(signal_semaphores)
+		.setSwapchainCount(1)
+		.setPSwapchains(&swapchain)
+		.setPImageIndices(&image_index));
+
+	present_queue.waitIdle();
 }

@@ -42,10 +42,17 @@ class TriangleApplication
 		vk::Extent2D swapchain_extent;
 		std::vector<vk::Image> swapchain_images;
 		std::vector<vk::ImageView> swapchain_image_views;
+		std::vector<vk::Framebuffer> swapchain_framebuffers;
 
 		vk::RenderPass render_pass;
 		vk::PipelineLayout pipeline_layout;
 		vk::Pipeline pipeline;
+
+		vk::CommandPool command_pool;
+		std::vector<vk::CommandBuffer> command_buffers;
+
+		vk::Semaphore image_available_semaphore;
+		vk::Semaphore render_finished_semaphore;
 
         void InitWindow();
 
@@ -73,8 +80,17 @@ class TriangleApplication
 		vk::ShaderModule CreateShaderModule(const std::vector<char> &code);
 		void CreatePipeline();
 
+		void CreateFramebuffers();
+
+		void CreateCommandPool();
+		void CreateCommandBuffers();
+
+		void CreateSemaphores();
+
         void MainLoop();
         void Cleanup();
+
+		void DrawFrame();
 };
 
 #endif
