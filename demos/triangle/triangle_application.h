@@ -2,8 +2,11 @@
 #ifndef VULKAN_TRIANGLE_APPLICATION_H
 #define VULKAN_TRIANGLE_APPLICATION_H
 
+#if not(__ANDROID__)
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#endif
+
 #include <vulkan/vulkan.hpp>
 
 struct QueueFamilyIndices
@@ -24,7 +27,10 @@ class TriangleApplication
         void Run();
 
     private:
+#if not(__ANDROID__)
         GLFWwindow *window;
+		static void OnWindowResized(GLFWwindow *window, int width, int height);
+#endif
 
 		vk::Instance instance;
 		vk::DebugReportCallbackEXT debug_report_callback;
@@ -95,9 +101,6 @@ class TriangleApplication
         void Cleanup();
 
 		void DrawFrame();
-
-
-		static void OnWindowResized(GLFWwindow *window, int width, int height);
 };
 
 #endif

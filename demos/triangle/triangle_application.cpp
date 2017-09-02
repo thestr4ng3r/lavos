@@ -1,14 +1,28 @@
 
+#if defined(__ANDROID__)
+#define VULKAN_HPP_TYPESAFE_CONVERSION
+#include <common.h>
+#endif
+
 #include <iostream>
 #include <set>
 #include <fstream>
 #include "triangle_application.h"
 
+
 static const int screen_width = 800;
 static const int screen_height = 600;
 
 static const std::vector<const char *> validation_layers = {
-        "VK_LAYER_LUNARG_standard_validation"
+        //"VK_LAYER_LUNARG_standard_validation"
+
+		"VK_LAYER_GOOGLE_threading",
+		"VK_LAYER_LUNARG_core_validation",
+		"VK_LAYER_LUNARG_object_tracker",
+		"VK_LAYER_LUNARG_swapchain",
+		"VK_LAYER_LUNARG_image",
+		"VK_LAYER_LUNARG_parameter_validation",
+		"VK_LAYER_GOOGLE_unique_objects"
 };
 
 static const std::vector<const char *> device_extensions = {
@@ -64,6 +78,15 @@ std::vector<char> ReadFile(const std::string &filename)
 	return buffer;
 }
 
+std::vector<char> ReadSPIRVShader(const std::string shader)
+{
+#if defined(__ANDROID__)
+	return AndroidReadSPIRVShader(shader);
+#else
+	return ReadFile("glsl/" + shader + ".spv");
+#endif
+}
+
 void TriangleApplication::Run()
 {
     InitWindow();
@@ -75,6 +98,7 @@ void TriangleApplication::Run()
 
 void TriangleApplication::InitWindow()
 {
+#if not(__ANDROID__)
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -84,6 +108,7 @@ void TriangleApplication::InitWindow()
 
 	glfwSetWindowUserPointer(window, this);
 	glfwSetWindowSizeCallback(window, TriangleApplication::OnWindowResized);
+#endif
 }
 
 
@@ -104,19 +129,23 @@ void TriangleApplication::InitVulkan()
 	CreateSemaphores();
 }
 
-
 std::vector<const char *> TriangleApplication::GetRequiredExtensions()
 {
     std::vector<const char *> extensions;
 
+#if defined(__ANDROID__)
+	extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+	extensions.push_back("VK_KHR_android_surface");
+#else
     unsigned int glfw_extensions_count;
     const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extensions_count);
 
     for(unsigned int i=0; i<glfw_extensions_count; i++)
         extensions.push_back(glfw_extensions[i]);
+#endif
 
-    if(enable_validation_layers)
-        extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	if(enable_validation_layers)
+		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
     return extensions;
 }
@@ -246,6 +275,14 @@ void TriangleApplication::PickPhysicalDevice()
 	if(physical_devices.empty())
 		throw std::runtime_error("failed to find GPUs with Vulkan support!");
 
+
+	std::cout << "Available Physical Devices:" << std::endl;
+	for(const auto &physical_device : physical_devices)
+	{
+		auto props = physical_device.getProperties();
+		std::cout << "\t" << props.deviceName << std::endl;
+	}
+
 	for(const auto &physical_device : physical_devices)
 	{
 		if(IsPhysicalDeviceSuitable(physical_device))
@@ -329,10 +366,39 @@ void TriangleApplication::CreateLogicalDevice()
 	present_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.present_family), 0);
 }
 
+#if defined(__ANDROID__)
+#include <android/native_window.h>
+
+typedef VkFlags VkAndroidSurfaceCreateFlagsKHR;
+
+typedef struct VkAndroidSurfaceCreateInfoKHR {
+	VkStructureType                   sType;
+	const void*                       pNext;
+	VkAndroidSurfaceCreateFlagsKHR    flags;
+	struct ANativeWindow*             window;
+} VkAndroidSurfaceCreateInfoKHR;
+
+typedef VkResult (VKAPI_PTR *PFN_vkCreateAndroidSurfaceKHR)(VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
+#endif
+
 void TriangleApplication::CreateSurface()
 {
 	VkSurfaceKHR c_surface;
-	if(glfwCreateWindowSurface(static_cast<VkInstance>(instance), window, nullptr, &c_surface) != VK_SUCCESS)
+
+#if defined(__ANDROID__)
+	auto CreateAndroidSurfaceKHR = (PFN_vkCreateAndroidSurfaceKHR) vkGetInstanceProcAddr(static_cast<VkInstance>(instance), "vkCreateAndroidSurfaceKHR");
+
+    VkAndroidSurfaceCreateInfoKHR createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
+    createInfo.window = AndroidGetApplicationWindow();
+    VkResult result = CreateAndroidSurfaceKHR(static_cast<VkInstance>(instance), &createInfo, nullptr, &c_surface);
+#else
+	vkResult result = glfwCreateWindowSurface(static_cast<VkInstance>(instance), window, nullptr, &c_surface);
+#endif
+
+	if(result != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create window surface!");
 	}
@@ -380,7 +446,11 @@ vk::Extent2D TriangleApplication::ChooseSwapExtent(const vk::SurfaceCapabilities
 		return capabilities.currentExtent;
 
 	int width, height;
+#if defined(__ANDROID__)
+	AndroidGetWindowSize(&width, &height);
+#else
 	glfwGetWindowSize(window, &width, &height);
+#endif
 
 	vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 	extent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, extent.width));
@@ -429,8 +499,8 @@ void TriangleApplication::CreateSwapchain()
 	create_info.setPreTransform(surface_capabilities.currentTransform)
 		.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
 		.setPresentMode(present_mode)
-		.setClipped(VK_TRUE)
-		.setOldSwapchain(vk::SwapchainKHR(nullptr));
+		.setClipped(VK_TRUE);
+		//.setOldSwapchain(vk::SwapchainKHR(nullptr));
 
 	swapchain = device.createSwapchainKHR(create_info);
 	swapchain_images = device.getSwapchainImagesKHR(swapchain);
@@ -514,8 +584,8 @@ vk::ShaderModule TriangleApplication::CreateShaderModule(const std::vector<char>
 
 void TriangleApplication::CreatePipeline()
 {
-	auto vert_shader_module = CreateShaderModule(ReadFile("glsl/triangle.vert.spv"));
-	auto frag_shader_module = CreateShaderModule(ReadFile("glsl/triangle.frag.spv"));
+	auto vert_shader_module = CreateShaderModule(ReadSPIRVShader("triangle.vert"));
+	auto frag_shader_module = CreateShaderModule(ReadSPIRVShader("triangle.frag"));
 
 	vk::PipelineShaderStageCreateInfo shader_stages[] = {
 			vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
@@ -590,7 +660,7 @@ void TriangleApplication::CreatePipeline()
 		.setSubpass(0);
 
 
-	pipeline = device.createGraphicsPipeline(nullptr, pipeline_info);
+	pipeline = device.createGraphicsPipeline(vk::PipelineCache() /*nullptr*/, pipeline_info);
 
 
 	device.destroyShaderModule(vert_shader_module);
@@ -673,10 +743,14 @@ void TriangleApplication::MainLoop()
 {
     while(true)
     {
+#if defined(__ANDROID__)
+		// TODO: events?
+#else
         if(glfwWindowShouldClose(window))
             break;
 
         glfwPollEvents();
+#endif
 
 		DrawFrame();
     }
@@ -718,13 +792,15 @@ void TriangleApplication::Cleanup()
 	instance.destroySurfaceKHR(surface);
     instance.destroy(nullptr);
 
+#if not(__ANDROID__)
     glfwDestroyWindow(window);
     glfwTerminate();
+#endif
 }
 
 void TriangleApplication::DrawFrame()
 {
-	auto image_index_result = device.acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphore, nullptr);
+	auto image_index_result = device.acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphore, vk::Fence() /*nullptr*/);
 
 	if(image_index_result.result == vk::Result::eErrorOutOfDateKHR)
 	{
@@ -752,7 +828,7 @@ void TriangleApplication::DrawFrame()
 				  .setPCommandBuffers(&command_buffers[image_index])
 				  .setSignalSemaphoreCount(1)
 				  .setPSignalSemaphores(signal_semaphores),
-			nullptr);
+			vk::Fence() /*nullptr*/);
 
 	auto present_result = present_queue.presentKHR(vk::PresentInfoKHR()
 		.setWaitSemaphoreCount(1)
@@ -773,6 +849,7 @@ void TriangleApplication::DrawFrame()
 	present_queue.waitIdle();
 }
 
+#if not(__ANDROID__)
 void TriangleApplication::OnWindowResized(GLFWwindow *window, int width, int height)
 {
 	if(width == 0 || height == 0)
@@ -781,3 +858,4 @@ void TriangleApplication::OnWindowResized(GLFWwindow *window, int width, int hei
 	auto *app = reinterpret_cast<TriangleApplication *>(glfwGetWindowUserPointer(window));
 	app->RecreateSwapchain();
 }
+#endif

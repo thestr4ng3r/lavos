@@ -1,5 +1,7 @@
 apply plugin: 'com.android.application'
 
+def layersDir = "${android.ndkDirectory}/sources/third_party/vulkan/src/build-android/jniLibs"
+
 android {
     compileSdkVersion 26
     buildToolsVersion "26.0.1"
@@ -15,25 +17,40 @@ android {
         }
         externalNativeBuild {
             cmake {
-                arguments '-DMODULE_NAME=app',
+                arguments "-DMODULE_NAME=${project.name}",
                         '-DANDROID_PLATFORM=android-24',
                         '-DANDROID_TOOLCHAIN=clang',
                         '-DANDROID_STL=gnustl_static'
             }
         }
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
     externalNativeBuild {
         cmake {
             path "../../CMakeLists.txt"
         }
     }
+
+    sourceSets {
+        main.jniLibs.srcDirs = ["${layersDir}"]
+        main.assets.srcDirs = ["src/main/assets", "build/additional_assets"]
+    }
 }
+
+task collectShaders(type: Copy) {
+    from(".externalNativeBuild/cmake/debug/armeabi-v7a/demos/${project.name}/shader") { // TODO: release
+        include '**/*.spv'
+    }
+    into 'build/additional_assets/shader'
+}
+
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -41,4 +58,8 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.0'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.0'
+}
+
+project.afterEvaluate {
+    preBuild.dependsOn collectShaders // TODO: preBuild is not the right place
 }

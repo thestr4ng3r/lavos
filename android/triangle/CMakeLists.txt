@@ -11,10 +11,13 @@ target_include_directories(native_lib PRIVATE
                           ${ANDROID_NDK}/sources/third_party/vulkan/src/include
                           ${CMAKE_SOURCE_DIR}/android/vulkan-hpp
                           ${ANDROID_NDK}/sources/android/native_app_glue
-                          ${ANDROID_NDK}/sources/third_party/shaderc/include)
+                          ${ANDROID_NDK}/sources/third_party/shaderc/include
+                          ${CMAKE_SOURCE_DIR}/demos/triangle)
 
 target_link_libraries(native_lib
                           android
                           log
                           native_app_glue
-                          vulkan)
+                          vulkan
+                          common
+                          triangle)
