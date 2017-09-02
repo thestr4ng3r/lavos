@@ -29,9 +29,14 @@ class DemoApplication
 		std::vector<vk::ImageView> swapchain_image_views;
 		std::vector<vk::Framebuffer> swapchain_framebuffers;
 
+
+		vk::Semaphore image_available_semaphore;
+		vk::Semaphore render_finished_semaphore;
+
+
 		virtual void InitVulkan();
 		virtual void MainLoop();
-		virtual void DrawFrame();
+		virtual void DrawFrame(uint32_t image_index) {};
 		virtual void Cleanup();
 
 		virtual void RecreateSwapchain();
@@ -49,6 +54,9 @@ class DemoApplication
 		void CreateSwapchain();
 		void CreateImageViews();
 
+		void CreateSemaphores();
+
+		void DrawAndPresentFrame();
 
 	public:
 		virtual ~DemoApplication() = default;

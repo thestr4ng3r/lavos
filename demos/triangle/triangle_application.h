@@ -19,9 +19,6 @@ class TriangleApplication: public DemoApplication
 		vk::CommandPool command_pool;
 		std::vector<vk::CommandBuffer> command_buffers;
 
-		vk::Semaphore image_available_semaphore;
-		vk::Semaphore render_finished_semaphore;
-
 
 		void InitVulkan() override;
 
@@ -40,9 +37,7 @@ class TriangleApplication: public DemoApplication
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 
-		void CreateSemaphores();
-
-		void DrawFrame() override;
+		void DrawFrame(uint32_t image_index) override;
 };
 
 #endif

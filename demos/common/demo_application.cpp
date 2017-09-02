@@ -44,6 +44,7 @@ void DemoApplication::InitVulkan()
 
 	CreateSwapchain();
 	CreateImageViews();
+	CreateSemaphores();
 }
 
 
@@ -237,12 +238,16 @@ void DemoApplication::RecreateSwapchain()
 	engine->GetVkDevice().waitIdle();
 
 	CleanupSwapchain();
-
 	CreateSwapchain();
 	CreateImageViews();
 }
 
 
+void DemoApplication::CreateSemaphores()
+{
+	image_available_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
+	render_finished_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
+}
 
 
 void DemoApplication::MainLoop()
@@ -258,15 +263,49 @@ void DemoApplication::MainLoop()
 		glfwPollEvents();
 #endif
 
-		DrawFrame();
+		DrawAndPresentFrame();
 	}
 
 	engine->GetVkDevice().waitIdle();
 }
 
-void DemoApplication::DrawFrame()
+void DemoApplication::DrawAndPresentFrame()
 {
-	// TODO: move swapchain stuff here
+	auto image_index_result = engine->GetVkDevice().acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphore, vk::Fence() /*nullptr*/);
+
+	if(image_index_result.result == vk::Result::eErrorOutOfDateKHR)
+	{
+		RecreateSwapchain();
+		return;
+	}
+	else if(image_index_result.result != vk::Result::eSuccess && image_index_result.result != vk::Result::eSuboptimalKHR)
+	{
+		throw std::runtime_error("failed to acquire swap chain image!");
+	}
+
+	uint32_t image_index = image_index_result.value;
+
+	DrawFrame(image_index);
+
+	vk::Semaphore signal_semaphores[] = { render_finished_semaphore };
+
+	auto present_result = engine->GetPresentQueue().presentKHR(vk::PresentInfoKHR()
+																	   .setWaitSemaphoreCount(1)
+																	   .setPWaitSemaphores(signal_semaphores)
+																	   .setSwapchainCount(1)
+																	   .setPSwapchains(&swapchain)
+																	   .setPImageIndices(&image_index));
+
+	if(present_result == vk::Result::eErrorOutOfDateKHR || present_result == vk::Result::eSuboptimalKHR)
+	{
+		RecreateSwapchain();
+	}
+	else if(present_result != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to present swap chain image!");
+	}
+
+	engine->GetPresentQueue().waitIdle();
 }
 
 void DemoApplication::CleanupSwapchain()
@@ -288,6 +327,9 @@ void DemoApplication::Cleanup()
 	auto device = engine->GetVkDevice();
 
 	CleanupSwapchain();
+
+	device.destroySemaphore(image_available_semaphore);
+	device.destroySemaphore(render_finished_semaphore);
 
 	device.destroy();
 

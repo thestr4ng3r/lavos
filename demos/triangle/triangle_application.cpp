@@ -26,7 +26,6 @@ void TriangleApplication::InitVulkan()
 	CreateFramebuffers();
 	CreateCommandPool();
 	CreateCommandBuffers();
-	CreateSemaphores();
 }
 
 void TriangleApplication::CreateRenderPasses()
@@ -225,34 +224,15 @@ void TriangleApplication::CreateCommandBuffers()
 	}
 }
 
-void TriangleApplication::CreateSemaphores()
+
+void TriangleApplication::DrawFrame(uint32_t image_index)
 {
-	image_available_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
-	render_finished_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
-}
-
-void TriangleApplication::DrawFrame()
-{
-	auto image_index_result = engine->GetVkDevice().acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphore, vk::Fence() /*nullptr*/);
-
-	if(image_index_result.result == vk::Result::eErrorOutOfDateKHR)
-	{
-		RecreateSwapchain();
-		return;
-	}
-	else if(image_index_result.result != vk::Result::eSuccess && image_index_result.result != vk::Result::eSuboptimalKHR)
-	{
-		throw std::runtime_error("failed to acquire swap chain image!");
-	}
-
-	uint32_t image_index = image_index_result.value;
-
 	vk::Semaphore wait_semaphores[] = { image_available_semaphore };
 	vk::PipelineStageFlags wait_stages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
 
 	vk::Semaphore signal_semaphores[] = { render_finished_semaphore };
 
-	engine->GetPresentQueue().submit(
+	engine->GetGraphicsQueue().submit(
 			vk::SubmitInfo()
 				  .setWaitSemaphoreCount(1)
 				  .setPWaitSemaphores(wait_semaphores)
@@ -262,24 +242,6 @@ void TriangleApplication::DrawFrame()
 				  .setSignalSemaphoreCount(1)
 				  .setPSignalSemaphores(signal_semaphores),
 			vk::Fence() /*nullptr*/);
-
-	auto present_result = engine->GetPresentQueue().presentKHR(vk::PresentInfoKHR()
-		.setWaitSemaphoreCount(1)
-		.setPWaitSemaphores(signal_semaphores)
-		.setSwapchainCount(1)
-		.setPSwapchains(&swapchain)
-		.setPImageIndices(&image_index));
-
-	if(present_result == vk::Result::eErrorOutOfDateKHR || present_result == vk::Result::eSuboptimalKHR)
-	{
-		RecreateSwapchain();
-	}
-	else if(present_result != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("failed to present swap chain image!");
-	}
-
-	engine->GetPresentQueue().waitIdle();
 }
 
 void TriangleApplication::RecreateSwapchain()
@@ -306,9 +268,6 @@ void TriangleApplication::CleanupSwapchain()
 void TriangleApplication::Cleanup()
 {
 	auto device = engine->GetVkDevice();
-
-	device.destroySemaphore(image_available_semaphore);
-	device.destroySemaphore(render_finished_semaphore);
 
 	device.destroyCommandPool(command_pool);
 }
