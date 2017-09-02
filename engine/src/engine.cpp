@@ -119,7 +119,7 @@ bool Engine::CheckValidationLayerSupport()
 
 void Engine::CreateInstance()
 {
-	vk::ApplicationInfo app_info("Triangle", VK_MAKE_VERSION(1, 0, 0),
+	vk::ApplicationInfo app_info(info.app_info.c_str(), VK_MAKE_VERSION(1, 0, 0),
 								 "no engine", VK_MAKE_VERSION(1, 0, 0),
 								 VK_API_VERSION_1_0);
 

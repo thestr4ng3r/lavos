@@ -13,6 +13,7 @@ class Engine
 	public:
 		struct CreateInfo
 		{
+			std::string app_info;
 			bool enable_validation_layers = false;
 			std::set<std::string> required_instance_extensions;
 			std::set<std::string> required_device_extensions;

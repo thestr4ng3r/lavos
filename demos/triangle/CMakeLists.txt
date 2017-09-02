@@ -33,6 +33,7 @@ else()
 	add_executable(triangle ${SOURCE_FILES} main.cpp ${SPIRV_FILES})
 
 	target_link_libraries(triangle
+			demo_common
 			engine
 			glfw
 			${Vulkan_LIBRARIES})
