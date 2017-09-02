@@ -11,6 +11,7 @@ set(GLSL_FILES
 set(GLSLC_EXECUTABLE glslc)
 
 set(SPIRV_FILES "")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/shader")
 foreach(glsl_file ${GLSL_FILES})
 	set(spirv_file "${CMAKE_CURRENT_BINARY_DIR}/shader/${glsl_file}.spv")
 	set(glsl_file "${CMAKE_CURRENT_SOURCE_DIR}/glsl/${glsl_file}")
@@ -32,6 +33,7 @@ else()
 	add_executable(triangle ${SOURCE_FILES} main.cpp ${SPIRV_FILES})
 
 	target_link_libraries(triangle
+			engine
 			glfw
 			${Vulkan_LIBRARIES})
 endif()

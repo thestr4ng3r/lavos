@@ -2,24 +2,14 @@
 #ifndef VULKAN_TRIANGLE_APPLICATION_H
 #define VULKAN_TRIANGLE_APPLICATION_H
 
-#if not(__ANDROID__)
+#ifndef __ANDROID__
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #endif
 
 #include <vulkan/vulkan.hpp>
+#include <engine.h>
 
-struct QueueFamilyIndices
-{
-	int graphics_family = -1;
-	int present_family = -1;
-
-	bool IsComplete()
-	{
-		return graphics_family >= 0
-				&& present_family >= 0;
-	}
-};
 
 class TriangleApplication
 {
@@ -27,21 +17,14 @@ class TriangleApplication
         void Run();
 
     private:
-#if not(__ANDROID__)
+#ifndef __ANDROID__
         GLFWwindow *window;
 		static void OnWindowResized(GLFWwindow *window, int width, int height);
 #endif
 
-		vk::Instance instance;
-		vk::DebugReportCallbackEXT debug_report_callback;
+		engine::Engine *engine;
 
 		vk::SurfaceKHR surface;
-
-		vk::PhysicalDevice physical_device;
-		vk::Device device;
-
-		vk::Queue graphics_queue;
-		vk::Queue present_queue;
 
 		vk::SwapchainKHR swapchain;
 		vk::Format swapchain_image_format;
@@ -63,16 +46,10 @@ class TriangleApplication
         void InitWindow();
 
         void InitVulkan();
-		std::vector<const char *> GetRequiredExtensions();
-		void SetupDebugCallback();
-		bool CheckValidationLayerSupport();
-		void CreateInstance();
 
-		bool CheckDeviceExtensionSupport(vk::PhysicalDevice physical_device);
-		bool IsPhysicalDeviceSuitable(vk::PhysicalDevice physical_device);
-		void PickPhysicalDevice();
-		QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice physical_device);
-		void CreateLogicalDevice();
+		void CreateEngine();
+
+
 
 		void CreateSurface();
 		vk::SurfaceFormatKHR ChooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &available_formats);

@@ -9,25 +9,12 @@
 #include <fstream>
 #include "triangle_application.h"
 
+#include <vulkan/vulkan.h>
+#include <engine.h>
+
 
 static const int screen_width = 800;
 static const int screen_height = 600;
-
-static const std::vector<const char *> validation_layers = {
-        //"VK_LAYER_LUNARG_standard_validation"
-
-		"VK_LAYER_GOOGLE_threading",
-		"VK_LAYER_LUNARG_core_validation",
-		"VK_LAYER_LUNARG_object_tracker",
-		"VK_LAYER_LUNARG_swapchain",
-		"VK_LAYER_LUNARG_image",
-		"VK_LAYER_LUNARG_parameter_validation",
-		"VK_LAYER_GOOGLE_unique_objects"
-};
-
-static const std::vector<const char *> device_extensions = {
-		VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
 
 static const bool enable_validation_layers = true;
 /*#ifdef NDEBUG
@@ -35,31 +22,6 @@ static const bool enable_validation_layers = true;
 #else
 	true;
 #endif*/
-
-VkResult vkCreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
-										const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
-{
-	auto func = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
-	if (func != nullptr)
-		return func(instance, pCreateInfo, pAllocator, pCallback);
-	else
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-}
-
-void vkDestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
-{
-	auto func = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
-	if (func != nullptr)
-		func(instance, callback, pAllocator);
-}
-
-static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType,
-													uint64_t obj, size_t location, int32_t code,
-													const char *layerPrefix, const char *msg, void *userData)
-{
-    std::cerr << "validation layer: " << msg << std::endl;
-    return VK_FALSE;
-}
 
 std::vector<char> ReadFile(const std::string &filename)
 {
@@ -83,7 +45,7 @@ std::vector<char> ReadSPIRVShader(const std::string shader)
 #if defined(__ANDROID__)
 	return AndroidReadSPIRVShader(shader);
 #else
-	return ReadFile("glsl/" + shader + ".spv");
+	return ReadFile(std::string(std::getenv("SHADER_PATH")) + "/" + shader + ".spv");
 #endif
 }
 
@@ -114,11 +76,8 @@ void TriangleApplication::InitWindow()
 
 void TriangleApplication::InitVulkan()
 {
-    CreateInstance();
-    SetupDebugCallback();
-	CreateSurface();
-	PickPhysicalDevice();
-	CreateLogicalDevice();
+	CreateEngine();
+
 	CreateSwapchain();
 	CreateImageViews();
 	CreateRenderPasses();
@@ -129,242 +88,34 @@ void TriangleApplication::InitVulkan()
 	CreateSemaphores();
 }
 
-std::vector<const char *> TriangleApplication::GetRequiredExtensions()
+
+void TriangleApplication::CreateEngine()
 {
-    std::vector<const char *> extensions;
+	engine::Engine::CreateInfo create_info;
 
 #if defined(__ANDROID__)
-	extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-	extensions.push_back("VK_KHR_android_surface");
+	create_info.required_instance_extensions.insert(VK_KHR_SURFACE_EXTENSION_NAME);
+	create_info.required_instance_extensions.insert("VK_KHR_android_surface");
 #else
-    unsigned int glfw_extensions_count;
-    const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extensions_count);
+	unsigned int glfw_extensions_count;
+	const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extensions_count);
 
-    for(unsigned int i=0; i<glfw_extensions_count; i++)
-        extensions.push_back(glfw_extensions[i]);
+	for(unsigned int i=0; i<glfw_extensions_count; i++)
+		create_info.required_instance_extensions.insert(std::string(glfw_extensions[i]));
 #endif
 
-	if(enable_validation_layers)
-		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	create_info.enable_validation_layers = enable_validation_layers;
 
-    return extensions;
+	create_info.required_device_extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+	engine = new engine::Engine(create_info);
+
+	CreateSurface();
+
+	engine->InitializeForSurface(surface);
 }
 
 
-bool TriangleApplication::CheckValidationLayerSupport()
-{
-	std::cout << "Available Layers:" << std::endl;
-
-    auto layers_available = vk::enumerateInstanceLayerProperties();
-
-	for(const auto &layer_props : layers_available)
-	{
-		std::cout << "\t" << layer_props.layerName << std::endl;
-	}
-
-    for(const char *layer_name : validation_layers)
-    {
-        bool layer_found = false;
-
-        for(const auto &layer_props : layers_available)
-        {
-            if(strcmp(layer_name, layer_props.layerName) == 0)
-            {
-                layer_found = true;
-                break;
-            }
-        }
-
-        if(!layer_found)
-            return false;
-    }
-
-    return true;
-}
-
-void TriangleApplication::CreateInstance()
-{
-    vk::ApplicationInfo app_info("Triangle", VK_MAKE_VERSION(1, 0, 0),
-                                "no engine", VK_MAKE_VERSION(1, 0, 0),
-                                VK_API_VERSION_1_0);
-
-    vk::InstanceCreateInfo create_info;
-    create_info.setPApplicationInfo(&app_info);
-
-
-    // extensions
-
-    auto extensions_available = vk::enumerateInstanceExtensionProperties();
-    std::cout << "Available Extensions:" << std::endl;
-    for(const auto &extension : extensions_available)
-        std::cout << "\t" << extension.extensionName << std::endl;
-
-    auto required_extensions = GetRequiredExtensions();
-    create_info.setEnabledExtensionCount(static_cast<uint32_t>(required_extensions.size()));
-    create_info.setPpEnabledExtensionNames(required_extensions.data());
-
-
-    // layers
-
-	if(enable_validation_layers)
-	{
-		if(!CheckValidationLayerSupport())
-			throw std::runtime_error("validation layers requested, but not available!");
-
-		create_info.setEnabledLayerCount(static_cast<uint32_t>(validation_layers.size()));
-		create_info.setPpEnabledLayerNames(validation_layers.data());
-	}
-	else
-	{
-    	create_info.setEnabledLayerCount(0);
-	}
-
-
-
-    instance = vk::createInstance(create_info);
-}
-
-void TriangleApplication::SetupDebugCallback()
-{
-    if(!enable_validation_layers)
-        return;
-
-    vk::DebugReportCallbackCreateInfoEXT create_info(vk::DebugReportFlagBitsEXT::eError | vk::DebugReportFlagBitsEXT::eWarning,
-                                                     DebugCallback);
-	debug_report_callback = instance.createDebugReportCallbackEXT(create_info);
-}
-
-bool TriangleApplication::CheckDeviceExtensionSupport(vk::PhysicalDevice physical_device)
-{
-	auto available_extensions = physical_device.enumerateDeviceExtensionProperties();
-
-	std::set<std::string> required_extensions(device_extensions.begin(), device_extensions.end());
-
-	for(const auto &extension : available_extensions)
-		required_extensions.erase(extension.extensionName);
-
-	return required_extensions.empty();
-}
-
-bool TriangleApplication::IsPhysicalDeviceSuitable(vk::PhysicalDevice physical_device)
-{
-	auto props = physical_device.getProperties();
-	auto features = physical_device.getFeatures();
-
-
-	// extensions
-
-	if(!CheckDeviceExtensionSupport(physical_device))
-		return false;
-
-
-	// surface
-
-	auto surface_formats = physical_device.getSurfaceFormatsKHR(surface);
-	auto surface_present_modes = physical_device.getSurfacePresentModesKHR(surface);
-
-	if(surface_formats.empty() || surface_present_modes.empty())
-		return false;
-
-	return true;
-}
-
-void TriangleApplication::PickPhysicalDevice()
-{
-	auto physical_devices = instance.enumeratePhysicalDevices();
-	if(physical_devices.empty())
-		throw std::runtime_error("failed to find GPUs with Vulkan support!");
-
-
-	std::cout << "Available Physical Devices:" << std::endl;
-	for(const auto &physical_device : physical_devices)
-	{
-		auto props = physical_device.getProperties();
-		std::cout << "\t" << props.deviceName << std::endl;
-	}
-
-	for(const auto &physical_device : physical_devices)
-	{
-		if(IsPhysicalDeviceSuitable(physical_device))
-		{
-			this->physical_device = physical_device;
-			break;
-		}
-	}
-
-	if(!physical_device)
-	{
-		throw std::runtime_error("failed to find a suitable GPU!");
-	}
-}
-
-QueueFamilyIndices TriangleApplication::FindQueueFamilies(vk::PhysicalDevice physical_device)
-{
-	QueueFamilyIndices indices;
-
-	auto queue_families = physical_device.getQueueFamilyProperties();
-	int i = 0;
-	for(const auto &queue_family : queue_families)
-	{
-		if(queue_family.queueCount > 0 && queue_family.queueFlags & vk::QueueFlagBits::eGraphics)
-			indices.graphics_family = i;
-
-		if(queue_family.queueCount > 0 && physical_device.getSurfaceSupportKHR(static_cast<uint32_t>(i), surface))
-			indices.present_family = i;
-
-		if(indices.IsComplete())
-			break;
-
-		i++;
-	}
-
-	return indices;
-}
-
-void TriangleApplication::CreateLogicalDevice()
-{
-	QueueFamilyIndices queue_family_indices = FindQueueFamilies(physical_device);
-
-	std::vector<vk::DeviceQueueCreateInfo> queue_create_infos;
-	std::set<int> unique_queue_families = { queue_family_indices.graphics_family, queue_family_indices.present_family };
-
-	for(int queue_family : unique_queue_families)
-	{
-		float queue_priority = 1.0f;
-
-		auto queue_info = vk::DeviceQueueCreateInfo()
-			.setQueueFamilyIndex(static_cast<uint32_t>(queue_family))
-			.setQueueCount(1)
-			.setPQueuePriorities(&queue_priority);
-
-		queue_create_infos.push_back(queue_info);
-	}
-
-	vk::PhysicalDeviceFeatures features;
-
-	auto create_info = vk::DeviceCreateInfo()
-		.setQueueCreateInfoCount(static_cast<uint32_t>(queue_create_infos.size()))
-		.setPQueueCreateInfos(queue_create_infos.data())
-		.setPEnabledFeatures(&features)
-		.setEnabledExtensionCount(static_cast<uint32_t>(device_extensions.size()))
-		.setPpEnabledExtensionNames(device_extensions.data());
-
-	if(enable_validation_layers)
-	{
-		create_info
-			.setEnabledLayerCount(static_cast<uint32_t>(validation_layers.size()))
-			.setPpEnabledLayerNames(validation_layers.data());
-	}
-	else
-	{
-		create_info.setEnabledLayerCount(0);
-	}
-
-	device = physical_device.createDevice(create_info);
-
-	graphics_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.graphics_family), 0);
-	present_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.present_family), 0);
-}
 
 #if defined(__ANDROID__)
 #include <android/native_window.h>
@@ -395,7 +146,7 @@ void TriangleApplication::CreateSurface()
     createInfo.window = AndroidGetApplicationWindow();
     VkResult result = CreateAndroidSurfaceKHR(static_cast<VkInstance>(instance), &createInfo, nullptr, &c_surface);
 #else
-	vkResult result = glfwCreateWindowSurface(static_cast<VkInstance>(instance), window, nullptr, &c_surface);
+	VkResult result = glfwCreateWindowSurface(static_cast<VkInstance>(engine->GetVkInstance()), window, nullptr, &c_surface);
 #endif
 
 	if(result != VK_SUCCESS)
@@ -460,9 +211,9 @@ vk::Extent2D TriangleApplication::ChooseSwapExtent(const vk::SurfaceCapabilities
 
 void TriangleApplication::CreateSwapchain()
 {
-	auto surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
-	auto surface_formats = physical_device.getSurfaceFormatsKHR(surface);
-	auto surface_present_modes = physical_device.getSurfacePresentModesKHR(surface);
+	auto surface_capabilities = engine->GetVkPhysicalDevice().getSurfaceCapabilitiesKHR(surface);
+	auto surface_formats = engine->GetVkPhysicalDevice().getSurfaceFormatsKHR(surface);
+	auto surface_present_modes = engine->GetVkPhysicalDevice().getSurfacePresentModesKHR(surface);
 
 	auto surface_format = ChooseSurfaceFormat(surface_formats);
 	auto present_mode = ChoosePresentMode(surface_present_modes);
@@ -481,7 +232,7 @@ void TriangleApplication::CreateSwapchain()
 		.setImageArrayLayers(1)
 		.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
 
-	auto queue_family_indices = FindQueueFamilies(physical_device);
+	auto queue_family_indices = engine->GetQueueFamilyIndices();
 	uint32_t queue_family_indices_array[] = {static_cast<uint32_t>(queue_family_indices.graphics_family),
 											 static_cast<uint32_t>(queue_family_indices.present_family)};
 
@@ -502,8 +253,8 @@ void TriangleApplication::CreateSwapchain()
 		.setClipped(VK_TRUE);
 		//.setOldSwapchain(vk::SwapchainKHR(nullptr));
 
-	swapchain = device.createSwapchainKHR(create_info);
-	swapchain_images = device.getSwapchainImagesKHR(swapchain);
+	swapchain = engine->GetVkDevice().createSwapchainKHR(create_info);
+	swapchain_images = engine->GetVkDevice().getSwapchainImagesKHR(swapchain);
 
 	swapchain_image_format = surface_format.format;
 	swapchain_extent = extent;
@@ -515,7 +266,7 @@ void TriangleApplication::CreateImageViews()
 
 	for(size_t i=0; i<swapchain_images.size(); i++)
 	{
-		swapchain_image_views[i] = device.createImageView(
+		swapchain_image_views[i] = engine->GetVkDevice().createImageView(
 				vk::ImageViewCreateInfo()
 						.setImage(swapchain_images[i])
 						.setViewType(vk::ImageViewType::e2D)
@@ -526,7 +277,7 @@ void TriangleApplication::CreateImageViews()
 
 void TriangleApplication::RecreateSwapchain()
 {
-	device.waitIdle();
+	engine->GetVkDevice().waitIdle();
 
 	CleanupSwapchain();
 
@@ -564,7 +315,7 @@ void TriangleApplication::CreateRenderPasses()
 			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
 
-	render_pass = device.createRenderPass(
+	render_pass = engine->GetVkDevice().createRenderPass(
 			vk::RenderPassCreateInfo()
 				.setAttachmentCount(1)
 				.setPAttachments(&color_attachment)
@@ -576,7 +327,7 @@ void TriangleApplication::CreateRenderPasses()
 
 vk::ShaderModule TriangleApplication::CreateShaderModule(const std::vector<char> &code)
 {
-	return device.createShaderModule(
+	return engine->GetVkDevice().createShaderModule(
 			vk::ShaderModuleCreateInfo()
 					.setCodeSize(code.size())
 					.setPCode(reinterpret_cast<const uint32_t *>(code.data())));
@@ -641,7 +392,7 @@ void TriangleApplication::CreatePipeline()
 
 
 	auto pipeline_layout_info = vk::PipelineLayoutCreateInfo();
-	pipeline_layout = device.createPipelineLayout(pipeline_layout_info);
+	pipeline_layout = engine->GetVkDevice().createPipelineLayout(pipeline_layout_info);
 
 
 	auto pipeline_info = vk::GraphicsPipelineCreateInfo()
@@ -660,11 +411,11 @@ void TriangleApplication::CreatePipeline()
 		.setSubpass(0);
 
 
-	pipeline = device.createGraphicsPipeline(vk::PipelineCache() /*nullptr*/, pipeline_info);
+	pipeline = engine->GetVkDevice().createGraphicsPipeline(vk::PipelineCache() /*nullptr*/, pipeline_info);
 
 
-	device.destroyShaderModule(vert_shader_module);
-	device.destroyShaderModule(frag_shader_module);
+	engine->GetVkDevice().destroyShaderModule(vert_shader_module);
+	engine->GetVkDevice().destroyShaderModule(frag_shader_module);
 }
 
 void TriangleApplication::CreateFramebuffers()
@@ -685,23 +436,24 @@ void TriangleApplication::CreateFramebuffers()
 			.setHeight(swapchain_extent.height)
 			.setLayers(1);
 
-		swapchain_framebuffers[i] = device.createFramebuffer(framebuffer_info);
+		swapchain_framebuffers[i] = engine->GetVkDevice().createFramebuffer(framebuffer_info);
 	}
 }
 
+
 void TriangleApplication::CreateCommandPool()
 {
-	auto queue_family_indices = FindQueueFamilies(physical_device);
+	auto queue_family_indices = engine->GetQueueFamilyIndices();
 
 	auto command_pool_info = vk::CommandPoolCreateInfo()
 		.setQueueFamilyIndex(static_cast<uint32_t>(queue_family_indices.graphics_family));
 
-	command_pool = device.createCommandPool(command_pool_info);
+	command_pool = engine->GetVkDevice().createCommandPool(command_pool_info);
 }
 
 void TriangleApplication::CreateCommandBuffers()
 {
-	command_buffers = device.allocateCommandBuffers(
+	command_buffers = engine->GetVkDevice().allocateCommandBuffers(
 			vk::CommandBufferAllocateInfo()
 					.setCommandPool(command_pool)
 					.setLevel(vk::CommandBufferLevel::ePrimary)
@@ -735,8 +487,8 @@ void TriangleApplication::CreateCommandBuffers()
 
 void TriangleApplication::CreateSemaphores()
 {
-	image_available_semaphore = device.createSemaphore(vk::SemaphoreCreateInfo());
-	render_finished_semaphore = device.createSemaphore(vk::SemaphoreCreateInfo());
+	image_available_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
+	render_finished_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
 }
 
 void TriangleApplication::MainLoop()
@@ -755,11 +507,13 @@ void TriangleApplication::MainLoop()
 		DrawFrame();
     }
 
-	device.waitIdle();
+	engine->GetVkDevice().waitIdle();
 }
 
 void TriangleApplication::CleanupSwapchain()
 {
+	auto device = engine->GetVkDevice();
+
 	for(vk::Framebuffer framebuffer : swapchain_framebuffers)
 		device.destroyFramebuffer(framebuffer);
 
@@ -777,6 +531,8 @@ void TriangleApplication::CleanupSwapchain()
 
 void TriangleApplication::Cleanup()
 {
+	auto device = engine->GetVkDevice();
+
 	CleanupSwapchain();
 
 	device.destroySemaphore(image_available_semaphore);
@@ -786,11 +542,9 @@ void TriangleApplication::Cleanup()
 
 	device.destroy();
 
-	if(enable_validation_layers)
-		instance.destroyDebugReportCallbackEXT(debug_report_callback);
+	engine->GetVkInstance().destroySurfaceKHR(surface);
 
-	instance.destroySurfaceKHR(surface);
-    instance.destroy(nullptr);
+	delete engine;
 
 #if not(__ANDROID__)
     glfwDestroyWindow(window);
@@ -800,7 +554,7 @@ void TriangleApplication::Cleanup()
 
 void TriangleApplication::DrawFrame()
 {
-	auto image_index_result = device.acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphore, vk::Fence() /*nullptr*/);
+	auto image_index_result = engine->GetVkDevice().acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphore, vk::Fence() /*nullptr*/);
 
 	if(image_index_result.result == vk::Result::eErrorOutOfDateKHR)
 	{
@@ -819,7 +573,7 @@ void TriangleApplication::DrawFrame()
 
 	vk::Semaphore signal_semaphores[] = { render_finished_semaphore };
 
-	graphics_queue.submit(
+	engine->GetPresentQueue().submit(
 			vk::SubmitInfo()
 				  .setWaitSemaphoreCount(1)
 				  .setPWaitSemaphores(wait_semaphores)
@@ -830,7 +584,7 @@ void TriangleApplication::DrawFrame()
 				  .setPSignalSemaphores(signal_semaphores),
 			vk::Fence() /*nullptr*/);
 
-	auto present_result = present_queue.presentKHR(vk::PresentInfoKHR()
+	auto present_result = engine->GetPresentQueue().presentKHR(vk::PresentInfoKHR()
 		.setWaitSemaphoreCount(1)
 		.setPWaitSemaphores(signal_semaphores)
 		.setSwapchainCount(1)
@@ -846,10 +600,10 @@ void TriangleApplication::DrawFrame()
 		throw std::runtime_error("failed to present swap chain image!");
 	}
 
-	present_queue.waitIdle();
+	engine->GetPresentQueue().waitIdle();
 }
 
-#if not(__ANDROID__)
+#ifndef __ANDROID__
 void TriangleApplication::OnWindowResized(GLFWwindow *window, int width, int height)
 {
 	if(width == 0 || height == 0)

@@ -13,8 +13,6 @@ if(ANDROID)
 
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}/android/common")
 
-
-    add_subdirectory(demos)
     add_subdirectory(android)
 else()
     find_package(Vulkan REQUIRED)
@@ -25,6 +23,9 @@ else()
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glfw")
-
-    add_subdirectory(demos)
 endif()
+
+add_subdirectory(engine)
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/engine/include")
+
+add_subdirectory(demos)
