@@ -75,7 +75,6 @@ class VertexBufferApplication: public DemoApplication
 		void CreateFramebuffers();
 
 		void CreateVertexBuffer();
-		uint32_t FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties);
 
 		void CreateCommandPool();
 		void CreateCommandBuffers();

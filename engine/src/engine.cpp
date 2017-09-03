@@ -190,6 +190,7 @@ void Engine::InitializeForSurface(vk::SurfaceKHR surface)
 {
 	PickPhysicalDevice(surface);
 	CreateLogicalDevice(surface);
+	CreateGlobalCommandPools();
 }
 
 bool Engine::IsPhysicalDeviceSuitable(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface)
@@ -313,4 +314,76 @@ void Engine::CreateLogicalDevice(vk::SurfaceKHR surface)
 
 	graphics_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.graphics_family), 0);
 	present_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.present_family), 0);
+}
+
+
+
+void Engine::CreateGlobalCommandPools()
+{
+	auto command_pool_info = vk::CommandPoolCreateInfo()
+			.setFlags(vk::CommandPoolCreateFlagBits::eTransient)
+			.setQueueFamilyIndex(static_cast<uint32_t>(queue_family_indices.graphics_family));
+
+	copy_command_pool = device.createCommandPool(command_pool_info);
+}
+
+
+uint32_t Engine::FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties)
+{
+	auto memory_properties = physical_device.getMemoryProperties();
+
+	for(uint32_t i=0; i<memory_properties.memoryTypeCount; i++)
+	{
+		if(type_filter & (1 << i)
+		   && (memory_properties.memoryTypes[i].propertyFlags & properties) == properties)
+			return i;
+	}
+
+	throw std::runtime_error("failed to find suitable memory type!");
+}
+
+vk::Buffer Engine::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
+								vk::DeviceMemory *buffer_memory)
+{
+	auto create_info = vk::BufferCreateInfo()
+			.setSize(size)
+			.setUsage(usage)
+			.setSharingMode(vk::SharingMode::eExclusive);
+
+	auto buffer = device.createBuffer(create_info);
+
+	auto memory_requirements = device.getBufferMemoryRequirements(buffer);
+
+	auto alloc_info = vk::MemoryAllocateInfo()
+			.setAllocationSize(memory_requirements.size)
+			.setMemoryTypeIndex(FindMemoryType(memory_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
+
+	auto &memory = *buffer_memory;
+	memory = device.allocateMemory(alloc_info);
+	device.bindBufferMemory(buffer, memory, 0);
+
+	return buffer;
+}
+
+void Engine::CopyBuffer(vk::Buffer src_buffer, vk::Buffer dst_buffer, vk::DeviceSize size)
+{
+	auto allocate_info = vk::CommandBufferAllocateInfo()
+		.setLevel(vk::CommandBufferLevel::ePrimary)
+		.setCommandPool(copy_command_pool)
+		.setCommandBufferCount(1);
+
+	auto command_buffer = *device.allocateCommandBuffers(allocate_info).begin();
+
+	command_buffer.begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
+	command_buffer.copyBuffer(src_buffer, dst_buffer, vk::BufferCopy(0, 0, size));
+	command_buffer.end();
+
+	auto submit_info = vk::SubmitInfo()
+		.setCommandBufferCount(1)
+		.setPCommandBuffers(&command_buffer);
+
+	graphics_queue.submit(submit_info, nullptr);
+	graphics_queue.waitIdle(); // TODO: use fence maybe?
+
+	device.freeCommandBuffers(copy_command_pool, command_buffer);
 }

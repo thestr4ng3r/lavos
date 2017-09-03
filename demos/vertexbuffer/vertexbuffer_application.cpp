@@ -170,41 +170,27 @@ void VertexBufferApplication::CreateVertexBuffer()
 {
 	auto device = engine->GetVkDevice();
 
-	auto create_info = vk::BufferCreateInfo()
-		.setSize(sizeof(vertices[0]) * vertices.size())
-		.setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
-		.setSharingMode(vk::SharingMode::eExclusive);
-
-	vertex_buffer = device.createBuffer(create_info);
-
-	auto memory_requirements = device.getBufferMemoryRequirements(vertex_buffer);
-
-	auto alloc_info = vk::MemoryAllocateInfo()
-		.setAllocationSize(memory_requirements.size)
-		.setMemoryTypeIndex(FindMemoryType(memory_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
-
-	vertex_buffer_memory = device.allocateMemory(alloc_info);
-
-	device.bindBufferMemory(vertex_buffer, vertex_buffer_memory, 0);
-
-	void *data = device.mapMemory(vertex_buffer_memory, 0, create_info.size);
-	memcpy(data, vertices.data(), create_info.size);
-	device.unmapMemory(vertex_buffer_memory);
-}
+	vk::DeviceSize size = sizeof(vertices[0]) * vertices.size();
 
 
-uint32_t VertexBufferApplication::FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties)
-{
-	auto memory_properties = engine->GetVkPhysicalDevice().getMemoryProperties();
+	vk::DeviceMemory staging_buffer_memory;
+	auto staging_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc,
+											   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+											   &staging_buffer_memory);
 
-	for(uint32_t i=0; i<memory_properties.memoryTypeCount; i++)
-	{
-		if(type_filter & (1 << i)
-				&& (memory_properties.memoryTypes[i].propertyFlags & properties) == properties)
-			return i;
-	}
+	void *data = device.mapMemory(staging_buffer_memory, 0, size);
+	memcpy(data, vertices.data(), size);
+	device.unmapMemory(staging_buffer_memory);
 
-	throw std::runtime_error("failed to find suitable memory type!");
+
+	vertex_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
+										 vk::MemoryPropertyFlagBits::eDeviceLocal,
+										 &vertex_buffer_memory);
+
+	engine->CopyBuffer(staging_buffer, vertex_buffer, size);
+
+	device.destroyBuffer(staging_buffer);
+	device.freeMemory(staging_buffer_memory);
 }
 
 void VertexBufferApplication::CreateFramebuffers()

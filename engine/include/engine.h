@@ -48,6 +48,9 @@ class Engine
 		vk::Queue present_queue;
 
 
+		vk::CommandPool copy_command_pool;
+
+
 		std::vector<const char *> GetRequiredInstanceExtensions();
 		std::vector<const char *> GetRequiredDeviceExtensions();
 
@@ -62,6 +65,8 @@ class Engine
 		QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface);
 		void CreateLogicalDevice(vk::SurfaceKHR surface);
 
+		void CreateGlobalCommandPools();
+
 	public:
 		Engine(const CreateInfo &info);
 		~Engine();
@@ -75,6 +80,11 @@ class Engine
 		const QueueFamilyIndices &GetQueueFamilyIndices() const		{ return queue_family_indices; }
 		const vk::Queue &GetGraphicsQueue()	const 					{ return graphics_queue; }
 		const vk::Queue &GetPresentQueue() const					{ return present_queue; }
+
+		uint32_t FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties);
+
+		vk::Buffer CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::DeviceMemory *buffer_memory);
+		void CopyBuffer(vk::Buffer src_buffer, vk::Buffer dst_buffer, vk::DeviceSize size);
 };
 
 }
