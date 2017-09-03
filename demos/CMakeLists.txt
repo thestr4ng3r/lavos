@@ -9,7 +9,7 @@ macro(add_spirv_shaders SPIRV_FILES_VAR GLSL_FILES_VAR)
 	foreach(glsl_file ${${GLSL_FILES_VAR}})
 		set(spirv_file "${CMAKE_CURRENT_BINARY_DIR}/shader/${glsl_file}.spv")
 		set(glsl_file "${CMAKE_CURRENT_SOURCE_DIR}/glsl/${glsl_file}")
-		list(APPEND SPIRV_FILES_VAR "${spirv_file}")
+		list(APPEND ${SPIRV_FILES_VAR} "${spirv_file}")
 		add_custom_command(OUTPUT "${spirv_file}"
 				COMMAND ${GLSLC_EXECUTABLE} "${glsl_file}" -o "${spirv_file}"
 				MAIN_DEPENDENCY "${glsl_file}")
@@ -43,3 +43,4 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/common")
 
 add_subdirectory(triangle)
 add_subdirectory(vertexbuffer)
+add_subdirectory(indexbuffer)
