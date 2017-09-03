@@ -8,8 +8,7 @@
 #include <set>
 #include <fstream>
 
-#include "triangle_application.h"
-#include "../vertexbuffer/vertexbuffer_application.h"
+#include "vertexbuffer_application.h"
 
 #include <vulkan/vulkan.h>
 #include <engine.h>
@@ -18,7 +17,7 @@
 
 
 
-void TriangleApplication::InitVulkan()
+void VertexBufferApplication::InitVulkan()
 {
 	DemoApplication::InitVulkan();
 
@@ -26,10 +25,11 @@ void TriangleApplication::InitVulkan()
 	CreatePipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
+	CreateVertexBuffer();
 	CreateCommandBuffers();
 }
 
-void TriangleApplication::CreateRenderPasses()
+void VertexBufferApplication::CreateRenderPasses()
 {
 	 auto color_attachment = vk::AttachmentDescription()
 		.setFormat(swapchain_image_format)
@@ -65,7 +65,7 @@ void TriangleApplication::CreateRenderPasses()
 				.setPDependencies(&subpass_dependency));
 }
 
-vk::ShaderModule TriangleApplication::CreateShaderModule(const std::vector<char> &code)
+vk::ShaderModule VertexBufferApplication::CreateShaderModule(const std::vector<char> &code)
 {
 	return engine->GetVkDevice().createShaderModule(
 			vk::ShaderModuleCreateInfo()
@@ -73,10 +73,10 @@ vk::ShaderModule TriangleApplication::CreateShaderModule(const std::vector<char>
 					.setPCode(reinterpret_cast<const uint32_t *>(code.data())));
 }
 
-void TriangleApplication::CreatePipeline()
+void VertexBufferApplication::CreatePipeline()
 {
-	auto vert_shader_module = CreateShaderModule(ReadSPIRVShader("triangle.vert"));
-	auto frag_shader_module = CreateShaderModule(ReadSPIRVShader("triangle.frag"));
+	auto vert_shader_module = CreateShaderModule(ReadSPIRVShader("color.vert"));
+	auto frag_shader_module = CreateShaderModule(ReadSPIRVShader("color.frag"));
 
 	vk::PipelineShaderStageCreateInfo shader_stages[] = {
 			vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
@@ -89,7 +89,14 @@ void TriangleApplication::CreatePipeline()
 											  "main")
 	};
 
-	auto vertex_input_info = vk::PipelineVertexInputStateCreateInfo();
+	auto vertex_binding_description = Vertex::GetBindingDescription();
+	auto vertex_attribute_description = Vertex::GetAttributeDescription();
+
+	auto vertex_input_info = vk::PipelineVertexInputStateCreateInfo()
+		.setVertexBindingDescriptionCount(1)
+		.setPVertexBindingDescriptions(&vertex_binding_description)
+		.setVertexAttributeDescriptionCount(vertex_attribute_description.size())
+		.setPVertexAttributeDescriptions(vertex_attribute_description.data());
 
 	auto input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo()
 		.setTopology(vk::PrimitiveTopology::eTriangleList);
@@ -159,7 +166,48 @@ void TriangleApplication::CreatePipeline()
 }
 
 
-void TriangleApplication::CreateFramebuffers()
+void VertexBufferApplication::CreateVertexBuffer()
+{
+	auto device = engine->GetVkDevice();
+
+	auto create_info = vk::BufferCreateInfo()
+		.setSize(sizeof(vertices[0]) * vertices.size())
+		.setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
+		.setSharingMode(vk::SharingMode::eExclusive);
+
+	vertex_buffer = device.createBuffer(create_info);
+
+	auto memory_requirements = device.getBufferMemoryRequirements(vertex_buffer);
+
+	auto alloc_info = vk::MemoryAllocateInfo()
+		.setAllocationSize(memory_requirements.size)
+		.setMemoryTypeIndex(FindMemoryType(memory_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
+
+	vertex_buffer_memory = device.allocateMemory(alloc_info);
+
+	device.bindBufferMemory(vertex_buffer, vertex_buffer_memory, 0);
+
+	void *data = device.mapMemory(vertex_buffer_memory, 0, create_info.size);
+	memcpy(data, vertices.data(), create_info.size);
+	device.unmapMemory(vertex_buffer_memory);
+}
+
+
+uint32_t VertexBufferApplication::FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties)
+{
+	auto memory_properties = engine->GetVkPhysicalDevice().getMemoryProperties();
+
+	for(uint32_t i=0; i<memory_properties.memoryTypeCount; i++)
+	{
+		if(type_filter & (1 << i)
+				&& (memory_properties.memoryTypes[i].propertyFlags & properties) == properties)
+			return i;
+	}
+
+	throw std::runtime_error("failed to find suitable memory type!");
+}
+
+void VertexBufferApplication::CreateFramebuffers()
 {
 	swapchain_framebuffers.resize(swapchain_image_views.size());
 
@@ -181,7 +229,8 @@ void TriangleApplication::CreateFramebuffers()
 	}
 }
 
-void TriangleApplication::CreateCommandPool()
+
+void VertexBufferApplication::CreateCommandPool()
 {
 	auto queue_family_indices = engine->GetQueueFamilyIndices();
 
@@ -191,8 +240,7 @@ void TriangleApplication::CreateCommandPool()
 	command_pool = engine->GetVkDevice().createCommandPool(command_pool_info);
 }
 
-
-void TriangleApplication::CreateCommandBuffers()
+void VertexBufferApplication::CreateCommandBuffers()
 {
 	command_buffers = engine->GetVkDevice().allocateCommandBuffers(
 			vk::CommandBufferAllocateInfo()
@@ -218,7 +266,8 @@ void TriangleApplication::CreateCommandBuffers()
 				vk::SubpassContents::eInline);
 
 		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-		command_buffer.draw(3, 1, 0, 0);
+		command_buffer.bindVertexBuffers(0, { vertex_buffer }, { 0 });
+		command_buffer.draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
 		command_buffer.endRenderPass();
 
@@ -226,7 +275,7 @@ void TriangleApplication::CreateCommandBuffers()
 	}
 }
 
-void TriangleApplication::DrawFrame(uint32_t image_index)
+void VertexBufferApplication::DrawFrame(uint32_t image_index)
 {
 	vk::Semaphore wait_semaphores[] = { image_available_semaphore };
 	vk::PipelineStageFlags wait_stages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
@@ -245,7 +294,7 @@ void TriangleApplication::DrawFrame(uint32_t image_index)
 			vk::Fence() /*nullptr*/);
 }
 
-void TriangleApplication::RecreateSwapchain()
+void VertexBufferApplication::RecreateSwapchain()
 {
 	DemoApplication::RecreateSwapchain();
 
@@ -255,7 +304,7 @@ void TriangleApplication::RecreateSwapchain()
 	CreateCommandBuffers();
 }
 
-void TriangleApplication::CleanupSwapchain()
+void VertexBufferApplication::CleanupSwapchain()
 {
 	auto device = engine->GetVkDevice();
 
@@ -268,18 +317,21 @@ void TriangleApplication::CleanupSwapchain()
 	DemoApplication::CleanupSwapchain();
 }
 
-void TriangleApplication::CleanupApplication()
+void VertexBufferApplication::CleanupApplication()
 {
 	auto device = engine->GetVkDevice();
 
 	device.destroyCommandPool(command_pool);
+
+	device.destroyBuffer(vertex_buffer);
+	device.freeMemory(vertex_buffer_memory);
 }
 
 
 #ifndef __ANDROID__
 int main()
 {
-	TriangleApplication app;
+	VertexBufferApplication app;
 
 	try
 	{
@@ -293,4 +345,5 @@ int main()
 
 	return EXIT_SUCCESS;
 }
+
 #endif

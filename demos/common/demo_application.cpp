@@ -328,10 +328,10 @@ void DemoApplication::Cleanup()
 
 	CleanupSwapchain();
 
+	CleanupApplication();
+
 	device.destroySemaphore(image_available_semaphore);
 	device.destroySemaphore(render_finished_semaphore);
-
-	device.destroy();
 
 	engine->GetVkInstance().destroySurfaceKHR(surface);
 

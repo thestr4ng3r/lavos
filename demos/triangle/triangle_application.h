@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_TRIANGLE_APPLICATION_H
-#define VULKAN_TRIANGLE_APPLICATION_H
+#ifndef VULKAN_VERTEXBUFFER_APPLICATION_H
+#define VULKAN_VERTEXBUFFER_APPLICATION_H
 
 #include <demo_application.h>
 #include <vulkan/vulkan.hpp>
@@ -25,12 +25,13 @@ class TriangleApplication: public DemoApplication
 		void RecreateSwapchain() override;
 		void CleanupSwapchain() override;
 
-		void Cleanup() override;
+		void CleanupApplication() override;
 
 		void CreateRenderPasses();
 
 		vk::ShaderModule CreateShaderModule(const std::vector<char> &code);
 		void CreatePipeline();
+
 
 		void CreateFramebuffers();
 

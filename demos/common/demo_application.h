@@ -37,7 +37,7 @@ class DemoApplication
 		virtual void InitVulkan();
 		virtual void MainLoop();
 		virtual void DrawFrame(uint32_t image_index) {};
-		virtual void Cleanup();
+		virtual void CleanupApplication() {};
 
 		virtual void RecreateSwapchain();
 		virtual void CleanupSwapchain();
@@ -52,6 +52,7 @@ class DemoApplication
 		vk::PresentModeKHR ChoosePresentMode(const std::vector<vk::PresentModeKHR> &available_present_modes);
 		vk::Extent2D ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities);
 		void CreateSwapchain();
+		void Cleanup();
 		void CreateImageViews();
 
 		void CreateSemaphores();

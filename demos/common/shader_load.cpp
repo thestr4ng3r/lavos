@@ -25,6 +25,10 @@ std::vector<char> ReadSPIRVShader(const std::string shader)
 #if defined(__ANDROID__)
 	return AndroidReadSPIRVShader(shader);
 #else
-	return ReadFile(std::string(std::getenv("SHADER_PATH")) + "/" + shader + ".spv");
+	const char *shader_path = std::getenv("SHADER_PATH");
+	if(!shader_path)
+		shader_path = ".";
+
+	return ReadFile(std::string(shader_path) + "/" + shader + ".spv");
 #endif
 }
