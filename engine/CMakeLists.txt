@@ -2,7 +2,8 @@
 
 set(SOURCE_FILES
 		src/engine.cpp
-		include/engine.h)
+		include/engine.h
+		src/thirdparty_impl.cpp)
 
 add_library(engine STATIC ${SOURCE_FILES})
 

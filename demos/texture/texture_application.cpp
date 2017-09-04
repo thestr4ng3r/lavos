@@ -7,29 +7,40 @@
 #include <iostream>
 #include <set>
 #include <fstream>
+#include <chrono>
 
-#include "vertexbuffer_application.h"
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "texture_application.h"
 
 #include <vulkan/vulkan.h>
 #include <engine.h>
 
 #include <shader_load.h>
+#include <stb_image.h>
 
 
-
-void VertexBufferApplication::InitVulkan()
+void TextureApplication::InitVulkan()
 {
 	DemoApplication::InitVulkan();
 
 	CreateRenderPasses();
+	CreateDescriptorSetLayout();
 	CreatePipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
 	CreateVertexBuffer();
+	CreateIndexBuffer();
+	CreateTextureImage();
+	CreateMatrixUniformBuffer();
+	CreateDescriptorPool();
+	CreateDescriptorSet();
 	CreateCommandBuffers();
 }
 
-void VertexBufferApplication::CreateRenderPasses()
+void TextureApplication::CreateRenderPasses()
 {
 	 auto color_attachment = vk::AttachmentDescription()
 		.setFormat(swapchain_image_format)
@@ -65,7 +76,22 @@ void VertexBufferApplication::CreateRenderPasses()
 				.setPDependencies(&subpass_dependency));
 }
 
-vk::ShaderModule VertexBufferApplication::CreateShaderModule(const std::vector<char> &code)
+void TextureApplication::CreateDescriptorSetLayout()
+{
+	auto matrix_buffer_layout_binding = vk::DescriptorSetLayoutBinding()
+		.setBinding(0)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setDescriptorCount(1)
+		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+
+	auto create_info = vk::DescriptorSetLayoutCreateInfo()
+		.setBindingCount(1)
+		.setPBindings(&matrix_buffer_layout_binding);
+
+	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
+}
+
+vk::ShaderModule TextureApplication::CreateShaderModule(const std::vector<char> &code)
 {
 	return engine->GetVkDevice().createShaderModule(
 			vk::ShaderModuleCreateInfo()
@@ -73,10 +99,11 @@ vk::ShaderModule VertexBufferApplication::CreateShaderModule(const std::vector<c
 					.setPCode(reinterpret_cast<const uint32_t *>(code.data())));
 }
 
-void VertexBufferApplication::CreatePipeline()
+
+void TextureApplication::CreatePipeline()
 {
-	auto vert_shader_module = CreateShaderModule(ReadSPIRVShader("color.vert"));
-	auto frag_shader_module = CreateShaderModule(ReadSPIRVShader("color.frag"));
+	auto vert_shader_module = CreateShaderModule(ReadSPIRVShader("texture.vert"));
+	auto frag_shader_module = CreateShaderModule(ReadSPIRVShader("texture.frag"));
 
 	vk::PipelineShaderStageCreateInfo shader_stages[] = {
 			vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
@@ -116,7 +143,7 @@ void VertexBufferApplication::CreatePipeline()
 		.setPolygonMode(vk::PolygonMode::eFill)
 		.setLineWidth(1.0f)
 		.setCullMode(vk::CullModeFlagBits::eBack)
-		.setFrontFace(vk::FrontFace::eClockwise)
+		.setFrontFace(vk::FrontFace::eCounterClockwise)
 		.setDepthBiasEnable(VK_FALSE);
 
 
@@ -138,7 +165,10 @@ void VertexBufferApplication::CreatePipeline()
 		.setPAttachments(&color_blend_attachment);
 
 
-	auto pipeline_layout_info = vk::PipelineLayoutCreateInfo();
+	auto pipeline_layout_info = vk::PipelineLayoutCreateInfo()
+		.setSetLayoutCount(1)
+		.setPSetLayouts(&descriptor_set_layout);
+
 	pipeline_layout = engine->GetVkDevice().createPipelineLayout(pipeline_layout_info);
 
 
@@ -166,7 +196,7 @@ void VertexBufferApplication::CreatePipeline()
 }
 
 
-void VertexBufferApplication::CreateVertexBuffer()
+void TextureApplication::CreateVertexBuffer()
 {
 	auto device = engine->GetVkDevice();
 
@@ -195,7 +225,47 @@ void VertexBufferApplication::CreateVertexBuffer()
 	device.freeMemory(staging_buffer_memory);
 }
 
-void VertexBufferApplication::CreateFramebuffers()
+
+void TextureApplication::CreateIndexBuffer()
+{
+	auto device = engine->GetVkDevice();
+
+	vk::DeviceSize size = sizeof(indices[0]) * indices.size();
+
+	vk::DeviceMemory staging_buffer_memory;
+	auto staging_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eTransferSrc,
+														 vk::MemoryPropertyFlagBits::eHostVisible |
+														 vk::MemoryPropertyFlagBits::eHostCoherent,
+														 &staging_buffer_memory);
+
+	void *data = device.mapMemory(staging_buffer_memory, 0, size);
+	memcpy(data, indices.data(), size);
+	device.unmapMemory(staging_buffer_memory);
+
+
+	index_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eTransferDst |
+														vk::BufferUsageFlagBits::eIndexBuffer,
+												  vk::MemoryPropertyFlagBits::eDeviceLocal,
+												  &index_buffer_memory);
+
+	engine->CopyBuffer(staging_buffer, index_buffer, size);
+
+	device.destroyBuffer(staging_buffer);
+	device.freeMemory(staging_buffer_memory);
+}
+
+void TextureApplication::CreateMatrixUniformBuffer()
+{
+	vk::DeviceSize size = sizeof(MatrixUniformBuffer);
+	matrix_uniform_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eUniformBuffer,
+														   vk::MemoryPropertyFlagBits::eHostVisible |
+														   vk::MemoryPropertyFlagBits::eHostCoherent,
+														   &matrix_uniform_buffer_memory);
+
+
+}
+
+void TextureApplication::CreateFramebuffers()
 {
 	swapchain_framebuffers.resize(swapchain_image_views.size());
 
@@ -217,8 +287,7 @@ void VertexBufferApplication::CreateFramebuffers()
 	}
 }
 
-
-void VertexBufferApplication::CreateCommandPool()
+void TextureApplication::CreateCommandPool()
 {
 	auto queue_family_indices = engine->GetQueueFamilyIndices();
 
@@ -228,7 +297,7 @@ void VertexBufferApplication::CreateCommandPool()
 	command_pool = engine->GetVkDevice().createCommandPool(command_pool_info);
 }
 
-void VertexBufferApplication::CreateCommandBuffers()
+void TextureApplication::CreateCommandBuffers()
 {
 	command_buffers = engine->GetVkDevice().allocateCommandBuffers(
 			vk::CommandBufferAllocateInfo()
@@ -254,8 +323,10 @@ void VertexBufferApplication::CreateCommandBuffers()
 				vk::SubpassContents::eInline);
 
 		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_set, nullptr);
 		command_buffer.bindVertexBuffers(0, { vertex_buffer }, { 0 });
-		command_buffer.draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+		command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint16);
+		command_buffer.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 		command_buffer.endRenderPass();
 
@@ -263,8 +334,108 @@ void VertexBufferApplication::CreateCommandBuffers()
 	}
 }
 
-void VertexBufferApplication::DrawFrame(uint32_t image_index)
+void TextureApplication::CreateDescriptorPool()
 {
+	auto pool_size = vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1);
+
+	auto create_info = vk::DescriptorPoolCreateInfo()
+		.setPoolSizeCount(1)
+		.setPPoolSizes(&pool_size)
+		.setMaxSets(1);
+
+	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
+}
+
+void TextureApplication::CreateDescriptorSet()
+{
+	vk::DescriptorSetLayout layouts[] = { descriptor_set_layout };
+
+	auto alloc_info = vk::DescriptorSetAllocateInfo()
+		.setDescriptorPool(descriptor_pool)
+		.setDescriptorSetCount(1)
+		.setPSetLayouts(layouts);
+
+	descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
+
+	auto buffer_info = vk::DescriptorBufferInfo()
+		.setBuffer(matrix_uniform_buffer)
+		.setOffset(0)
+		.setRange(sizeof(MatrixUniformBuffer));
+
+	auto descriptor_write = vk::WriteDescriptorSet()
+		.setDstSet(descriptor_set)
+		.setDstBinding(0)
+		.setDstArrayElement(0)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setDescriptorCount(1)
+		.setPBufferInfo(&buffer_info);
+
+	engine->GetVkDevice().updateDescriptorSets(descriptor_write, nullptr);
+}
+
+void TextureApplication::CreateTextureImage()
+{
+	int width, height, channels;
+	stbi_uc *pixels = stbi_load("data/tex.png", &width, &height, &channels, STBI_rgb_alpha);
+
+	vk::DeviceSize image_size = static_cast<vk::DeviceSize>(width * height * 4);
+
+	if (!pixels)
+		throw std::runtime_error("failed to load texture image!");
+
+
+	auto device = engine->GetVkDevice();
+
+	vk::DeviceMemory staging_buffer_memory;
+	vk::Buffer staging_buffer = engine->CreateBufferWithMemory(image_size, vk::BufferUsageFlagBits::eTransferSrc,
+															   vk::MemoryPropertyFlagBits::eHostVisible |
+															   vk::MemoryPropertyFlagBits::eHostCoherent,
+															   &staging_buffer_memory);
+
+	void *data = device.mapMemory(staging_buffer_memory, 0, image_size);
+	memcpy(data, pixels, image_size);
+	device.unmapMemory(staging_buffer_memory);
+
+	stbi_image_free(pixels);
+
+
+	vk::Format format = vk::Format::eR8G8B8A8Unorm;
+
+	texture_image = engine->Create2DImageWithMemory(image_size, width, height, format, vk::ImageTiling::eOptimal,
+													vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+													vk::MemoryPropertyFlagBits::eDeviceLocal, &texture_image_memory);
+
+
+	engine->TransitionImageLayout(texture_image, format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+	engine->CopyBufferTo2DImage(staging_buffer, texture_image, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+	engine->TransitionImageLayout(texture_image, format, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+
+
+	device.destroyBuffer(staging_buffer);
+	device.freeMemory(staging_buffer_memory);
+}
+
+void TextureApplication::UpdateMatrixUniformBuffer()
+{
+	static auto start_time = std::chrono::high_resolution_clock::now();
+	auto current_time = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration_cast<std::chrono::microseconds>(current_time - start_time).count() / 1e6f;
+
+	MatrixUniformBuffer matrix_ubo;
+	matrix_ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	matrix_ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	matrix_ubo.projection = glm::perspective(glm::radians(45.0f), (float)swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f);
+	matrix_ubo.projection[1][1] *= -1.0f;
+
+	void *data = engine->GetVkDevice().mapMemory(matrix_uniform_buffer_memory, 0, sizeof(matrix_ubo));
+	memcpy(data, &matrix_ubo, sizeof(matrix_ubo));
+	engine->GetVkDevice().unmapMemory(matrix_uniform_buffer_memory);
+}
+
+void TextureApplication::DrawFrame(uint32_t image_index)
+{
+	UpdateMatrixUniformBuffer();
+
 	vk::Semaphore wait_semaphores[] = { image_available_semaphore };
 	vk::PipelineStageFlags wait_stages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
 
@@ -282,7 +453,7 @@ void VertexBufferApplication::DrawFrame(uint32_t image_index)
 			vk::Fence() /*nullptr*/);
 }
 
-void VertexBufferApplication::RecreateSwapchain()
+void TextureApplication::RecreateSwapchain()
 {
 	DemoApplication::RecreateSwapchain();
 
@@ -292,7 +463,7 @@ void VertexBufferApplication::RecreateSwapchain()
 	CreateCommandBuffers();
 }
 
-void VertexBufferApplication::CleanupSwapchain()
+void TextureApplication::CleanupSwapchain()
 {
 	auto device = engine->GetVkDevice();
 
@@ -300,26 +471,39 @@ void VertexBufferApplication::CleanupSwapchain()
 
 	device.destroyPipeline(pipeline);
 	device.destroyPipelineLayout(pipeline_layout);
+	device.destroyDescriptorSetLayout(descriptor_set_layout);
+
 	device.destroyRenderPass(render_pass);
 
 	DemoApplication::CleanupSwapchain();
 }
 
-void VertexBufferApplication::CleanupApplication()
+void TextureApplication::CleanupApplication()
 {
 	auto device = engine->GetVkDevice();
 
+	device.destroyDescriptorPool(descriptor_pool);
+
 	device.destroyCommandPool(command_pool);
+
+	device.destroyImage(texture_image);
+	device.freeMemory(texture_image_memory);
+
+	device.destroyBuffer(index_buffer);
+	device.freeMemory(index_buffer_memory);
 
 	device.destroyBuffer(vertex_buffer);
 	device.freeMemory(vertex_buffer_memory);
+
+	device.destroyBuffer(matrix_uniform_buffer);
+	device.freeMemory(matrix_uniform_buffer_memory);
 }
 
 
 #ifndef __ANDROID__
 int main()
 {
-	VertexBufferApplication app;
+	TextureApplication app;
 
 	try
 	{

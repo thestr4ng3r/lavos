@@ -326,9 +326,37 @@ void Engine::CreateGlobalCommandPools()
 			.setFlags(vk::CommandPoolCreateFlagBits::eTransient)
 			.setQueueFamilyIndex(static_cast<uint32_t>(queue_family_indices.graphics_family));
 
-	copy_command_pool = device.createCommandPool(command_pool_info);
+	transient_command_pool = device.createCommandPool(command_pool_info);
 }
 
+
+vk::CommandBuffer Engine::BeginSingleTimeCommandBuffer()
+{
+	auto allocate_info = vk::CommandBufferAllocateInfo()
+			.setLevel(vk::CommandBufferLevel::ePrimary)
+			.setCommandPool(transient_command_pool)
+			.setCommandBufferCount(1);
+
+	auto command_buffer = *device.allocateCommandBuffers(allocate_info).begin();
+
+	command_buffer.begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
+
+	return command_buffer;
+}
+
+void Engine::EndSingleTimeCommandBuffer(vk::CommandBuffer command_buffer)
+{
+	command_buffer.end();
+
+	auto submit_info = vk::SubmitInfo()
+			.setCommandBufferCount(1)
+			.setPCommandBuffers(&command_buffer);
+
+	graphics_queue.submit(submit_info, nullptr);
+	graphics_queue.waitIdle(); // TODO: use fence maybe?
+
+	device.freeCommandBuffers(transient_command_pool, command_buffer);
+}
 
 uint32_t Engine::FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties)
 {
@@ -344,8 +372,9 @@ uint32_t Engine::FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags pr
 	throw std::runtime_error("failed to find suitable memory type!");
 }
 
-vk::Buffer Engine::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
-								vk::DeviceMemory *buffer_memory)
+vk::Buffer Engine::CreateBufferWithMemory(vk::DeviceSize size, vk::BufferUsageFlags usage,
+										  vk::MemoryPropertyFlags properties,
+										  vk::DeviceMemory *buffer_memory)
 {
 	auto create_info = vk::BufferCreateInfo()
 			.setSize(size)
@@ -369,23 +398,99 @@ vk::Buffer Engine::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
 
 void Engine::CopyBuffer(vk::Buffer src_buffer, vk::Buffer dst_buffer, vk::DeviceSize size)
 {
-	auto allocate_info = vk::CommandBufferAllocateInfo()
-		.setLevel(vk::CommandBufferLevel::ePrimary)
-		.setCommandPool(copy_command_pool)
-		.setCommandBufferCount(1);
-
-	auto command_buffer = *device.allocateCommandBuffers(allocate_info).begin();
-
-	command_buffer.begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
+	auto command_buffer = BeginSingleTimeCommandBuffer();
 	command_buffer.copyBuffer(src_buffer, dst_buffer, vk::BufferCopy(0, 0, size));
-	command_buffer.end();
+	EndSingleTimeCommandBuffer(command_buffer);
+}
 
-	auto submit_info = vk::SubmitInfo()
-		.setCommandBufferCount(1)
-		.setPCommandBuffers(&command_buffer);
+vk::Image Engine::Create2DImageWithMemory(vk::DeviceSize size, uint32_t width, uint32_t height, vk::Format format,
+										  vk::ImageTiling tiling, vk::ImageUsageFlags usage,
+										  vk::MemoryPropertyFlags properties, vk::DeviceMemory *image_memory)
+{
+	auto image_info = vk::ImageCreateInfo()
+			.setImageType(vk::ImageType::e2D)
+			.setExtent(vk::Extent3D(width, height, 1))
+			.setMipLevels(1)
+			.setArrayLayers(1)
+			.setFormat(format)
+			.setTiling(tiling)
+			.setInitialLayout(vk::ImageLayout::eUndefined)
+			.setUsage(usage)
+			.setSharingMode(vk::SharingMode::eExclusive)
+			.setSamples(vk::SampleCountFlagBits::e1);
 
-	graphics_queue.submit(submit_info, nullptr);
-	graphics_queue.waitIdle(); // TODO: use fence maybe?
+	auto image = device.createImage(image_info);
 
-	device.freeCommandBuffers(copy_command_pool, command_buffer);
+	auto memory_requirements = device.getImageMemoryRequirements(image);
+
+	auto alloc_info = vk::MemoryAllocateInfo()
+			.setAllocationSize(size)
+			.setMemoryTypeIndex(FindMemoryType(memory_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
+
+
+	auto &memory = *image_memory;
+	memory = device.allocateMemory(alloc_info);
+
+	device.bindImageMemory(image, memory, 0);
+
+	return image;
+}
+
+void Engine::TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout old_layout,
+								   vk::ImageLayout new_layout)
+{
+	auto command_buffer = BeginSingleTimeCommandBuffer();
+
+	auto barrier = vk::ImageMemoryBarrier()
+		.setOldLayout(old_layout)
+		.setNewLayout(new_layout)
+		.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+		.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+		.setImage(image)
+		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+
+	vk::PipelineStageFlags src_stage;
+	vk::PipelineStageFlags dst_stage;
+
+	if(old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eTransferDstOptimal)
+	{
+		barrier.setSrcAccessMask(vk::AccessFlags())
+				.setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
+
+		src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+		dst_stage = vk::PipelineStageFlagBits::eTransfer;
+	}
+	else if(old_layout == vk::ImageLayout::eTransferDstOptimal && new_layout == vk::ImageLayout::eShaderReadOnlyOptimal)
+	{
+		barrier.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+				.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+
+		src_stage = vk::PipelineStageFlagBits::eTransfer;
+		dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
+	}
+	else
+	{
+		throw std::invalid_argument("unsupported layout transition!");
+	}
+
+	command_buffer.pipelineBarrier(src_stage, dst_stage, vk::DependencyFlags(), 0, nullptr, 0, nullptr, 1, &barrier);
+
+	EndSingleTimeCommandBuffer(command_buffer);
+}
+
+void Engine::CopyBufferTo2DImage(vk::Buffer src_buffer, vk::Image dst_image, uint32_t width, uint32_t height)
+{
+	auto command_buffer = BeginSingleTimeCommandBuffer();
+
+	auto region = vk::BufferImageCopy()
+		.setBufferOffset(0)
+		.setBufferRowLength(0)
+		.setBufferImageHeight(0)
+		.setImageSubresource(vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1))
+		.setImageOffset(vk::Offset3D(0, 0, 0))
+		.setImageExtent(vk::Extent3D(width, height, 1));
+
+	command_buffer.copyBufferToImage(src_buffer, dst_image, vk::ImageLayout::eTransferDstOptimal, region);
+
+	EndSingleTimeCommandBuffer(command_buffer);
 }

@@ -48,7 +48,7 @@ class Engine
 		vk::Queue present_queue;
 
 
-		vk::CommandPool copy_command_pool;
+		vk::CommandPool transient_command_pool;
 
 
 		std::vector<const char *> GetRequiredInstanceExtensions();
@@ -83,8 +83,18 @@ class Engine
 
 		uint32_t FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties);
 
-		vk::Buffer CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::DeviceMemory *buffer_memory);
+		vk::CommandBuffer BeginSingleTimeCommandBuffer();
+		void EndSingleTimeCommandBuffer(vk::CommandBuffer command_buffer);
+
+		vk::Buffer CreateBufferWithMemory(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::DeviceMemory *buffer_memory);
 		void CopyBuffer(vk::Buffer src_buffer, vk::Buffer dst_buffer, vk::DeviceSize size);
+
+		vk::Image Create2DImageWithMemory(vk::DeviceSize size, uint32_t width, uint32_t height, vk::Format format,
+										  vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::DeviceMemory *image_memory);
+
+		void TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout old_layout, vk::ImageLayout new_layout);
+
+		void CopyBufferTo2DImage(vk::Buffer src_buffer, vk::Image dst_image, uint32_t width, uint32_t height);
 };
 
 }

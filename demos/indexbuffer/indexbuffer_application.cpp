@@ -175,18 +175,20 @@ void IndexBufferApplication::CreateVertexBuffer()
 
 
 	vk::DeviceMemory staging_buffer_memory;
-	auto staging_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc,
-											   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-											   &staging_buffer_memory);
+	auto staging_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eTransferSrc,
+														 vk::MemoryPropertyFlagBits::eHostVisible |
+														 vk::MemoryPropertyFlagBits::eHostCoherent,
+														 &staging_buffer_memory);
 
 	void *data = device.mapMemory(staging_buffer_memory, 0, size);
 	memcpy(data, vertices.data(), size);
 	device.unmapMemory(staging_buffer_memory);
 
 
-	vertex_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
-										 vk::MemoryPropertyFlagBits::eDeviceLocal,
-										 &vertex_buffer_memory);
+	vertex_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eTransferDst |
+														 vk::BufferUsageFlagBits::eVertexBuffer,
+												   vk::MemoryPropertyFlagBits::eDeviceLocal,
+												   &vertex_buffer_memory);
 
 	engine->CopyBuffer(staging_buffer, vertex_buffer, size);
 
@@ -202,18 +204,20 @@ void IndexBufferApplication::CreateIndexBuffer()
 	vk::DeviceSize size = sizeof(indices[0]) * indices.size();
 
 	vk::DeviceMemory staging_buffer_memory;
-	auto staging_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc,
-											   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-											   &staging_buffer_memory);
+	auto staging_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eTransferSrc,
+														 vk::MemoryPropertyFlagBits::eHostVisible |
+														 vk::MemoryPropertyFlagBits::eHostCoherent,
+														 &staging_buffer_memory);
 
 	void *data = device.mapMemory(staging_buffer_memory, 0, size);
 	memcpy(data, indices.data(), size);
 	device.unmapMemory(staging_buffer_memory);
 
 
-	index_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
-										 vk::MemoryPropertyFlagBits::eDeviceLocal,
-										 &index_buffer_memory);
+	index_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eTransferDst |
+														vk::BufferUsageFlagBits::eIndexBuffer,
+												  vk::MemoryPropertyFlagBits::eDeviceLocal,
+												  &index_buffer_memory);
 
 	engine->CopyBuffer(staging_buffer, index_buffer, size);
 
