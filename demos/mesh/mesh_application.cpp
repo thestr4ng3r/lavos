@@ -10,10 +10,11 @@
 #include <chrono>
 
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "texture_application.h"
+#include "mesh_application.h"
 
 #include <vulkan/vulkan.h>
 #include <engine.h>
@@ -22,10 +23,11 @@
 #include "../../thirdparty/stb_image.h"
 
 
-void TextureApplication::InitVulkan()
+void MeshApplication::InitVulkan()
 {
 	DemoApplication::InitVulkan();
 
+	CreateDepthResources();
 	CreateRenderPasses();
 	CreateDescriptorSetLayout();
 	CreatePipeline();
@@ -42,7 +44,24 @@ void TextureApplication::InitVulkan()
 	CreateCommandBuffers();
 }
 
-void TextureApplication::CreateRenderPasses()
+void MeshApplication::CreateDepthResources()
+{
+	depth_format = engine->FindDepthFormat();
+
+	depth_image = engine->Create2DImage(swapchain_extent.width, swapchain_extent.height, depth_format,
+										vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment,
+										VMA_MEMORY_USAGE_GPU_ONLY);
+
+	depth_image_view = engine->GetVkDevice().createImageView(vk::ImageViewCreateInfo()
+		.setImage(depth_image.image)
+		.setViewType(vk::ImageViewType::e2D)
+		.setFormat(depth_format)
+		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1)));
+
+	engine->TransitionImageLayout(depth_image.image, depth_format, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+}
+
+void MeshApplication::CreateRenderPasses()
 {
 	 auto color_attachment = vk::AttachmentDescription()
 		.setFormat(swapchain_image_format)
@@ -53,12 +72,25 @@ void TextureApplication::CreateRenderPasses()
 		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 		.setInitialLayout(vk::ImageLayout::eUndefined)
 		.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-
 	vk::AttachmentReference color_attachment_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
+
+	auto depth_attachment = vk::AttachmentDescription()
+		.setFormat(depth_format)
+		.setSamples(vk::SampleCountFlagBits::e1)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+	vk::AttachmentReference depth_attachment_ref(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+
 
 	auto subpass = vk::SubpassDescription()
 		.setColorAttachmentCount(1)
-		.setPColorAttachments(&color_attachment_ref);
+		.setPColorAttachments(&color_attachment_ref)
+		.setPDepthStencilAttachment(&depth_attachment_ref);
 
 	auto subpass_dependency = vk::SubpassDependency()
 			.setSrcSubpass(VK_SUBPASS_EXTERNAL)
@@ -68,17 +100,20 @@ void TextureApplication::CreateRenderPasses()
 			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
 
+
+	std::array<vk::AttachmentDescription, 2> attachments = { color_attachment, depth_attachment };
+
 	render_pass = engine->GetVkDevice().createRenderPass(
 			vk::RenderPassCreateInfo()
-				.setAttachmentCount(1)
-				.setPAttachments(&color_attachment)
+				.setAttachmentCount(attachments.size())
+				.setPAttachments(attachments.data())
 				.setSubpassCount(1)
 				.setPSubpasses(&subpass)
 				.setDependencyCount(1)
 				.setPDependencies(&subpass_dependency));
 }
 
-void TextureApplication::CreateDescriptorSetLayout()
+void MeshApplication::CreateDescriptorSetLayout()
 {
 	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
 		vk::DescriptorSetLayoutBinding()
@@ -102,7 +137,8 @@ void TextureApplication::CreateDescriptorSetLayout()
 	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
 }
 
-vk::ShaderModule TextureApplication::CreateShaderModule(const std::vector<char> &code)
+
+vk::ShaderModule MeshApplication::CreateShaderModule(const std::vector<char> &code)
 {
 	return engine->GetVkDevice().createShaderModule(
 			vk::ShaderModuleCreateInfo()
@@ -111,7 +147,7 @@ vk::ShaderModule TextureApplication::CreateShaderModule(const std::vector<char> 
 }
 
 
-void TextureApplication::CreatePipeline()
+void MeshApplication::CreatePipeline()
 {
 	auto vert_shader_module = CreateShaderModule(ReadSPIRVShader("texture.vert"));
 	auto frag_shader_module = CreateShaderModule(ReadSPIRVShader("texture.frag"));
@@ -163,6 +199,14 @@ void TextureApplication::CreatePipeline()
 		.setRasterizationSamples(vk::SampleCountFlagBits::e1);
 
 
+	auto depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo()
+		.setDepthTestEnable(VK_TRUE)
+		.setDepthWriteEnable(VK_TRUE)
+		.setDepthCompareOp(vk::CompareOp::eLess)
+		.setDepthBoundsTestEnable(VK_FALSE)
+		.setStencilTestEnable(VK_FALSE);
+
+
 	auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
 		.setColorWriteMask(vk::ColorComponentFlagBits::eR
 						   | vk::ColorComponentFlagBits::eG
@@ -191,7 +235,7 @@ void TextureApplication::CreatePipeline()
 		.setPViewportState(&viewport_state_info)
 		.setPRasterizationState(&rasterizer_info)
 		.setPMultisampleState(&multisample_info)
-		.setPDepthStencilState(nullptr)
+		.setPDepthStencilState(&depth_stencil_info)
 		.setPColorBlendState(&color_blend_info)
 		.setPDynamicState(nullptr)
 		.setLayout(pipeline_layout)
@@ -207,89 +251,67 @@ void TextureApplication::CreatePipeline()
 }
 
 
-void TextureApplication::CreateVertexBuffer()
+void MeshApplication::CreateVertexBuffer()
 {
 	auto device = engine->GetVkDevice();
 
 	vk::DeviceSize size = sizeof(vertices[0]) * vertices.size();
 
 
-	vk::DeviceMemory staging_buffer_memory;
-	auto staging_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eTransferSrc,
-														 vk::MemoryPropertyFlagBits::eHostVisible |
-														 vk::MemoryPropertyFlagBits::eHostCoherent,
-														 &staging_buffer_memory);
-
-	void *data = device.mapMemory(staging_buffer_memory, 0, size);
+	auto staging_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY);
+	void *data = engine->MapMemory(staging_buffer.allocation);
 	memcpy(data, vertices.data(), size);
-	device.unmapMemory(staging_buffer_memory);
+	engine->UnmapMemory(staging_buffer.allocation);
 
+	vertex_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
+										 VMA_MEMORY_USAGE_GPU_ONLY);
 
-	vertex_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eTransferDst |
-														 vk::BufferUsageFlagBits::eVertexBuffer,
-												   vk::MemoryPropertyFlagBits::eDeviceLocal,
-												   &vertex_buffer_memory);
+	engine->CopyBuffer(staging_buffer.buffer, vertex_buffer.buffer, size);
 
-	engine->CopyBuffer(staging_buffer, vertex_buffer, size);
-
-	device.destroyBuffer(staging_buffer);
-	device.freeMemory(staging_buffer_memory);
+	engine->DestroyBuffer(staging_buffer);
 }
 
-
-void TextureApplication::CreateIndexBuffer()
+void MeshApplication::CreateIndexBuffer()
 {
 	auto device = engine->GetVkDevice();
 
 	vk::DeviceSize size = sizeof(indices[0]) * indices.size();
 
-	vk::DeviceMemory staging_buffer_memory;
-	auto staging_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eTransferSrc,
-														 vk::MemoryPropertyFlagBits::eHostVisible |
-														 vk::MemoryPropertyFlagBits::eHostCoherent,
-														 &staging_buffer_memory);
-
-	void *data = device.mapMemory(staging_buffer_memory, 0, size);
+	auto staging_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY);
+	void *data = engine->MapMemory(staging_buffer.allocation);
 	memcpy(data, indices.data(), size);
-	device.unmapMemory(staging_buffer_memory);
+	engine->UnmapMemory(staging_buffer.allocation);
 
+	index_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
+										VMA_MEMORY_USAGE_GPU_ONLY);
 
-	index_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eTransferDst |
-														vk::BufferUsageFlagBits::eIndexBuffer,
-												  vk::MemoryPropertyFlagBits::eDeviceLocal,
-												  &index_buffer_memory);
+	engine->CopyBuffer(staging_buffer.buffer, index_buffer.buffer, size);
 
-	engine->CopyBuffer(staging_buffer, index_buffer, size);
-
-	device.destroyBuffer(staging_buffer);
-	device.freeMemory(staging_buffer_memory);
+	engine->DestroyBuffer(staging_buffer);
 }
 
-void TextureApplication::CreateMatrixUniformBuffer()
+void MeshApplication::CreateMatrixUniformBuffer()
 {
-	vk::DeviceSize size = sizeof(MatrixUniformBuffer);
-	matrix_uniform_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eUniformBuffer,
-														   vk::MemoryPropertyFlagBits::eHostVisible |
-														   vk::MemoryPropertyFlagBits::eHostCoherent,
-														   &matrix_uniform_buffer_memory);
-
-
+	matrix_uniform_buffer = engine->CreateBuffer(sizeof(MatrixUniformBuffer),
+												 vk::BufferUsageFlagBits::eUniformBuffer,
+												 VMA_MEMORY_USAGE_CPU_ONLY);
 }
 
-void TextureApplication::CreateFramebuffers()
+void MeshApplication::CreateFramebuffers()
 {
 	swapchain_framebuffers.resize(swapchain_image_views.size());
 
 	for(size_t i=0; i<swapchain_image_views.size(); i++)
 	{
-		vk::ImageView attachments[] = {
-			swapchain_image_views[i]
+		std::array<vk::ImageView, 2> attachments = {
+			swapchain_image_views[i],
+			depth_image_view
 		};
 
 		auto framebuffer_info = vk::FramebufferCreateInfo()
 			.setRenderPass(render_pass)
-			.setAttachmentCount(1)
-			.setPAttachments(attachments)
+			.setAttachmentCount(attachments.size())
+			.setPAttachments(attachments.data())
 			.setWidth(swapchain_extent.width)
 			.setHeight(swapchain_extent.height)
 			.setLayers(1);
@@ -298,7 +320,7 @@ void TextureApplication::CreateFramebuffers()
 	}
 }
 
-void TextureApplication::CreateCommandPool()
+void MeshApplication::CreateCommandPool()
 {
 	auto queue_family_indices = engine->GetQueueFamilyIndices();
 
@@ -308,7 +330,7 @@ void TextureApplication::CreateCommandPool()
 	command_pool = engine->GetVkDevice().createCommandPool(command_pool_info);
 }
 
-void TextureApplication::CreateCommandBuffers()
+void MeshApplication::CreateCommandBuffers()
 {
 	command_buffers = engine->GetVkDevice().allocateCommandBuffers(
 			vk::CommandBufferAllocateInfo()
@@ -322,21 +344,24 @@ void TextureApplication::CreateCommandBuffers()
 
 		command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 
-		vk::ClearValue clear_color_value = vk::ClearColorValue(std::array<float, 4>{{ 0.0f, 0.0f, 0.0f, 1.0f }});
+		std::array<vk::ClearValue, 2> clear_values = {
+			vk::ClearColorValue(std::array<float, 4>{{ 0.0f, 0.0f, 0.0f, 1.0f }}),
+			vk::ClearDepthStencilValue(1.0f, 0)
+		};
 
 		command_buffer.beginRenderPass(
 				vk::RenderPassBeginInfo()
 					.setRenderPass(render_pass)
 					.setFramebuffer(swapchain_framebuffers[i])
 					.setRenderArea(vk::Rect2D({ 0, 0 }, swapchain_extent))
-					.setClearValueCount(1)
-					.setPClearValues(&clear_color_value),
+					.setClearValueCount(clear_values.size())
+					.setPClearValues(clear_values.data()),
 				vk::SubpassContents::eInline);
 
 		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_set, nullptr);
-		command_buffer.bindVertexBuffers(0, { vertex_buffer }, { 0 });
-		command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint16);
+		command_buffer.bindVertexBuffers(0, { vertex_buffer.buffer }, { 0 });
+		command_buffer.bindIndexBuffer(index_buffer.buffer, 0, vk::IndexType::eUint16);
 		command_buffer.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 		command_buffer.endRenderPass();
@@ -345,7 +370,7 @@ void TextureApplication::CreateCommandBuffers()
 	}
 }
 
-void TextureApplication::CreateDescriptorPool()
+void MeshApplication::CreateDescriptorPool()
 {
 	std::vector<vk::DescriptorPoolSize> pool_sizes = {
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
@@ -360,7 +385,7 @@ void TextureApplication::CreateDescriptorPool()
 	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
 }
 
-void TextureApplication::CreateDescriptorSet()
+void MeshApplication::CreateDescriptorSet()
 {
 	vk::DescriptorSetLayout layouts[] = { descriptor_set_layout };
 
@@ -372,7 +397,7 @@ void TextureApplication::CreateDescriptorSet()
 	descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
 
 	auto buffer_info = vk::DescriptorBufferInfo()
-		.setBuffer(matrix_uniform_buffer)
+		.setBuffer(matrix_uniform_buffer.buffer)
 		.setOffset(0)
 		.setRange(sizeof(MatrixUniformBuffer));
 
@@ -401,7 +426,7 @@ void TextureApplication::CreateDescriptorSet()
 	engine->GetVkDevice().updateDescriptorSets({buffer_write, image_write}, nullptr);
 }
 
-void TextureApplication::CreateTextureImage()
+void MeshApplication::CreateTextureImage()
 {
 	int width, height, channels;
 	stbi_uc *pixels = stbi_load("data/tex.jpg", &width, &height, &channels, STBI_rgb_alpha);
@@ -414,39 +439,34 @@ void TextureApplication::CreateTextureImage()
 
 	auto device = engine->GetVkDevice();
 
-	vk::DeviceMemory staging_buffer_memory;
-	vk::Buffer staging_buffer = engine->CreateBufferWithMemory(image_size, vk::BufferUsageFlagBits::eTransferSrc,
-															   vk::MemoryPropertyFlagBits::eHostVisible |
-															   vk::MemoryPropertyFlagBits::eHostCoherent,
-															   &staging_buffer_memory);
+	auto staging_buffer = engine->CreateBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY);
 
-	void *data = device.mapMemory(staging_buffer_memory, 0, image_size);
+	void *data = engine->MapMemory(staging_buffer.allocation);
 	memcpy(data, pixels, image_size);
-	device.unmapMemory(staging_buffer_memory);
+	engine->UnmapMemory(staging_buffer.allocation);
 
 	stbi_image_free(pixels);
 
 
 	vk::Format format = vk::Format::eR8G8B8A8Unorm;
 
-	texture_image = engine->Create2DImageWithMemory(width, height, format, vk::ImageTiling::eOptimal,
-													vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-													vk::MemoryPropertyFlagBits::eDeviceLocal, &texture_image_memory);
+	texture_image = engine->Create2DImage(width, height, format, vk::ImageTiling::eOptimal,
+										  vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+										  VMA_MEMORY_USAGE_GPU_ONLY);
 
 
-	engine->TransitionImageLayout(texture_image, format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-	engine->CopyBufferTo2DImage(staging_buffer, texture_image, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-	engine->TransitionImageLayout(texture_image, format, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+	engine->TransitionImageLayout(texture_image.image, format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+	engine->CopyBufferTo2DImage(staging_buffer.buffer, texture_image.image, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+	engine->TransitionImageLayout(texture_image.image, format, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
 
 
-	device.destroyBuffer(staging_buffer);
-	device.freeMemory(staging_buffer_memory);
+	engine->DestroyBuffer(staging_buffer);
 }
 
-void TextureApplication::CreateTextureImageView()
+void MeshApplication::CreateTextureImageView()
 {
 	auto create_info = vk::ImageViewCreateInfo()
-		.setImage(texture_image)
+		.setImage(texture_image.image)
 		.setViewType(vk::ImageViewType::e2D)
 		.setFormat(vk::Format::eR8G8B8A8Unorm)
 		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
@@ -454,7 +474,7 @@ void TextureApplication::CreateTextureImageView()
 	texture_image_view = engine->GetVkDevice().createImageView(create_info);
 }
 
-void TextureApplication::CreateTextureSampler()
+void MeshApplication::CreateTextureSampler()
 {
 	auto create_info = vk::SamplerCreateInfo()
 		.setMagFilter(vk::Filter::eLinear)
@@ -476,7 +496,7 @@ void TextureApplication::CreateTextureSampler()
 	texture_sampler = engine->GetVkDevice().createSampler(create_info);
 }
 
-void TextureApplication::UpdateMatrixUniformBuffer()
+void MeshApplication::UpdateMatrixUniformBuffer()
 {
 	static auto start_time = std::chrono::high_resolution_clock::now();
 	auto current_time = std::chrono::high_resolution_clock::now();
@@ -488,12 +508,12 @@ void TextureApplication::UpdateMatrixUniformBuffer()
 	matrix_ubo.projection = glm::perspective(glm::radians(45.0f), (float)swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f);
 	matrix_ubo.projection[1][1] *= -1.0f;
 
-	void *data = engine->GetVkDevice().mapMemory(matrix_uniform_buffer_memory, 0, sizeof(matrix_ubo));
+	void *data = engine->MapMemory(matrix_uniform_buffer.allocation);
 	memcpy(data, &matrix_ubo, sizeof(matrix_ubo));
-	engine->GetVkDevice().unmapMemory(matrix_uniform_buffer_memory);
+	engine->UnmapMemory(matrix_uniform_buffer.allocation);
 }
 
-void TextureApplication::DrawFrame(uint32_t image_index)
+void MeshApplication::DrawFrame(uint32_t image_index)
 {
 	UpdateMatrixUniformBuffer();
 
@@ -514,21 +534,25 @@ void TextureApplication::DrawFrame(uint32_t image_index)
 			vk::Fence() /*nullptr*/);
 }
 
-void TextureApplication::RecreateSwapchain()
+void MeshApplication::RecreateSwapchain()
 {
 	DemoApplication::RecreateSwapchain();
 
 	CreateRenderPasses();
 	CreatePipeline();
+	CreateDepthResources();
 	CreateFramebuffers();
 	CreateCommandBuffers();
 }
 
-void TextureApplication::CleanupSwapchain()
+void MeshApplication::CleanupSwapchain()
 {
 	auto device = engine->GetVkDevice();
 
 	device.freeCommandBuffers(command_pool, command_buffers);
+
+	device.destroyImageView(depth_image_view);
+	engine->DestroyImage(depth_image);
 
 	device.destroyPipeline(pipeline);
 	device.destroyPipelineLayout(pipeline_layout);
@@ -538,7 +562,7 @@ void TextureApplication::CleanupSwapchain()
 	DemoApplication::CleanupSwapchain();
 }
 
-void TextureApplication::CleanupApplication()
+void MeshApplication::CleanupApplication()
 {
 	auto device = engine->GetVkDevice();
 
@@ -550,24 +574,18 @@ void TextureApplication::CleanupApplication()
 
 	device.destroySampler(texture_sampler);
 	device.destroyImageView(texture_image_view);
-	device.destroyImage(texture_image);
-	device.freeMemory(texture_image_memory);
+	engine->DestroyImage(texture_image);
 
-	device.destroyBuffer(index_buffer);
-	device.freeMemory(index_buffer_memory);
-
-	device.destroyBuffer(vertex_buffer);
-	device.freeMemory(vertex_buffer_memory);
-
-	device.destroyBuffer(matrix_uniform_buffer);
-	device.freeMemory(matrix_uniform_buffer_memory);
+	engine->DestroyBuffer(index_buffer);
+	engine->DestroyBuffer(vertex_buffer);
+	engine->DestroyBuffer(matrix_uniform_buffer);
 }
 
 
 #ifndef __ANDROID__
 int main()
 {
-	TextureApplication app;
+	MeshApplication app;
 
 	try
 	{

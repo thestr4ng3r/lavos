@@ -1,9 +1,15 @@
 
 
 set(SOURCE_FILES
+		src/thirdparty_impl.cpp
 		src/engine.cpp
 		include/engine.h
-		src/thirdparty_impl.cpp)
+		src/mesh.cpp
+		include/mesh.h
+		src/material.cpp
+		include/material.h
+		include/buffer.h
+		include/image.h)
 
 add_library(engine STATIC ${SOURCE_FILES})
 

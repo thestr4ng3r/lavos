@@ -4,7 +4,7 @@ project(vulkan)
 set(CMAKE_CXX_STANDARD 11)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glm")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/stb")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 
 if(ANDROID)
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}/android/vulkan_wrapper")

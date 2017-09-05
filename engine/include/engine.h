@@ -3,7 +3,12 @@
 #define VULKAN_ENGINE_H
 
 #include <vulkan/vulkan.hpp>
+#include <vk_mem_alloc.h>
+
 #include <set>
+
+#include "buffer.h"
+#include "image.h"
 
 namespace engine
 {
@@ -46,6 +51,8 @@ class Engine
 		vk::PhysicalDevice physical_device;
 		vk::Device device;
 
+		VmaAllocator allocator;
+
 		vk::Queue graphics_queue;
 		vk::Queue present_queue;
 
@@ -67,6 +74,8 @@ class Engine
 		QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface);
 		void CreateLogicalDevice(vk::SurfaceKHR surface);
 
+		void CreateAllocator();
+
 		void CreateGlobalCommandPools();
 
 	public:
@@ -78,6 +87,7 @@ class Engine
 		const vk::Instance &GetVkInstance()	const					{ return instance; }
 		const vk::PhysicalDevice &GetVkPhysicalDevice()	const		{ return physical_device; }
 		const vk::Device &GetVkDevice() const						{ return device; }
+		const VmaAllocator &GetVmaAllocator() const 				{ return allocator; };
 
 		const QueueFamilyIndices &GetQueueFamilyIndices() const		{ return queue_family_indices; }
 		const vk::Queue &GetGraphicsQueue()	const 					{ return graphics_queue; }
@@ -92,11 +102,19 @@ class Engine
 		vk::CommandBuffer BeginSingleTimeCommandBuffer();
 		void EndSingleTimeCommandBuffer(vk::CommandBuffer command_buffer);
 
-		vk::Buffer CreateBufferWithMemory(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::DeviceMemory *buffer_memory);
+		Buffer CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, VmaMemoryUsage vma_usage, vk::SharingMode sharing_mode = vk::SharingMode::eExclusive);
+		void DestroyBuffer(const Buffer &buffer);
+
+		void *MapMemory(const VmaAllocation &allocation);
+		void UnmapMemory(const VmaAllocation &allocation);
+
 		void CopyBuffer(vk::Buffer src_buffer, vk::Buffer dst_buffer, vk::DeviceSize size);
 
-		vk::Image Create2DImageWithMemory(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
-										  vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::DeviceMemory *image_memory);
+
+		Image CreateImage(vk::ImageCreateInfo create_info, VmaMemoryUsage vma_usage);
+		void DestroyImage(const Image &image);
+
+		Image Create2DImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, VmaMemoryUsage vma_usage, vk::SharingMode sharing_mode = vk::SharingMode::eExclusive);
 
 		void TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout old_layout, vk::ImageLayout new_layout);
 

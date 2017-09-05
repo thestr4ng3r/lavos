@@ -20,7 +20,7 @@
 #include <engine.h>
 
 #include <shader_load.h>
-#include <stb_image.h>
+#include "../../thirdparty/stb_image.h"
 
 
 void DepthBufferApplication::InitVulkan()
@@ -595,7 +595,7 @@ void DepthBufferApplication::CleanupApplication()
 	auto device = engine->GetVkDevice();
 
 	device.destroyDescriptorPool(descriptor_pool);
-	
+
 	device.destroyDescriptorSetLayout(descriptor_set_layout);
 
 	device.destroyCommandPool(command_pool);

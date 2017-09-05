@@ -7,7 +7,7 @@ using namespace engine;
 static const std::vector<const char *> validation_layers = {
 		"VK_LAYER_LUNARG_standard_validation",
 
-		/*"VK_LAYER_RENDERDOC_Capture",*/
+		"VK_LAYER_RENDERDOC_Capture",
 
 		/*"VK_LAYER_GOOGLE_threading",
 		"VK_LAYER_LUNARG_core_validation",
@@ -58,6 +58,8 @@ Engine::Engine(const CreateInfo &info)
 
 Engine::~Engine()
 {
+	vmaDestroyAllocator(allocator);
+
 	if(debug_report_callback)
 		instance.destroyDebugReportCallbackEXT(debug_report_callback);
 
@@ -192,6 +194,7 @@ void Engine::InitializeForSurface(vk::SurfaceKHR surface)
 {
 	PickPhysicalDevice(surface);
 	CreateLogicalDevice(surface);
+	CreateAllocator();
 	CreateGlobalCommandPools();
 }
 
@@ -324,6 +327,24 @@ void Engine::CreateLogicalDevice(vk::SurfaceKHR surface)
 
 
 
+void Engine::CreateAllocator()
+{
+	VmaAllocatorCreateInfo create_info;
+	create_info.flags = 0;
+	create_info.physicalDevice = physical_device;
+	create_info.device = device;
+	create_info.preferredLargeHeapBlockSize = 0;
+	create_info.preferredSmallHeapBlockSize = 0;
+	create_info.pAllocationCallbacks = 0;
+	create_info.pDeviceMemoryCallbacks = 0;
+
+	VkResult result = vmaCreateAllocator(&create_info, &allocator);
+
+	if(result != VK_SUCCESS)
+		throw std::runtime_error("failed to create allocator.");
+}
+
+
 void Engine::CreateGlobalCommandPools()
 {
 	auto command_pool_info = vk::CommandPoolCreateInfo()
@@ -332,7 +353,6 @@ void Engine::CreateGlobalCommandPools()
 
 	transient_command_pool = device.createCommandPool(command_pool_info);
 }
-
 
 vk::CommandBuffer Engine::BeginSingleTimeCommandBuffer()
 {
@@ -404,28 +424,73 @@ bool Engine::HasStencilComponent(vk::Format format)
 	return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
 }
 
-vk::Buffer Engine::CreateBufferWithMemory(vk::DeviceSize size, vk::BufferUsageFlags usage,
-										  vk::MemoryPropertyFlags properties,
-										  vk::DeviceMemory *buffer_memory)
+Buffer Engine::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, VmaMemoryUsage vma_usage, vk::SharingMode sharing_mode)
 {
 	auto create_info = vk::BufferCreateInfo()
 			.setSize(size)
 			.setUsage(usage)
-			.setSharingMode(vk::SharingMode::eExclusive);
+			.setSharingMode(sharing_mode);
 
-	auto buffer = device.createBuffer(create_info);
+	VmaMemoryRequirements memory_requirements;
+	memory_requirements.flags = 0;
+	memory_requirements.usage = vma_usage;
+	memory_requirements.requiredFlags = 0;
+	memory_requirements.preferredFlags = 0;
+	memory_requirements.pUserData = 0;
 
-	auto memory_requirements = device.getBufferMemoryRequirements(buffer);
+	VkBuffer buffer;
+	VmaAllocation allocation;
+	VkResult result = vmaCreateBuffer(allocator, reinterpret_cast<const VkBufferCreateInfo *>(&create_info), &memory_requirements, &buffer, &allocation, nullptr);
 
-	auto alloc_info = vk::MemoryAllocateInfo()
-			.setAllocationSize(memory_requirements.size)
-			.setMemoryTypeIndex(FindMemoryType(memory_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
+	if(result != VK_SUCCESS)
+		throw std::runtime_error("Failed to create buffer.");
 
-	auto &memory = *buffer_memory;
-	memory = device.allocateMemory(alloc_info);
-	device.bindBufferMemory(buffer, memory, 0);
+	return Buffer(buffer, allocation);
+}
 
-	return buffer;
+void Engine::DestroyBuffer(const Buffer &buffer)
+{
+	vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
+}
+
+Image Engine::CreateImage(vk::ImageCreateInfo create_info, VmaMemoryUsage vma_usage)
+{
+	VmaMemoryRequirements memory_requirements;
+	memory_requirements.flags = 0;
+	memory_requirements.usage = vma_usage;
+	memory_requirements.requiredFlags = 0;
+	memory_requirements.preferredFlags = 0;
+	memory_requirements.pUserData = 0;
+
+	VkImage image;
+	VmaAllocation allocation;
+	VkResult result = vmaCreateImage(allocator, reinterpret_cast<const VkImageCreateInfo *>(&create_info), &memory_requirements, &image, &allocation, nullptr);
+
+	if(result != VK_SUCCESS)
+		throw std::runtime_error("Failed to create image.");
+
+	return Image(image, allocation);
+}
+
+void Engine::DestroyImage(const Image &image)
+{
+	vmaDestroyImage(allocator, image.image, image.allocation);
+}
+
+void *Engine::MapMemory(const VmaAllocation &allocation)
+{
+	void *data;
+	VkResult result = vmaMapMemory(allocator, allocation, &data);
+
+	if(result != VK_SUCCESS)
+		throw std::runtime_error("Failed to map memory.");
+
+	return data;
+}
+
+void Engine::UnmapMemory(const VmaAllocation &allocation)
+{
+	vmaUnmapMemory(allocator, allocation);
 }
 
 void Engine::CopyBuffer(vk::Buffer src_buffer, vk::Buffer dst_buffer, vk::DeviceSize size)
@@ -435,9 +500,8 @@ void Engine::CopyBuffer(vk::Buffer src_buffer, vk::Buffer dst_buffer, vk::Device
 	EndSingleTimeCommandBuffer(command_buffer);
 }
 
-vk::Image Engine::Create2DImageWithMemory(uint32_t width, uint32_t height, vk::Format format,
-										  vk::ImageTiling tiling, vk::ImageUsageFlags usage,
-										  vk::MemoryPropertyFlags properties, vk::DeviceMemory *image_memory)
+Image Engine::Create2DImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
+								vk::ImageUsageFlags usage, VmaMemoryUsage vma_usage, vk::SharingMode sharing_mode)
 {
 	auto image_info = vk::ImageCreateInfo()
 			.setImageType(vk::ImageType::e2D)
@@ -448,24 +512,10 @@ vk::Image Engine::Create2DImageWithMemory(uint32_t width, uint32_t height, vk::F
 			.setTiling(tiling)
 			.setInitialLayout(vk::ImageLayout::eUndefined)
 			.setUsage(usage)
-			.setSharingMode(vk::SharingMode::eExclusive)
+			.setSharingMode(sharing_mode)
 			.setSamples(vk::SampleCountFlagBits::e1);
 
-	auto image = device.createImage(image_info);
-
-	auto memory_requirements = device.getImageMemoryRequirements(image);
-
-	auto alloc_info = vk::MemoryAllocateInfo()
-			.setAllocationSize(memory_requirements.size)
-			.setMemoryTypeIndex(FindMemoryType(memory_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
-
-
-	auto &memory = *image_memory;
-	memory = device.allocateMemory(alloc_info);
-
-	device.bindImageMemory(image, memory, 0);
-
-	return image;
+	return CreateImage(image_info, vma_usage);
 }
 
 void Engine::TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout old_layout,
