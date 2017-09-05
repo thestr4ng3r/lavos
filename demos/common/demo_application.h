@@ -35,6 +35,7 @@ class DemoApplication
 
 
 		virtual void InitVulkan();
+
 		virtual void MainLoop();
 		virtual void DrawFrame(uint32_t image_index) {};
 		virtual void CleanupApplication() {};

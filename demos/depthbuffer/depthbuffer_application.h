@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_TEXTURE_APPLICATION_H
-#define VULKAN_TEXTURE_APPLICATION_H
+#ifndef VULKAN_DEPTHBUFFER_APPLICATION_H
+#define VULKAN_DEPTHBUFFER_APPLICATION_H
 
 #include <demo_application.h>
 #include <vulkan/vulkan.hpp>
@@ -12,7 +12,7 @@
 
 struct Vertex
 {
-	glm::vec2 pos;
+	glm::vec3 pos;
 	glm::vec3 color;
 	glm::vec2 uv;
 
@@ -30,7 +30,7 @@ struct Vertex
 				vk::VertexInputAttributeDescription()
 					.setBinding(0)
 					.setLocation(0)
-					.setFormat(vk::Format::eR32G32Sfloat)
+					.setFormat(vk::Format::eR32G32B32Sfloat)
 					.setOffset(static_cast<uint32_t>(offsetof(Vertex, pos))),
 
 				vk::VertexInputAttributeDescription()
@@ -55,9 +55,14 @@ struct MatrixUniformBuffer
 	glm::mat4 projection;
 };
 
-class TextureApplication: public DemoApplication
+class DepthBufferApplication: public DemoApplication
 {
     private:
+		vk::Format depth_format;
+		vk::Image depth_image;
+		vk::ImageView depth_image_view;
+		vk::DeviceMemory depth_image_memory;
+
 		vk::RenderPass render_pass;
 
 		vk::DescriptorSetLayout descriptor_set_layout;
@@ -71,14 +76,20 @@ class TextureApplication: public DemoApplication
 		vk::DescriptorSet descriptor_set;
 
 		const std::vector<Vertex> vertices = {
-			{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-			{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+			{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+			{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+			{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+			{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
 		};
 
 		const std::vector<uint16_t> indices = {
-			0, 1, 2, 2, 3, 0
+			0, 1, 2, 2, 3, 0,
+			4, 5, 6, 6, 7, 4
 		};
 
 		vk::Buffer vertex_buffer;
@@ -96,6 +107,8 @@ class TextureApplication: public DemoApplication
 		vk::Sampler texture_sampler;
 
 		void InitVulkan() override;
+
+		void CreateDepthResources();
 
 		void RecreateSwapchain() override;
 		void CleanupSwapchain() override;

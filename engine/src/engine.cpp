@@ -376,6 +376,34 @@ uint32_t Engine::FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags pr
 	throw std::runtime_error("failed to find suitable memory type!");
 }
 
+vk::Format Engine::FindSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features)
+{
+	for(auto format : candidates)
+	{
+		vk::FormatProperties props = physical_device.getFormatProperties(format);
+
+		if(tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features)
+			return format;
+
+		if(tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features)
+			return format;
+	}
+
+	throw std::runtime_error("failed to find supported format!");
+}
+
+vk::Format Engine::FindDepthFormat()
+{
+	return FindSupportedFormat({vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
+							   vk::ImageTiling::eOptimal,
+							   vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+}
+
+bool Engine::HasStencilComponent(vk::Format format)
+{
+	return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
+}
+
 vk::Buffer Engine::CreateBufferWithMemory(vk::DeviceSize size, vk::BufferUsageFlags usage,
 										  vk::MemoryPropertyFlags properties,
 										  vk::DeviceMemory *buffer_memory)
@@ -407,7 +435,7 @@ void Engine::CopyBuffer(vk::Buffer src_buffer, vk::Buffer dst_buffer, vk::Device
 	EndSingleTimeCommandBuffer(command_buffer);
 }
 
-vk::Image Engine::Create2DImageWithMemory(vk::DeviceSize size, uint32_t width, uint32_t height, vk::Format format,
+vk::Image Engine::Create2DImageWithMemory(uint32_t width, uint32_t height, vk::Format format,
 										  vk::ImageTiling tiling, vk::ImageUsageFlags usage,
 										  vk::MemoryPropertyFlags properties, vk::DeviceMemory *image_memory)
 {
@@ -428,7 +456,7 @@ vk::Image Engine::Create2DImageWithMemory(vk::DeviceSize size, uint32_t width, u
 	auto memory_requirements = device.getImageMemoryRequirements(image);
 
 	auto alloc_info = vk::MemoryAllocateInfo()
-			.setAllocationSize(size)
+			.setAllocationSize(memory_requirements.size)
 			.setMemoryTypeIndex(FindMemoryType(memory_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
 
 
@@ -459,7 +487,7 @@ void Engine::TransitionImageLayout(vk::Image image, vk::Format format, vk::Image
 	if(old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eTransferDstOptimal)
 	{
 		barrier.setSrcAccessMask(vk::AccessFlags())
-				.setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
+			.setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
 
 		src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
 		dst_stage = vk::PipelineStageFlagBits::eTransfer;
@@ -467,10 +495,23 @@ void Engine::TransitionImageLayout(vk::Image image, vk::Format format, vk::Image
 	else if(old_layout == vk::ImageLayout::eTransferDstOptimal && new_layout == vk::ImageLayout::eShaderReadOnlyOptimal)
 	{
 		barrier.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-				.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+			.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
 
 		src_stage = vk::PipelineStageFlagBits::eTransfer;
 		dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
+	}
+	else if(old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+	{
+		barrier.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+
+		if(HasStencilComponent(format))
+			barrier.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
+
+		barrier.setSrcAccessMask(vk::AccessFlags())
+			.setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead);
+
+		src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+		dst_stage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 	}
 	else
 	{

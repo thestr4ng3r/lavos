@@ -10,10 +10,11 @@
 #include <chrono>
 
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "texture_application.h"
+#include "depthbuffer_application.h"
 
 #include <vulkan/vulkan.h>
 #include <engine.h>
@@ -22,10 +23,11 @@
 #include <stb_image.h>
 
 
-void TextureApplication::InitVulkan()
+void DepthBufferApplication::InitVulkan()
 {
 	DemoApplication::InitVulkan();
 
+	CreateDepthResources();
 	CreateRenderPasses();
 	CreateDescriptorSetLayout();
 	CreatePipeline();
@@ -42,7 +44,24 @@ void TextureApplication::InitVulkan()
 	CreateCommandBuffers();
 }
 
-void TextureApplication::CreateRenderPasses()
+void DepthBufferApplication::CreateDepthResources()
+{
+	depth_format = engine->FindDepthFormat();
+
+	depth_image = engine->Create2DImageWithMemory(swapchain_extent.width, swapchain_extent.height, depth_format,
+												  vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment,
+												  vk::MemoryPropertyFlagBits::eDeviceLocal, &depth_image_memory);
+
+	depth_image_view = engine->GetVkDevice().createImageView(vk::ImageViewCreateInfo()
+		.setImage(depth_image)
+		.setViewType(vk::ImageViewType::e2D)
+		.setFormat(depth_format)
+		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1)));
+
+	engine->TransitionImageLayout(depth_image, depth_format, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+}
+
+void DepthBufferApplication::CreateRenderPasses()
 {
 	 auto color_attachment = vk::AttachmentDescription()
 		.setFormat(swapchain_image_format)
@@ -53,12 +72,25 @@ void TextureApplication::CreateRenderPasses()
 		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 		.setInitialLayout(vk::ImageLayout::eUndefined)
 		.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-
 	vk::AttachmentReference color_attachment_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
+
+	auto depth_attachment = vk::AttachmentDescription()
+		.setFormat(depth_format)
+		.setSamples(vk::SampleCountFlagBits::e1)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+	vk::AttachmentReference depth_attachment_ref(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+
 
 	auto subpass = vk::SubpassDescription()
 		.setColorAttachmentCount(1)
-		.setPColorAttachments(&color_attachment_ref);
+		.setPColorAttachments(&color_attachment_ref)
+		.setPDepthStencilAttachment(&depth_attachment_ref);
 
 	auto subpass_dependency = vk::SubpassDependency()
 			.setSrcSubpass(VK_SUBPASS_EXTERNAL)
@@ -68,17 +100,20 @@ void TextureApplication::CreateRenderPasses()
 			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
 
+
+	std::array<vk::AttachmentDescription, 2> attachments = { color_attachment, depth_attachment };
+
 	render_pass = engine->GetVkDevice().createRenderPass(
 			vk::RenderPassCreateInfo()
-				.setAttachmentCount(1)
-				.setPAttachments(&color_attachment)
+				.setAttachmentCount(attachments.size())
+				.setPAttachments(attachments.data())
 				.setSubpassCount(1)
 				.setPSubpasses(&subpass)
 				.setDependencyCount(1)
 				.setPDependencies(&subpass_dependency));
 }
 
-void TextureApplication::CreateDescriptorSetLayout()
+void DepthBufferApplication::CreateDescriptorSetLayout()
 {
 	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
 		vk::DescriptorSetLayoutBinding()
@@ -102,7 +137,8 @@ void TextureApplication::CreateDescriptorSetLayout()
 	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
 }
 
-vk::ShaderModule TextureApplication::CreateShaderModule(const std::vector<char> &code)
+
+vk::ShaderModule DepthBufferApplication::CreateShaderModule(const std::vector<char> &code)
 {
 	return engine->GetVkDevice().createShaderModule(
 			vk::ShaderModuleCreateInfo()
@@ -111,7 +147,7 @@ vk::ShaderModule TextureApplication::CreateShaderModule(const std::vector<char> 
 }
 
 
-void TextureApplication::CreatePipeline()
+void DepthBufferApplication::CreatePipeline()
 {
 	auto vert_shader_module = CreateShaderModule(ReadSPIRVShader("texture.vert"));
 	auto frag_shader_module = CreateShaderModule(ReadSPIRVShader("texture.frag"));
@@ -163,6 +199,14 @@ void TextureApplication::CreatePipeline()
 		.setRasterizationSamples(vk::SampleCountFlagBits::e1);
 
 
+	auto depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo()
+		.setDepthTestEnable(VK_TRUE)
+		.setDepthWriteEnable(VK_TRUE)
+		.setDepthCompareOp(vk::CompareOp::eLess)
+		.setDepthBoundsTestEnable(VK_FALSE)
+		.setStencilTestEnable(VK_FALSE);
+
+
 	auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
 		.setColorWriteMask(vk::ColorComponentFlagBits::eR
 						   | vk::ColorComponentFlagBits::eG
@@ -191,7 +235,7 @@ void TextureApplication::CreatePipeline()
 		.setPViewportState(&viewport_state_info)
 		.setPRasterizationState(&rasterizer_info)
 		.setPMultisampleState(&multisample_info)
-		.setPDepthStencilState(nullptr)
+		.setPDepthStencilState(&depth_stencil_info)
 		.setPColorBlendState(&color_blend_info)
 		.setPDynamicState(nullptr)
 		.setLayout(pipeline_layout)
@@ -207,7 +251,7 @@ void TextureApplication::CreatePipeline()
 }
 
 
-void TextureApplication::CreateVertexBuffer()
+void DepthBufferApplication::CreateVertexBuffer()
 {
 	auto device = engine->GetVkDevice();
 
@@ -236,8 +280,7 @@ void TextureApplication::CreateVertexBuffer()
 	device.freeMemory(staging_buffer_memory);
 }
 
-
-void TextureApplication::CreateIndexBuffer()
+void DepthBufferApplication::CreateIndexBuffer()
 {
 	auto device = engine->GetVkDevice();
 
@@ -265,7 +308,7 @@ void TextureApplication::CreateIndexBuffer()
 	device.freeMemory(staging_buffer_memory);
 }
 
-void TextureApplication::CreateMatrixUniformBuffer()
+void DepthBufferApplication::CreateMatrixUniformBuffer()
 {
 	vk::DeviceSize size = sizeof(MatrixUniformBuffer);
 	matrix_uniform_buffer = engine->CreateBufferWithMemory(size, vk::BufferUsageFlagBits::eUniformBuffer,
@@ -276,20 +319,21 @@ void TextureApplication::CreateMatrixUniformBuffer()
 
 }
 
-void TextureApplication::CreateFramebuffers()
+void DepthBufferApplication::CreateFramebuffers()
 {
 	swapchain_framebuffers.resize(swapchain_image_views.size());
 
 	for(size_t i=0; i<swapchain_image_views.size(); i++)
 	{
-		vk::ImageView attachments[] = {
-			swapchain_image_views[i]
+		std::array<vk::ImageView, 2> attachments = {
+			swapchain_image_views[i],
+			depth_image_view
 		};
 
 		auto framebuffer_info = vk::FramebufferCreateInfo()
 			.setRenderPass(render_pass)
-			.setAttachmentCount(1)
-			.setPAttachments(attachments)
+			.setAttachmentCount(attachments.size())
+			.setPAttachments(attachments.data())
 			.setWidth(swapchain_extent.width)
 			.setHeight(swapchain_extent.height)
 			.setLayers(1);
@@ -298,7 +342,7 @@ void TextureApplication::CreateFramebuffers()
 	}
 }
 
-void TextureApplication::CreateCommandPool()
+void DepthBufferApplication::CreateCommandPool()
 {
 	auto queue_family_indices = engine->GetQueueFamilyIndices();
 
@@ -308,7 +352,7 @@ void TextureApplication::CreateCommandPool()
 	command_pool = engine->GetVkDevice().createCommandPool(command_pool_info);
 }
 
-void TextureApplication::CreateCommandBuffers()
+void DepthBufferApplication::CreateCommandBuffers()
 {
 	command_buffers = engine->GetVkDevice().allocateCommandBuffers(
 			vk::CommandBufferAllocateInfo()
@@ -322,15 +366,18 @@ void TextureApplication::CreateCommandBuffers()
 
 		command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 
-		vk::ClearValue clear_color_value = vk::ClearColorValue(std::array<float, 4>{{ 0.0f, 0.0f, 0.0f, 1.0f }});
+		std::array<vk::ClearValue, 2> clear_values = {
+			vk::ClearColorValue(std::array<float, 4>{{ 0.0f, 0.0f, 0.0f, 1.0f }}),
+			vk::ClearDepthStencilValue(1.0f, 0)
+		};
 
 		command_buffer.beginRenderPass(
 				vk::RenderPassBeginInfo()
 					.setRenderPass(render_pass)
 					.setFramebuffer(swapchain_framebuffers[i])
 					.setRenderArea(vk::Rect2D({ 0, 0 }, swapchain_extent))
-					.setClearValueCount(1)
-					.setPClearValues(&clear_color_value),
+					.setClearValueCount(clear_values.size())
+					.setPClearValues(clear_values.data()),
 				vk::SubpassContents::eInline);
 
 		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
@@ -345,7 +392,7 @@ void TextureApplication::CreateCommandBuffers()
 	}
 }
 
-void TextureApplication::CreateDescriptorPool()
+void DepthBufferApplication::CreateDescriptorPool()
 {
 	std::vector<vk::DescriptorPoolSize> pool_sizes = {
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
@@ -360,7 +407,7 @@ void TextureApplication::CreateDescriptorPool()
 	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
 }
 
-void TextureApplication::CreateDescriptorSet()
+void DepthBufferApplication::CreateDescriptorSet()
 {
 	vk::DescriptorSetLayout layouts[] = { descriptor_set_layout };
 
@@ -401,7 +448,7 @@ void TextureApplication::CreateDescriptorSet()
 	engine->GetVkDevice().updateDescriptorSets({buffer_write, image_write}, nullptr);
 }
 
-void TextureApplication::CreateTextureImage()
+void DepthBufferApplication::CreateTextureImage()
 {
 	int width, height, channels;
 	stbi_uc *pixels = stbi_load("data/tex.jpg", &width, &height, &channels, STBI_rgb_alpha);
@@ -443,7 +490,7 @@ void TextureApplication::CreateTextureImage()
 	device.freeMemory(staging_buffer_memory);
 }
 
-void TextureApplication::CreateTextureImageView()
+void DepthBufferApplication::CreateTextureImageView()
 {
 	auto create_info = vk::ImageViewCreateInfo()
 		.setImage(texture_image)
@@ -454,7 +501,7 @@ void TextureApplication::CreateTextureImageView()
 	texture_image_view = engine->GetVkDevice().createImageView(create_info);
 }
 
-void TextureApplication::CreateTextureSampler()
+void DepthBufferApplication::CreateTextureSampler()
 {
 	auto create_info = vk::SamplerCreateInfo()
 		.setMagFilter(vk::Filter::eLinear)
@@ -476,7 +523,7 @@ void TextureApplication::CreateTextureSampler()
 	texture_sampler = engine->GetVkDevice().createSampler(create_info);
 }
 
-void TextureApplication::UpdateMatrixUniformBuffer()
+void DepthBufferApplication::UpdateMatrixUniformBuffer()
 {
 	static auto start_time = std::chrono::high_resolution_clock::now();
 	auto current_time = std::chrono::high_resolution_clock::now();
@@ -493,7 +540,7 @@ void TextureApplication::UpdateMatrixUniformBuffer()
 	engine->GetVkDevice().unmapMemory(matrix_uniform_buffer_memory);
 }
 
-void TextureApplication::DrawFrame(uint32_t image_index)
+void DepthBufferApplication::DrawFrame(uint32_t image_index)
 {
 	UpdateMatrixUniformBuffer();
 
@@ -514,21 +561,26 @@ void TextureApplication::DrawFrame(uint32_t image_index)
 			vk::Fence() /*nullptr*/);
 }
 
-void TextureApplication::RecreateSwapchain()
+void DepthBufferApplication::RecreateSwapchain()
 {
 	DemoApplication::RecreateSwapchain();
 
 	CreateRenderPasses();
 	CreatePipeline();
+	CreateDepthResources();
 	CreateFramebuffers();
 	CreateCommandBuffers();
 }
 
-void TextureApplication::CleanupSwapchain()
+void DepthBufferApplication::CleanupSwapchain()
 {
 	auto device = engine->GetVkDevice();
 
 	device.freeCommandBuffers(command_pool, command_buffers);
+
+	device.destroyImageView(depth_image_view);
+	device.destroyImage(depth_image);
+	device.freeMemory(depth_image_memory);
 
 	device.destroyPipeline(pipeline);
 	device.destroyPipelineLayout(pipeline_layout);
@@ -538,7 +590,7 @@ void TextureApplication::CleanupSwapchain()
 	DemoApplication::CleanupSwapchain();
 }
 
-void TextureApplication::CleanupApplication()
+void DepthBufferApplication::CleanupApplication()
 {
 	auto device = engine->GetVkDevice();
 
@@ -567,7 +619,7 @@ void TextureApplication::CleanupApplication()
 #ifndef __ANDROID__
 int main()
 {
-	TextureApplication app;
+	DepthBufferApplication app;
 
 	try
 	{

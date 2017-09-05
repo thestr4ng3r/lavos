@@ -428,7 +428,6 @@ void UniformBufferApplication::CleanupSwapchain()
 
 	device.destroyPipeline(pipeline);
 	device.destroyPipelineLayout(pipeline_layout);
-	device.destroyDescriptorSetLayout(descriptor_set_layout);
 
 	device.destroyRenderPass(render_pass);
 
@@ -440,6 +439,8 @@ void UniformBufferApplication::CleanupApplication()
 	auto device = engine->GetVkDevice();
 
 	device.destroyDescriptorPool(descriptor_pool);
+
+	device.destroyDescriptorSetLayout(descriptor_set_layout);
 
 	device.destroyCommandPool(command_pool);
 
