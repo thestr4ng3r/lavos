@@ -201,6 +201,9 @@ bool Engine::IsPhysicalDeviceSuitable(vk::PhysicalDevice physical_device, vk::Su
 	auto features = physical_device.getFeatures();
 
 
+	if(info.enable_anisotropy && !features.samplerAnisotropy)
+		return false;
+
 	// extensions
 
 	if(!CheckDeviceExtensionSupport(physical_device))
@@ -289,7 +292,8 @@ void Engine::CreateLogicalDevice(vk::SurfaceKHR surface)
 		queue_create_infos.push_back(queue_info);
 	}
 
-	vk::PhysicalDeviceFeatures features;
+	auto features = vk::PhysicalDeviceFeatures()
+		.setSamplerAnisotropy(info.enable_anisotropy ? VK_TRUE : VK_FALSE);
 
 
 	std::vector<const char *> device_extensions = GetRequiredDeviceExtensions();

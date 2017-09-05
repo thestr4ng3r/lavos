@@ -34,6 +34,8 @@ void TextureApplication::InitVulkan()
 	CreateVertexBuffer();
 	CreateIndexBuffer();
 	CreateTextureImage();
+	CreateTextureImageView();
+	CreateTextureSampler();
 	CreateMatrixUniformBuffer();
 	CreateDescriptorPool();
 	CreateDescriptorSet();
@@ -78,15 +80,24 @@ void TextureApplication::CreateRenderPasses()
 
 void TextureApplication::CreateDescriptorSetLayout()
 {
-	auto matrix_buffer_layout_binding = vk::DescriptorSetLayoutBinding()
-		.setBinding(0)
-		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-		.setDescriptorCount(1)
-		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
+		vk::DescriptorSetLayoutBinding()
+			.setBinding(0)
+			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eVertex),
+
+		vk::DescriptorSetLayoutBinding()
+			.setBinding(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(1)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
+	};
 
 	auto create_info = vk::DescriptorSetLayoutCreateInfo()
-		.setBindingCount(1)
-		.setPBindings(&matrix_buffer_layout_binding);
+		.setBindingCount(static_cast<uint32_t>(bindings.size()))
+		.setPBindings(bindings.data());
 
 	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
 }
@@ -336,11 +347,14 @@ void TextureApplication::CreateCommandBuffers()
 
 void TextureApplication::CreateDescriptorPool()
 {
-	auto pool_size = vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1);
+	std::vector<vk::DescriptorPoolSize> pool_sizes = {
+		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
+		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1),
+	};
 
 	auto create_info = vk::DescriptorPoolCreateInfo()
-		.setPoolSizeCount(1)
-		.setPPoolSizes(&pool_size)
+		.setPoolSizeCount(static_cast<uint32_t>(pool_sizes.size()))
+		.setPPoolSizes(pool_sizes.data())
 		.setMaxSets(1);
 
 	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
@@ -362,7 +376,7 @@ void TextureApplication::CreateDescriptorSet()
 		.setOffset(0)
 		.setRange(sizeof(MatrixUniformBuffer));
 
-	auto descriptor_write = vk::WriteDescriptorSet()
+	auto buffer_write = vk::WriteDescriptorSet()
 		.setDstSet(descriptor_set)
 		.setDstBinding(0)
 		.setDstArrayElement(0)
@@ -370,13 +384,27 @@ void TextureApplication::CreateDescriptorSet()
 		.setDescriptorCount(1)
 		.setPBufferInfo(&buffer_info);
 
-	engine->GetVkDevice().updateDescriptorSets(descriptor_write, nullptr);
+
+	auto image_info = vk::DescriptorImageInfo()
+		.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+		.setImageView(texture_image_view)
+		.setSampler(texture_sampler);
+
+	auto image_write = vk::WriteDescriptorSet()
+		.setDstSet(descriptor_set)
+		.setDstBinding(1)
+		.setDstArrayElement(0)
+		.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+		.setDescriptorCount(1)
+		.setPImageInfo(&image_info);
+
+	engine->GetVkDevice().updateDescriptorSets({buffer_write, image_write}, nullptr);
 }
 
 void TextureApplication::CreateTextureImage()
 {
 	int width, height, channels;
-	stbi_uc *pixels = stbi_load("data/tex.png", &width, &height, &channels, STBI_rgb_alpha);
+	stbi_uc *pixels = stbi_load("data/tex.jpg", &width, &height, &channels, STBI_rgb_alpha);
 
 	vk::DeviceSize image_size = static_cast<vk::DeviceSize>(width * height * 4);
 
@@ -413,6 +441,39 @@ void TextureApplication::CreateTextureImage()
 
 	device.destroyBuffer(staging_buffer);
 	device.freeMemory(staging_buffer_memory);
+}
+
+void TextureApplication::CreateTextureImageView()
+{
+	auto create_info = vk::ImageViewCreateInfo()
+		.setImage(texture_image)
+		.setViewType(vk::ImageViewType::e2D)
+		.setFormat(vk::Format::eR8G8B8A8Unorm)
+		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+
+	texture_image_view = engine->GetVkDevice().createImageView(create_info);
+}
+
+void TextureApplication::CreateTextureSampler()
+{
+	auto create_info = vk::SamplerCreateInfo()
+		.setMagFilter(vk::Filter::eLinear)
+		.setMinFilter(vk::Filter::eLinear)
+		.setAddressModeU(vk::SamplerAddressMode::eRepeat)
+		.setAddressModeV(vk::SamplerAddressMode::eRepeat)
+		.setAddressModeW(vk::SamplerAddressMode::eRepeat)
+		.setAnisotropyEnable(VK_TRUE)
+		.setMaxAnisotropy(16)
+		.setBorderColor(vk::BorderColor::eIntOpaqueBlack)
+		.setUnnormalizedCoordinates(VK_FALSE)
+		.setCompareEnable(VK_FALSE)
+		.setCompareOp(vk::CompareOp::eAlways)
+		.setMipmapMode(vk::SamplerMipmapMode::eLinear)
+		.setMipLodBias(0.0f)
+		.setMinLod(0.0f)
+		.setMaxLod(0.0f);
+
+	texture_sampler = engine->GetVkDevice().createSampler(create_info);
 }
 
 void TextureApplication::UpdateMatrixUniformBuffer()
@@ -486,6 +547,8 @@ void TextureApplication::CleanupApplication()
 
 	device.destroyCommandPool(command_pool);
 
+	device.destroySampler(texture_sampler);
+	device.destroyImageView(texture_image_view);
 	device.destroyImage(texture_image);
 	device.freeMemory(texture_image_memory);
 

@@ -14,6 +14,7 @@ struct Vertex
 {
 	glm::vec2 pos;
 	glm::vec3 color;
+	glm::vec2 uv;
 
 	static vk::VertexInputBindingDescription GetBindingDescription()
 	{
@@ -23,7 +24,7 @@ struct Vertex
 				.setInputRate(vk::VertexInputRate::eVertex);
 	}
 
-	static std::array<vk::VertexInputAttributeDescription, 2> GetAttributeDescription()
+	static std::array<vk::VertexInputAttributeDescription, 3> GetAttributeDescription()
 	{
 		return {
 				vk::VertexInputAttributeDescription()
@@ -37,6 +38,12 @@ struct Vertex
 						.setLocation(1)
 						.setFormat(vk::Format::eR32G32B32Sfloat)
 						.setOffset(static_cast<uint32_t>(offsetof(Vertex, color))),
+
+				vk::VertexInputAttributeDescription()
+						.setBinding(0)
+						.setLocation(2)
+						.setFormat(vk::Format::eR32G32Sfloat)
+						.setOffset(static_cast<uint32_t>(offsetof(Vertex, uv))),
 		};
 	};
 };
@@ -64,10 +71,10 @@ class TextureApplication: public DemoApplication
 		vk::DescriptorSet descriptor_set;
 
 		const std::vector<Vertex> vertices = {
-				{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-				{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-				{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-				{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+				{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+				{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+				{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+				{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 		};
 
 		const std::vector<uint16_t> indices = {
@@ -85,6 +92,8 @@ class TextureApplication: public DemoApplication
 
 		vk::Image texture_image;
 		vk::DeviceMemory texture_image_memory;
+		vk::ImageView texture_image_view;
+		vk::Sampler texture_sampler;
 
 		void InitVulkan() override;
 
@@ -113,6 +122,8 @@ class TextureApplication: public DemoApplication
 		void CreateDescriptorSet();
 
 		void CreateTextureImage();
+		void CreateTextureImageView();
+		void CreateTextureSampler();
 
 		void UpdateMatrixUniformBuffer();
 

@@ -18,6 +18,8 @@ class Engine
 			std::set<std::string> required_instance_extensions;
 			std::set<std::string> required_device_extensions;
 
+			bool enable_anisotropy = true;
+
 			CreateInfo() = default;
 		};
 
