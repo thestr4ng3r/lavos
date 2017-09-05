@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.hpp>
 #include <engine.h>
 #include <material.h>
+#include <material_instance.h>
 
 #include <glm/glm.hpp>
 
@@ -65,7 +66,6 @@ class MeshApplication: public DemoApplication
 
 		vk::RenderPass render_pass;
 
-		vk::DescriptorSetLayout descriptor_set_layout;
 		vk::PipelineLayout pipeline_layout;
 		vk::Pipeline pipeline;
 
@@ -73,6 +73,7 @@ class MeshApplication: public DemoApplication
 		std::vector<vk::CommandBuffer> command_buffers;
 
 		vk::DescriptorPool descriptor_pool;
+		vk::DescriptorSetLayout descriptor_set_layout;
 		vk::DescriptorSet descriptor_set;
 
 		const std::vector<Vertex> vertices = {
@@ -97,7 +98,7 @@ class MeshApplication: public DemoApplication
 		engine::Buffer matrix_uniform_buffer;
 
 		engine::Material *material;
-		vk::Sampler texture_sampler;
+		engine::MaterialInstance *material_instance;
 
 		void InitVulkan() override;
 
@@ -109,8 +110,6 @@ class MeshApplication: public DemoApplication
 		void CleanupApplication() override;
 
 		void CreateRenderPasses();
-
-		void CreateDescriptorSetLayout();
 
 		vk::ShaderModule CreateShaderModule(const std::vector<char> &code);
 		void CreatePipeline();
@@ -125,10 +124,10 @@ class MeshApplication: public DemoApplication
 		void CreateCommandBuffers();
 
 		void CreateDescriptorPool();
+		void CreateDescriptorSetLayout();
 		void CreateDescriptorSet();
 
 		void CreateMaterial();
-		void CreateTextureSampler();
 
 		void UpdateMatrixUniformBuffer();
 

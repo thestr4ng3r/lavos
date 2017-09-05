@@ -2,7 +2,7 @@
 #ifndef VULKAN_MATERIAL_H
 #define VULKAN_MATERIAL_H
 
-#include "image.h"
+#include <vulkan/vulkan.hpp>
 
 namespace engine
 {
@@ -14,14 +14,21 @@ class Material
 	private:
 		Engine *engine;
 
-		Image texture_image;
-		vk::ImageView texture_image_view;
+		vk::DescriptorSetLayout descriptor_set_layout;
+
+		vk::Sampler texture_sampler;
+
+		void CreateDescriptorSetLayout();
+		void CreateSamplers();
 
 	public:
-		Material(Engine *engine, std::string texture_file);
+		Material(Engine *engine);
 		~Material();
 
-		vk::ImageView GetImageView() const	{ return texture_image_view; }
+		Engine *GetEngine() const							 		{ return engine; }
+
+		vk::DescriptorSetLayout GetDescriptorSetLayout() const		{ return descriptor_set_layout; }
+		vk::Sampler GetTextureSampler() const 						{ return texture_sampler; }
 };
 
 }

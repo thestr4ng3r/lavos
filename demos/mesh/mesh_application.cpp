@@ -30,15 +30,14 @@ void MeshApplication::InitVulkan()
 	CreateDepthResources();
 	CreateRenderPasses();
 	CreateDescriptorSetLayout();
+	CreateDescriptorPool();
+	CreateMaterial();
 	CreatePipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
 	CreateVertexBuffer();
 	CreateIndexBuffer();
-	CreateMaterial();
-	CreateTextureSampler();
 	CreateMatrixUniformBuffer();
-	CreateDescriptorPool();
 	CreateDescriptorSet();
 	CreateCommandBuffers();
 }
@@ -110,30 +109,6 @@ void MeshApplication::CreateRenderPasses()
 				.setPSubpasses(&subpass)
 				.setDependencyCount(1)
 				.setPDependencies(&subpass_dependency));
-}
-
-void MeshApplication::CreateDescriptorSetLayout()
-{
-	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setDescriptorCount(1)
-			.setStageFlags(vk::ShaderStageFlagBits::eVertex),
-
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(1)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
-			.setPImmutableSamplers(nullptr)
-			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
-	};
-
-	auto create_info = vk::DescriptorSetLayoutCreateInfo()
-		.setBindingCount(static_cast<uint32_t>(bindings.size()))
-		.setPBindings(bindings.data());
-
-	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
 }
 
 
@@ -219,9 +194,13 @@ void MeshApplication::CreatePipeline()
 		.setPAttachments(&color_blend_attachment);
 
 
+	std::array<vk::DescriptorSetLayout, 2> descriptor_set_layouts = {
+		descriptor_set_layout, material->GetDescriptorSetLayout()
+	};
+
 	auto pipeline_layout_info = vk::PipelineLayoutCreateInfo()
-		.setSetLayoutCount(1)
-		.setPSetLayouts(&descriptor_set_layout);
+		.setSetLayoutCount(descriptor_set_layouts.size())
+		.setPSetLayouts(descriptor_set_layouts.data());
 
 	pipeline_layout = engine->GetVkDevice().createPipelineLayout(pipeline_layout_info);
 
@@ -358,7 +337,7 @@ void MeshApplication::CreateCommandBuffers()
 				vk::SubpassContents::eInline);
 
 		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_set, nullptr);
+		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, { descriptor_set, material_instance->GetDescriptorSet() }, nullptr);
 		command_buffer.bindVertexBuffers(0, { vertex_buffer.buffer }, { 0 });
 		command_buffer.bindIndexBuffer(index_buffer.buffer, 0, vk::IndexType::eUint16);
 		command_buffer.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
@@ -379,9 +358,26 @@ void MeshApplication::CreateDescriptorPool()
 	auto create_info = vk::DescriptorPoolCreateInfo()
 		.setPoolSizeCount(static_cast<uint32_t>(pool_sizes.size()))
 		.setPPoolSizes(pool_sizes.data())
-		.setMaxSets(1);
+		.setMaxSets(2);
 
 	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
+}
+
+void MeshApplication::CreateDescriptorSetLayout()
+{
+	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
+		vk::DescriptorSetLayoutBinding()
+			.setBinding(0)
+			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eVertex),
+	};
+
+	auto create_info = vk::DescriptorSetLayoutCreateInfo()
+		.setBindingCount(static_cast<uint32_t>(bindings.size()))
+		.setPBindings(bindings.data());
+
+	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
 }
 
 void MeshApplication::CreateDescriptorSet()
@@ -408,48 +404,13 @@ void MeshApplication::CreateDescriptorSet()
 		.setDescriptorCount(1)
 		.setPBufferInfo(&buffer_info);
 
-
-	auto image_info = vk::DescriptorImageInfo()
-		.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-		.setImageView(material->GetImageView())
-		.setSampler(texture_sampler);
-
-	auto image_write = vk::WriteDescriptorSet()
-		.setDstSet(descriptor_set)
-		.setDstBinding(1)
-		.setDstArrayElement(0)
-		.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-		.setDescriptorCount(1)
-		.setPImageInfo(&image_info);
-
-	engine->GetVkDevice().updateDescriptorSets({buffer_write, image_write}, nullptr);
+	engine->GetVkDevice().updateDescriptorSets({buffer_write}, nullptr);
 }
 
 void MeshApplication::CreateMaterial()
 {
-	material = new engine::Material(engine, "data/tex.jpg");
-}
-
-void MeshApplication::CreateTextureSampler()
-{
-	auto create_info = vk::SamplerCreateInfo()
-		.setMagFilter(vk::Filter::eLinear)
-		.setMinFilter(vk::Filter::eLinear)
-		.setAddressModeU(vk::SamplerAddressMode::eRepeat)
-		.setAddressModeV(vk::SamplerAddressMode::eRepeat)
-		.setAddressModeW(vk::SamplerAddressMode::eRepeat)
-		.setAnisotropyEnable(VK_TRUE)
-		.setMaxAnisotropy(16)
-		.setBorderColor(vk::BorderColor::eIntOpaqueBlack)
-		.setUnnormalizedCoordinates(VK_FALSE)
-		.setCompareEnable(VK_FALSE)
-		.setCompareOp(vk::CompareOp::eAlways)
-		.setMipmapMode(vk::SamplerMipmapMode::eLinear)
-		.setMipLodBias(0.0f)
-		.setMinLod(0.0f)
-		.setMaxLod(0.0f);
-
-	texture_sampler = engine->GetVkDevice().createSampler(create_info);
+	material = new engine::Material(engine);
+	material_instance = new engine::MaterialInstance(material, descriptor_pool, "data/tex.jpg");
 }
 
 void MeshApplication::UpdateMatrixUniformBuffer()
@@ -528,8 +489,7 @@ void MeshApplication::CleanupApplication()
 
 	device.destroyCommandPool(command_pool);
 
-	device.destroySampler(texture_sampler);
-	delete material;
+	delete material_instance;
 
 	engine->DestroyBuffer(index_buffer);
 	engine->DestroyBuffer(vertex_buffer);

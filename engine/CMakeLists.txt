@@ -8,6 +8,8 @@ set(SOURCE_FILES
 		include/mesh.h
 		src/material.cpp
 		include/material.h
+		src/material_instance.cpp
+		include/material_instance.h
 		include/buffer.h
 		src/image.cpp
 		include/image.h)

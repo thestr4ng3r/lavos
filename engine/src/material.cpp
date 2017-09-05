@@ -4,22 +4,55 @@
 
 using namespace engine;
 
-Material::Material(Engine *engine, std::string texture_file):
-	engine(engine)
+Material::Material(engine::Engine *engine)
+	: engine(engine)
 {
-	texture_image = engine::Image::LoadFromFile(engine, texture_file);
-
-	auto create_info = vk::ImageViewCreateInfo()
-		.setImage(texture_image.image)
-		.setViewType(vk::ImageViewType::e2D)
-		.setFormat(vk::Format::eR8G8B8A8Unorm)
-		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
-
-	texture_image_view = engine->GetVkDevice().createImageView(create_info);
+	CreateDescriptorSetLayout();
+	CreateSamplers();
 }
 
 Material::~Material()
 {
-	engine->GetVkDevice().destroyImageView(texture_image_view);
-	engine->DestroyImage(texture_image);
+	engine->GetVkDevice().destroySampler(texture_sampler);
+	engine->GetVkDevice().destroyDescriptorSetLayout(descriptor_set_layout);
+}
+
+void Material::CreateDescriptorSetLayout()
+{
+	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
+		vk::DescriptorSetLayoutBinding()
+			.setBinding(0)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(1)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
+	};
+
+	auto create_info = vk::DescriptorSetLayoutCreateInfo()
+		.setBindingCount(static_cast<uint32_t>(bindings.size()))
+		.setPBindings(bindings.data());
+
+	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
+}
+
+void Material::CreateSamplers()
+{
+	auto create_info = vk::SamplerCreateInfo()
+		.setMagFilter(vk::Filter::eLinear)
+		.setMinFilter(vk::Filter::eLinear)
+		.setAddressModeU(vk::SamplerAddressMode::eRepeat)
+		.setAddressModeV(vk::SamplerAddressMode::eRepeat)
+		.setAddressModeW(vk::SamplerAddressMode::eRepeat)
+		.setAnisotropyEnable(VK_TRUE)
+		.setMaxAnisotropy(16)
+		.setBorderColor(vk::BorderColor::eIntOpaqueBlack)
+		.setUnnormalizedCoordinates(VK_FALSE)
+		.setCompareEnable(VK_FALSE)
+		.setCompareOp(vk::CompareOp::eAlways)
+		.setMipmapMode(vk::SamplerMipmapMode::eLinear)
+		.setMipLodBias(0.0f)
+		.setMinLod(0.0f)
+		.setMaxLod(0.0f);
+
+	texture_sampler = engine->GetVkDevice().createSampler(create_info);
 }
