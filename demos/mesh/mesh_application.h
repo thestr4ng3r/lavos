@@ -5,6 +5,7 @@
 #include <demo_application.h>
 #include <vulkan/vulkan.hpp>
 #include <engine.h>
+#include <material.h>
 
 #include <glm/glm.hpp>
 
@@ -95,8 +96,7 @@ class MeshApplication: public DemoApplication
 		engine::Buffer index_buffer;
 		engine::Buffer matrix_uniform_buffer;
 
-		engine::Image texture_image;
-		vk::ImageView texture_image_view;
+		engine::Material *material;
 		vk::Sampler texture_sampler;
 
 		void InitVulkan() override;
@@ -127,8 +127,7 @@ class MeshApplication: public DemoApplication
 		void CreateDescriptorPool();
 		void CreateDescriptorSet();
 
-		void CreateTextureImage();
-		void CreateTextureImageView();
+		void CreateMaterial();
 		void CreateTextureSampler();
 
 		void UpdateMatrixUniformBuffer();

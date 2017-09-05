@@ -8,6 +8,8 @@
 namespace engine
 {
 
+class Engine;
+
 class Image
 {
 	public:
@@ -19,6 +21,9 @@ class Image
 
 		Image(vk::Image image, VmaAllocation allocation)
 			: image(image), allocation(allocation) {}
+
+
+		static Image LoadFromFile(Engine *engine, std::string file);
 };
 
 }

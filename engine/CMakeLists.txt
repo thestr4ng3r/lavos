@@ -9,6 +9,7 @@ set(SOURCE_FILES
 		src/material.cpp
 		include/material.h
 		include/buffer.h
+		src/image.cpp
 		include/image.h)
 
 add_library(engine STATIC ${SOURCE_FILES})

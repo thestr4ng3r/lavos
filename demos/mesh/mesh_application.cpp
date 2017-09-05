@@ -35,8 +35,7 @@ void MeshApplication::InitVulkan()
 	CreateCommandPool();
 	CreateVertexBuffer();
 	CreateIndexBuffer();
-	CreateTextureImage();
-	CreateTextureImageView();
+	CreateMaterial();
 	CreateTextureSampler();
 	CreateMatrixUniformBuffer();
 	CreateDescriptorPool();
@@ -412,7 +411,7 @@ void MeshApplication::CreateDescriptorSet()
 
 	auto image_info = vk::DescriptorImageInfo()
 		.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-		.setImageView(texture_image_view)
+		.setImageView(material->GetImageView())
 		.setSampler(texture_sampler);
 
 	auto image_write = vk::WriteDescriptorSet()
@@ -426,52 +425,9 @@ void MeshApplication::CreateDescriptorSet()
 	engine->GetVkDevice().updateDescriptorSets({buffer_write, image_write}, nullptr);
 }
 
-void MeshApplication::CreateTextureImage()
+void MeshApplication::CreateMaterial()
 {
-	int width, height, channels;
-	stbi_uc *pixels = stbi_load("data/tex.jpg", &width, &height, &channels, STBI_rgb_alpha);
-
-	vk::DeviceSize image_size = static_cast<vk::DeviceSize>(width * height * 4);
-
-	if (!pixels)
-		throw std::runtime_error("failed to load texture image!");
-
-
-	auto device = engine->GetVkDevice();
-
-	auto staging_buffer = engine->CreateBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY);
-
-	void *data = engine->MapMemory(staging_buffer.allocation);
-	memcpy(data, pixels, image_size);
-	engine->UnmapMemory(staging_buffer.allocation);
-
-	stbi_image_free(pixels);
-
-
-	vk::Format format = vk::Format::eR8G8B8A8Unorm;
-
-	texture_image = engine->Create2DImage(width, height, format, vk::ImageTiling::eOptimal,
-										  vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-										  VMA_MEMORY_USAGE_GPU_ONLY);
-
-
-	engine->TransitionImageLayout(texture_image.image, format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-	engine->CopyBufferTo2DImage(staging_buffer.buffer, texture_image.image, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-	engine->TransitionImageLayout(texture_image.image, format, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
-
-
-	engine->DestroyBuffer(staging_buffer);
-}
-
-void MeshApplication::CreateTextureImageView()
-{
-	auto create_info = vk::ImageViewCreateInfo()
-		.setImage(texture_image.image)
-		.setViewType(vk::ImageViewType::e2D)
-		.setFormat(vk::Format::eR8G8B8A8Unorm)
-		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
-
-	texture_image_view = engine->GetVkDevice().createImageView(create_info);
+	material = new engine::Material(engine, "data/tex.jpg");
 }
 
 void MeshApplication::CreateTextureSampler()
@@ -573,8 +529,7 @@ void MeshApplication::CleanupApplication()
 	device.destroyCommandPool(command_pool);
 
 	device.destroySampler(texture_sampler);
-	device.destroyImageView(texture_image_view);
-	engine->DestroyImage(texture_image);
+	delete material;
 
 	engine->DestroyBuffer(index_buffer);
 	engine->DestroyBuffer(vertex_buffer);
