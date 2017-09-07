@@ -7,7 +7,7 @@ using namespace engine;
 static const std::vector<const char *> validation_layers = {
 		"VK_LAYER_LUNARG_standard_validation",
 
-		"VK_LAYER_RENDERDOC_Capture",
+		/*"VK_LAYER_RENDERDOC_Capture",*/
 
 		/*"VK_LAYER_GOOGLE_threading",
 		"VK_LAYER_LUNARG_core_validation",

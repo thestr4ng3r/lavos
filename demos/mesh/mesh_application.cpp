@@ -9,9 +9,7 @@
 #include <fstream>
 #include <chrono>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
+#include <glm_config.h>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "mesh_application.h"
@@ -35,8 +33,11 @@ void MeshApplication::InitVulkan()
 	CreatePipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
+
+	mesh = new engine::Mesh("/home/florian/dev/glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf");
 	CreateVertexBuffer();
 	CreateIndexBuffer();
+
 	CreateMatrixUniformBuffer();
 	CreateDescriptorSet();
 	CreateCommandBuffers();
@@ -233,12 +234,12 @@ void MeshApplication::CreateVertexBuffer()
 {
 	auto device = engine->GetVkDevice();
 
-	vk::DeviceSize size = sizeof(vertices[0]) * vertices.size();
+	vk::DeviceSize size = sizeof(mesh->vertices[0]) * mesh->vertices.size();
 
 
 	auto staging_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY);
 	void *data = engine->MapMemory(staging_buffer.allocation);
-	memcpy(data, vertices.data(), size);
+	memcpy(data, mesh->vertices.data(), size);
 	engine->UnmapMemory(staging_buffer.allocation);
 
 	vertex_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
@@ -253,11 +254,11 @@ void MeshApplication::CreateIndexBuffer()
 {
 	auto device = engine->GetVkDevice();
 
-	vk::DeviceSize size = sizeof(indices[0]) * indices.size();
+	vk::DeviceSize size = sizeof(mesh->indices[0]) * mesh->indices.size();
 
 	auto staging_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY);
 	void *data = engine->MapMemory(staging_buffer.allocation);
-	memcpy(data, indices.data(), size);
+	memcpy(data, mesh->indices.data(), size);
 	engine->UnmapMemory(staging_buffer.allocation);
 
 	index_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
@@ -340,7 +341,7 @@ void MeshApplication::CreateCommandBuffers()
 		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, { descriptor_set, material_instance->GetDescriptorSet() }, nullptr);
 		command_buffer.bindVertexBuffers(0, { vertex_buffer.buffer }, { 0 });
 		command_buffer.bindIndexBuffer(index_buffer.buffer, 0, vk::IndexType::eUint16);
-		command_buffer.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+		command_buffer.drawIndexed(static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
 
 		command_buffer.endRenderPass();
 
@@ -410,7 +411,7 @@ void MeshApplication::CreateDescriptorSet()
 void MeshApplication::CreateMaterial()
 {
 	material = new engine::Material(engine);
-	material_instance = new engine::MaterialInstance(material, descriptor_pool, "data/tex.jpg");
+	material_instance = new engine::MaterialInstance(material, descriptor_pool, "/home/florian/dev/glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox_baseColor.png");
 }
 
 void MeshApplication::UpdateMatrixUniformBuffer()
@@ -420,8 +421,8 @@ void MeshApplication::UpdateMatrixUniformBuffer()
 	float time = std::chrono::duration_cast<std::chrono::microseconds>(current_time - start_time).count() / 1e6f;
 
 	MatrixUniformBuffer matrix_ubo;
-	matrix_ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	matrix_ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	matrix_ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	matrix_ubo.view = glm::lookAt(glm::vec3(0.1f, 0.1f, -0.1f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	matrix_ubo.projection = glm::perspective(glm::radians(45.0f), (float)swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f);
 	matrix_ubo.projection[1][1] *= -1.0f;
 

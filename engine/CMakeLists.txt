@@ -4,6 +4,7 @@ set(SOURCE_FILES
 		src/thirdparty_impl.cpp
 		src/engine.cpp
 		include/engine.h
+		include/vertex.h
 		src/mesh.cpp
 		include/mesh.h
 		src/material.cpp
@@ -12,7 +13,8 @@ set(SOURCE_FILES
 		include/material_instance.h
 		include/buffer.h
 		src/image.cpp
-		include/image.h)
+		include/image.h
+		include/glm_config.h)
 
 add_library(engine STATIC ${SOURCE_FILES})
 

@@ -5,50 +5,14 @@
 #include <demo_application.h>
 #include <vulkan/vulkan.hpp>
 #include <engine.h>
+#include <vertex.h>
 #include <material.h>
 #include <material_instance.h>
+#include <mesh.h>
 
 #include <glm/glm.hpp>
 
 #include "demo_application.h"
-
-struct Vertex
-{
-	glm::vec3 pos;
-	glm::vec3 color;
-	glm::vec2 uv;
-
-	static vk::VertexInputBindingDescription GetBindingDescription()
-	{
-		return vk::VertexInputBindingDescription()
-			.setBinding(0)
-			.setStride(sizeof(Vertex))
-			.setInputRate(vk::VertexInputRate::eVertex);
-	}
-
-	static std::array<vk::VertexInputAttributeDescription, 3> GetAttributeDescription()
-	{
-		return {
-				vk::VertexInputAttributeDescription()
-					.setBinding(0)
-					.setLocation(0)
-					.setFormat(vk::Format::eR32G32B32Sfloat)
-					.setOffset(static_cast<uint32_t>(offsetof(Vertex, pos))),
-
-				vk::VertexInputAttributeDescription()
-					.setBinding(0)
-					.setLocation(1)
-					.setFormat(vk::Format::eR32G32B32Sfloat)
-					.setOffset(static_cast<uint32_t>(offsetof(Vertex, color))),
-
-				vk::VertexInputAttributeDescription()
-					.setBinding(0)
-					.setLocation(2)
-					.setFormat(vk::Format::eR32G32Sfloat)
-					.setOffset(static_cast<uint32_t>(offsetof(Vertex, uv))),
-		};
-	};
-};
 
 struct MatrixUniformBuffer
 {
@@ -76,22 +40,7 @@ class MeshApplication: public DemoApplication
 		vk::DescriptorSetLayout descriptor_set_layout;
 		vk::DescriptorSet descriptor_set;
 
-		const std::vector<Vertex> vertices = {
-			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-		};
-
-		const std::vector<uint16_t> indices = {
-			0, 1, 2, 2, 3, 0,
-			4, 5, 6, 6, 7, 4
-		};
+		engine::Mesh *mesh;
 
 		engine::Buffer vertex_buffer;
 		engine::Buffer index_buffer;
