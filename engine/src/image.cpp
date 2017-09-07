@@ -14,7 +14,7 @@ Image Image::LoadFromFile(Engine *engine, std::string file)
 	vk::DeviceSize image_size = static_cast<vk::DeviceSize>(width * height * 4);
 
 	if (!pixels)
-		throw std::runtime_error("failed to load image!");
+		throw std::runtime_error("failed to load image \"" + file + "\"");
 
 
 	auto device = engine->GetVkDevice();

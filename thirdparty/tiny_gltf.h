@@ -978,7 +978,7 @@ static bool LoadExternalFile(std::vector<unsigned char> *out, std::string *err,
 static bool LoadImageData(Image *image, std::string *err, int req_width,
                           int req_height, const unsigned char *bytes,
                           int size) {
-  std::cout << "size " << size << std::endl;
+  //std::cout << "size " << size << std::endl;
 
   int w, h, comp;
   // if image cannot be decoded, ignore parsing and keep it by its path

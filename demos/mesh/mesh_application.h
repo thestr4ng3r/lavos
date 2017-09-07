@@ -9,6 +9,7 @@
 #include <material.h>
 #include <material_instance.h>
 #include <mesh.h>
+#include <renderer.h>
 
 #include <glm/glm.hpp>
 
@@ -36,9 +37,10 @@ class MeshApplication: public DemoApplication
 		vk::CommandPool command_pool;
 		std::vector<vk::CommandBuffer> command_buffers;
 
-		vk::DescriptorPool descriptor_pool;
 		vk::DescriptorSetLayout descriptor_set_layout;
 		vk::DescriptorSet descriptor_set;
+
+		engine::Renderer *renderer;
 
 		engine::Mesh *mesh;
 
@@ -46,7 +48,7 @@ class MeshApplication: public DemoApplication
 		engine::Buffer index_buffer;
 		engine::Buffer matrix_uniform_buffer;
 
-		engine::Material *material;
+		//engine::Material *material;
 		engine::MaterialInstance *material_instance;
 
 		void InitVulkan() override;
@@ -72,11 +74,8 @@ class MeshApplication: public DemoApplication
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 
-		void CreateDescriptorPool();
 		void CreateDescriptorSetLayout();
 		void CreateDescriptorSet();
-
-		void CreateMaterial();
 
 		void UpdateMatrixUniformBuffer();
 

@@ -14,7 +14,11 @@ set(SOURCE_FILES
 		include/buffer.h
 		src/image.cpp
 		include/image.h
-		include/glm_config.h)
+		include/glm_config.h
+		src/gltf_loader.cpp
+		include/gltf_loader.h
+		src/renderer.cpp
+		include/renderer.h)
 
 add_library(engine STATIC ${SOURCE_FILES})
 

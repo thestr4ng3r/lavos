@@ -3,6 +3,7 @@
 #define VULKAN_MATERIAL_INSTANCE_H
 
 #include "image.h"
+#include "material.h"
 
 namespace engine
 {

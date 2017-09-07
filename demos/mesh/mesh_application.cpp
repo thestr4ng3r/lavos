@@ -16,6 +16,7 @@
 
 #include <vulkan/vulkan.h>
 #include <engine.h>
+#include <gltf_loader.h>
 
 #include <shader_load.h>
 #include "../../thirdparty/stb_image.h"
@@ -28,13 +29,20 @@ void MeshApplication::InitVulkan()
 	CreateDepthResources();
 	CreateRenderPasses();
 	CreateDescriptorSetLayout();
-	CreateDescriptorPool();
-	CreateMaterial();
+
+	renderer = new engine::Renderer(engine);
+
 	CreatePipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
 
-	mesh = new engine::Mesh("/home/florian/dev/glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf");
+	auto gltf = new engine::GLTF(renderer, "/home/florian/dev/glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf");
+	mesh = gltf->GetMeshes().front();
+	gltf->GetMeshes().clear();
+
+	material_instance = gltf->GetMaterialInstances().front();
+	gltf->GetMaterialInstances().clear();
+
 	CreateVertexBuffer();
 	CreateIndexBuffer();
 
@@ -196,7 +204,7 @@ void MeshApplication::CreatePipeline()
 
 
 	std::array<vk::DescriptorSetLayout, 2> descriptor_set_layouts = {
-		descriptor_set_layout, material->GetDescriptorSetLayout()
+		descriptor_set_layout, renderer->GetMaterial()->GetDescriptorSetLayout()
 	};
 
 	auto pipeline_layout_info = vk::PipelineLayoutCreateInfo()
@@ -232,10 +240,7 @@ void MeshApplication::CreatePipeline()
 
 void MeshApplication::CreateVertexBuffer()
 {
-	auto device = engine->GetVkDevice();
-
 	vk::DeviceSize size = sizeof(mesh->vertices[0]) * mesh->vertices.size();
-
 
 	auto staging_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY);
 	void *data = engine->MapMemory(staging_buffer.allocation);
@@ -252,8 +257,6 @@ void MeshApplication::CreateVertexBuffer()
 
 void MeshApplication::CreateIndexBuffer()
 {
-	auto device = engine->GetVkDevice();
-
 	vk::DeviceSize size = sizeof(mesh->indices[0]) * mesh->indices.size();
 
 	auto staging_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY);
@@ -337,6 +340,7 @@ void MeshApplication::CreateCommandBuffers()
 					.setPClearValues(clear_values.data()),
 				vk::SubpassContents::eInline);
 
+
 		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, { descriptor_set, material_instance->GetDescriptorSet() }, nullptr);
 		command_buffer.bindVertexBuffers(0, { vertex_buffer.buffer }, { 0 });
@@ -347,21 +351,6 @@ void MeshApplication::CreateCommandBuffers()
 
 		command_buffer.end();
 	}
-}
-
-void MeshApplication::CreateDescriptorPool()
-{
-	std::vector<vk::DescriptorPoolSize> pool_sizes = {
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1),
-	};
-
-	auto create_info = vk::DescriptorPoolCreateInfo()
-		.setPoolSizeCount(static_cast<uint32_t>(pool_sizes.size()))
-		.setPPoolSizes(pool_sizes.data())
-		.setMaxSets(2);
-
-	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
 }
 
 void MeshApplication::CreateDescriptorSetLayout()
@@ -386,7 +375,7 @@ void MeshApplication::CreateDescriptorSet()
 	vk::DescriptorSetLayout layouts[] = { descriptor_set_layout };
 
 	auto alloc_info = vk::DescriptorSetAllocateInfo()
-		.setDescriptorPool(descriptor_pool)
+		.setDescriptorPool(renderer->GetDescriptorPool())
 		.setDescriptorSetCount(1)
 		.setPSetLayouts(layouts);
 
@@ -406,12 +395,6 @@ void MeshApplication::CreateDescriptorSet()
 		.setPBufferInfo(&buffer_info);
 
 	engine->GetVkDevice().updateDescriptorSets({buffer_write}, nullptr);
-}
-
-void MeshApplication::CreateMaterial()
-{
-	material = new engine::Material(engine);
-	material_instance = new engine::MaterialInstance(material, descriptor_pool, "/home/florian/dev/glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox_baseColor.png");
 }
 
 void MeshApplication::UpdateMatrixUniformBuffer()
@@ -483,8 +466,6 @@ void MeshApplication::CleanupSwapchain()
 void MeshApplication::CleanupApplication()
 {
 	auto device = engine->GetVkDevice();
-
-	device.destroyDescriptorPool(descriptor_pool);
 
 	device.destroyDescriptorSetLayout(descriptor_set_layout);
 
