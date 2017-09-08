@@ -477,6 +477,13 @@ void Engine::DestroyImage(const Image &image)
 	vmaDestroyImage(allocator, image.image, image.allocation);
 }
 
+void Engine::DestroyTexture(const Texture &texture)
+{
+	DestroyImage(texture.image);
+	device.destroyImageView(texture.image_view);
+	device.destroySampler(texture.sampler);
+}
+
 void *Engine::MapMemory(const VmaAllocation &allocation)
 {
 	void *data;

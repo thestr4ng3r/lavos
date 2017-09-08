@@ -3,6 +3,7 @@
 #define VULKAN_GLTF_LOADER_H
 
 #include <string>
+#include <map>
 
 #include "material_instance.h"
 #include "mesh.h"
@@ -19,7 +20,7 @@ namespace engine
 class GLTF
 {
 	private:
-		const Renderer *renderer;
+		Renderer * const renderer;
 
 		std::string root_path;
 
@@ -33,6 +34,8 @@ class GLTF
 	public:
 		GLTF(Renderer *renderer, std::string filename);
 		~GLTF();
+
+		Renderer *GetRenderer() const 								{ return renderer; }
 
 		std::vector<MaterialInstance *> &GetMaterialInstances()		{ return material_instances; }
 		std::vector<Mesh *> &GetMeshes() 							{ return meshes; };

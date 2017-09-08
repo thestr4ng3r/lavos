@@ -2,7 +2,7 @@
 #ifndef VULKAN_MATERIAL_INSTANCE_H
 #define VULKAN_MATERIAL_INSTANCE_H
 
-#include "image.h"
+#include "texture.h"
 #include "material.h"
 
 namespace engine
@@ -13,21 +13,23 @@ class Engine;
 class MaterialInstance
 {
 	private:
-		Material *material;
+		Material * const material;
 
-		Image texture_image;
-		vk::ImageView texture_image_view;
+		Texture texture;
 
 		vk::DescriptorSet descriptor_set;
 
 		void CreateDescriptorSet(vk::DescriptorPool descriptor_pool);
 
 	public:
-		MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool, std::string texture_file);
+		MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool);
 		~MaterialInstance();
 
-		//vk::ImageView GetImageView() const		{ return texture_image_view; }
+		void WriteDescriptorSet();
+
 		vk::DescriptorSet GetDescriptorSet() const 		{ return descriptor_set; }
+
+		void SetTexture(Texture texture)				{ this->texture = texture; };
 };
 
 }

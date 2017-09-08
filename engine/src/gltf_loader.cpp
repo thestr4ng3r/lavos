@@ -3,6 +3,7 @@
 #include "gltf_loader.h"
 
 #include <tiny_gltf.h>
+#include <iostream>
 
 using namespace engine;
 
@@ -39,7 +40,63 @@ void GLTF::LoadGLTF(tinygltf::Model &model)
 	LoadMaterialInstances(model);
 }
 
-bool GetSubParameter(const tinygltf::ParameterMap &params, std::string name, std::string subname, int &dst)
+
+static Image LoadImage(GLTF *gltf, tinygltf::Model &model, int index)
+{
+	auto gltf_image = model.images[index];
+	return Image::LoadFromPixelDataRGBA8UI(gltf->GetRenderer()->GetEngine(),
+										   static_cast<uint32_t>(gltf_image.width),
+										   static_cast<uint32_t>(gltf_image.height),
+										   gltf_image.image.data());
+}
+
+static Texture LoadTexture(GLTF *gltf, tinygltf::Model &model, int index)
+{
+	auto gltf_texture = model.textures[index];
+
+	auto device = gltf->GetRenderer()->GetEngine()->GetVkDevice();
+
+	auto image = LoadImage(gltf, model, gltf_texture.source);
+
+	if(image == nullptr)
+		return nullptr;
+
+
+	auto image_view_info = vk::ImageViewCreateInfo()
+		.setImage(image.image)
+		.setViewType(vk::ImageViewType::e2D)
+		.setFormat(vk::Format::eR8G8B8A8Unorm)
+		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+
+	auto image_view = device.createImageView(image_view_info);
+
+
+	//auto gltf_sampler = model.samplers[gltf_texture.sampler];
+
+	auto create_info = vk::SamplerCreateInfo()
+		.setMagFilter(vk::Filter::eLinear)
+		.setMinFilter(vk::Filter::eLinear)
+		.setAddressModeU(vk::SamplerAddressMode::eRepeat)
+		.setAddressModeV(vk::SamplerAddressMode::eRepeat)
+		.setAddressModeW(vk::SamplerAddressMode::eRepeat)
+		.setAnisotropyEnable(VK_TRUE)
+		.setMaxAnisotropy(16)
+		.setBorderColor(vk::BorderColor::eIntOpaqueBlack)
+		.setUnnormalizedCoordinates(VK_FALSE)
+		.setCompareEnable(VK_FALSE)
+		.setCompareOp(vk::CompareOp::eAlways)
+		.setMipmapMode(vk::SamplerMipmapMode::eLinear)
+		.setMipLodBias(0.0f)
+		.setMinLod(0.0f)
+		.setMaxLod(0.0f);
+
+	auto sampler = device.createSampler(create_info);
+
+	return Texture(image, image_view, sampler);
+}
+
+
+static bool GetSubParameter(const tinygltf::ParameterMap &params, std::string name, std::string subname, int &dst)
 {
 	auto it = params.find(name);
 	if(it == params.end())
@@ -54,23 +111,24 @@ bool GetSubParameter(const tinygltf::ParameterMap &params, std::string name, std
 	return true;
 }
 
+static Texture LoadSubParameterTexture(GLTF *gltf, tinygltf::Model &model, const tinygltf::ParameterMap &params, std::string name, std::string subname)
+{
+	int index;
+	if(!GetSubParameter(params, name, subname, index))
+		return nullptr;
+
+	return LoadTexture(gltf, model, index);
+}
+
 void GLTF::LoadMaterialInstances(tinygltf::Model &model)
 {
 	Material *material = renderer->GetMaterial();
 
 	for(const auto &gltf_material : model.materials)
 	{
-		std::string tex;
-
-		int index;
-		if(GetSubParameter(gltf_material.values, "baseColorTexture", "index", index))
-		{
-			int image_index = model.textures[index].source;
-			tex = root_path + "/" + model.images[image_index].uri;
-			// TODO: load from image data, not uri
-		}
-
-		auto material_instance = new MaterialInstance(material, renderer->GetDescriptorPool(), tex);
+		auto material_instance = new MaterialInstance(material, renderer->GetDescriptorPool());
+		material_instance->SetTexture(LoadSubParameterTexture(this, model, gltf_material.values, "baseColorTexture", "index"));
+		material_instance->WriteDescriptorSet();
 		material_instances.push_back(material_instance);
 	}
 }

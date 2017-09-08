@@ -13,7 +13,6 @@ Material::Material(engine::Engine *engine)
 
 Material::~Material()
 {
-	engine->GetVkDevice().destroySampler(texture_sampler);
 	engine->GetVkDevice().destroyDescriptorSetLayout(descriptor_set_layout);
 }
 
@@ -37,22 +36,4 @@ void Material::CreateDescriptorSetLayout()
 
 void Material::CreateSamplers()
 {
-	auto create_info = vk::SamplerCreateInfo()
-		.setMagFilter(vk::Filter::eLinear)
-		.setMinFilter(vk::Filter::eLinear)
-		.setAddressModeU(vk::SamplerAddressMode::eRepeat)
-		.setAddressModeV(vk::SamplerAddressMode::eRepeat)
-		.setAddressModeW(vk::SamplerAddressMode::eRepeat)
-		.setAnisotropyEnable(VK_TRUE)
-		.setMaxAnisotropy(16)
-		.setBorderColor(vk::BorderColor::eIntOpaqueBlack)
-		.setUnnormalizedCoordinates(VK_FALSE)
-		.setCompareEnable(VK_FALSE)
-		.setCompareOp(vk::CompareOp::eAlways)
-		.setMipmapMode(vk::SamplerMipmapMode::eLinear)
-		.setMipLodBias(0.0f)
-		.setMinLod(0.0f)
-		.setMaxLod(0.0f);
-
-	texture_sampler = engine->GetVkDevice().createSampler(create_info);
 }

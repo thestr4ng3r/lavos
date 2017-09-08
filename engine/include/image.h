@@ -16,15 +16,31 @@ class Image
 		vk::Image image;
 		VmaAllocation allocation;
 
-		Image()
+		Image(nullptr_t = nullptr)
 			: image(nullptr), allocation(nullptr) {}
 
 		Image(vk::Image image, VmaAllocation allocation)
 			: image(image), allocation(allocation) {}
 
 
+		static Image LoadFromPixelDataRGBA8UI(Engine *engine, uint32_t width, uint32_t height, unsigned char *pixels);
 		static Image LoadFromFile(Engine *engine, std::string file);
+		static Image LoadFromMemory(Engine *engine, unsigned char *data, size_t size);
+
+		bool operator==(Image const &rhs) const
+		{
+			return image == rhs.image
+				   && allocation == rhs.allocation;
+		}
+
+		bool operator!=(Image const &rhs) const
+		{
+			return image != rhs.image
+				   || allocation != rhs.allocation;
+		}
 };
+
+
 
 }
 

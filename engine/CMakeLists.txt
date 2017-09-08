@@ -14,6 +14,7 @@ set(SOURCE_FILES
 		include/buffer.h
 		src/image.cpp
 		include/image.h
+		include/texture.h
 		include/glm_config.h
 		src/gltf_loader.cpp
 		include/gltf_loader.h

@@ -8,7 +8,7 @@
 #include <set>
 
 #include "buffer.h"
-#include "image.h"
+#include "texture.h"
 
 namespace engine
 {
@@ -113,6 +113,8 @@ class Engine
 
 		Image CreateImage(vk::ImageCreateInfo create_info, VmaMemoryUsage vma_usage);
 		void DestroyImage(const Image &image);
+
+		void DestroyTexture(const Texture &texture);
 
 		Image Create2DImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, VmaMemoryUsage vma_usage, vk::SharingMode sharing_mode = vk::SharingMode::eExclusive);
 

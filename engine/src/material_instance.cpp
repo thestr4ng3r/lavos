@@ -5,32 +5,19 @@
 
 using namespace engine;
 
-MaterialInstance::MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool, std::string texture_file)
-	: material(material)
+MaterialInstance::MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool)
+	: material(material), texture(nullptr)
 {
 	auto engine = material->GetEngine();
-
-	texture_image = engine::Image::LoadFromFile(engine, texture_file);
-
-	auto create_info = vk::ImageViewCreateInfo()
-		.setImage(texture_image.image)
-		.setViewType(vk::ImageViewType::e2D)
-		.setFormat(vk::Format::eR8G8B8A8Unorm)
-		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
-
-	texture_image_view = engine->GetVkDevice().createImageView(create_info);
-
 	CreateDescriptorSet(descriptor_pool);
 }
 
 MaterialInstance::~MaterialInstance()
 {
 	auto engine = material->GetEngine();
+	engine->DestroyTexture(texture);
 
 	// TODO: free descriptor set (would also be automatically freed with descriptor pool)
-
-	engine->GetVkDevice().destroyImageView(texture_image_view);
-	engine->DestroyImage(texture_image);
 }
 
 void MaterialInstance::CreateDescriptorSet(vk::DescriptorPool descriptor_pool)
@@ -45,11 +32,14 @@ void MaterialInstance::CreateDescriptorSet(vk::DescriptorPool descriptor_pool)
 		.setPSetLayouts(layouts);
 
 	descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
+}
 
+void MaterialInstance::WriteDescriptorSet()
+{
 	auto image_info = vk::DescriptorImageInfo()
 		.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-		.setImageView(texture_image_view)
-		.setSampler(material->GetTextureSampler());
+		.setImageView(texture.image_view)
+		.setSampler(texture.sampler);
 
 	auto image_write = vk::WriteDescriptorSet()
 		.setDstSet(descriptor_set)
@@ -59,5 +49,5 @@ void MaterialInstance::CreateDescriptorSet(vk::DescriptorPool descriptor_pool)
 		.setDescriptorCount(1)
 		.setPImageInfo(&image_info);
 
-	engine->GetVkDevice().updateDescriptorSets(image_write, nullptr);
+	material->GetEngine()->GetVkDevice().updateDescriptorSets(image_write, nullptr);
 }

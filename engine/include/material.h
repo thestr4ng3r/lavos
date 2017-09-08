@@ -16,8 +16,6 @@ class Material
 
 		vk::DescriptorSetLayout descriptor_set_layout;
 
-		vk::Sampler texture_sampler;
-
 		void CreateDescriptorSetLayout();
 		void CreateSamplers();
 
@@ -28,7 +26,6 @@ class Material
 		Engine *GetEngine() const							 		{ return engine; }
 
 		vk::DescriptorSetLayout GetDescriptorSetLayout() const		{ return descriptor_set_layout; }
-		vk::Sampler GetTextureSampler() const 						{ return texture_sampler; }
 };
 
 }

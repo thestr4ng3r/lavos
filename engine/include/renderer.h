@@ -11,7 +11,7 @@ namespace engine
 class Renderer
 {
 	private:
-		Engine *engine;
+		Engine * const engine;
 
 		Material *material;
 
@@ -23,6 +23,8 @@ class Renderer
 	public:
 		Renderer(Engine *engine);
 		~Renderer();
+
+		Engine *GetEngine() const 						{ return engine; }
 
 		vk::DescriptorPool GetDescriptorPool() const 	{ return descriptor_pool; }
 		Material *GetMaterial() const 					{ return material; }
