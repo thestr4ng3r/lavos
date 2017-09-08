@@ -19,13 +19,13 @@ void Renderer::CreateDescriptorPool()
 {
 	std::vector<vk::DescriptorPoolSize> pool_sizes = {
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1),
+		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 2),
 	};
 
 	auto create_info = vk::DescriptorPoolCreateInfo()
 		.setPoolSizeCount(static_cast<uint32_t>(pool_sizes.size()))
 		.setPPoolSizes(pool_sizes.data())
-		.setMaxSets(2);
+		.setMaxSets(3);
 
 	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
 }

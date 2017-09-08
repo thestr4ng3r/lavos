@@ -15,9 +15,9 @@ class Mesh
 	public:
 		struct Primitive
 		{
-			MaterialInstance *material;
-			size_t vertices_offset;
-			size_t indices_offset;
+			MaterialInstance *material_instance;
+			uint32_t indices_count;
+			uint32_t indices_offset;
 		};
 
 		std::vector<Vertex> vertices;

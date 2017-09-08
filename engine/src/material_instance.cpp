@@ -8,7 +8,6 @@ using namespace engine;
 MaterialInstance::MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool)
 	: material(material), texture(nullptr)
 {
-	auto engine = material->GetEngine();
 	CreateDescriptorSet(descriptor_pool);
 }
 

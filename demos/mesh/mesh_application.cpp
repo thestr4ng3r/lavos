@@ -36,7 +36,7 @@ void MeshApplication::InitVulkan()
 	CreateFramebuffers();
 	CreateCommandPool();
 
-	auto gltf = new engine::GLTF(renderer, "/home/florian/dev/glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf");
+	auto gltf = new engine::GLTF(renderer, "data/gltftest.gltf");
 	mesh = gltf->GetMeshes().front();
 	gltf->GetMeshes().clear();
 
@@ -342,10 +342,15 @@ void MeshApplication::CreateCommandBuffers()
 
 
 		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, { descriptor_set, material_instance->GetDescriptorSet() }, nullptr);
+		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_set, nullptr);
 		command_buffer.bindVertexBuffers(0, { vertex_buffer.buffer }, { 0 });
 		command_buffer.bindIndexBuffer(index_buffer.buffer, 0, vk::IndexType::eUint16);
-		command_buffer.drawIndexed(static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
+
+		for(auto primitive : mesh->primitives)
+		{
+			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 1, primitive.material_instance->GetDescriptorSet(), nullptr);
+			command_buffer.drawIndexed(primitive.indices_count, 1, primitive.indices_offset, 0, 0);
+		}
 
 		command_buffer.endRenderPass();
 
@@ -405,8 +410,8 @@ void MeshApplication::UpdateMatrixUniformBuffer()
 
 	MatrixUniformBuffer matrix_ubo;
 	matrix_ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	matrix_ubo.view = glm::lookAt(glm::vec3(0.1f, 0.1f, -0.1f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	matrix_ubo.projection = glm::perspective(glm::radians(45.0f), (float)swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f);
+	matrix_ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	matrix_ubo.projection = glm::perspective(glm::radians(60.0f), (float)swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f);
 	matrix_ubo.projection[1][1] *= -1.0f;
 
 	void *data = engine->MapMemory(matrix_uniform_buffer.allocation);
