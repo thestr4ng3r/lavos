@@ -16,6 +16,7 @@
 
 #include <vulkan/vulkan.h>
 #include <engine.h>
+#include <material.h>
 #include <gltf_loader.h>
 
 #include <shader_load.h>
@@ -28,11 +29,11 @@ void MeshApplication::InitVulkan()
 
 	CreateDepthResources();
 	CreateRenderPasses();
-	CreateDescriptorSetLayout();
 
-	renderer = new engine::Renderer(engine);
+	material = new engine::Material(engine);
+	renderer = new engine::Renderer(engine, swapchain_extent, render_pass);
+	renderer->AddMaterial(material);
 
-	CreatePipeline();
 	CreateFramebuffers();
 	CreateCommandPool();
 
@@ -46,8 +47,6 @@ void MeshApplication::InitVulkan()
 	CreateVertexBuffer();
 	CreateIndexBuffer();
 
-	CreateMatrixUniformBuffer();
-	CreateDescriptorSet();
 	CreateCommandBuffers();
 }
 
@@ -121,123 +120,6 @@ void MeshApplication::CreateRenderPasses()
 }
 
 
-vk::ShaderModule MeshApplication::CreateShaderModule(const std::vector<char> &code)
-{
-	return engine->GetVkDevice().createShaderModule(
-			vk::ShaderModuleCreateInfo()
-					.setCodeSize(code.size())
-					.setPCode(reinterpret_cast<const uint32_t *>(code.data())));
-}
-
-
-void MeshApplication::CreatePipeline()
-{
-	auto vert_shader_module = CreateShaderModule(ReadSPIRVShader("texture.vert"));
-	auto frag_shader_module = CreateShaderModule(ReadSPIRVShader("texture.frag"));
-
-	vk::PipelineShaderStageCreateInfo shader_stages[] = {
-			vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
-											  vk::ShaderStageFlagBits::eVertex,
-											  vert_shader_module,
-											  "main"),
-			vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
-											  vk::ShaderStageFlagBits::eFragment,
-											  frag_shader_module,
-											  "main")
-	};
-
-	auto vertex_binding_description = Vertex::GetBindingDescription();
-	auto vertex_attribute_description = Vertex::GetAttributeDescription();
-
-	auto vertex_input_info = vk::PipelineVertexInputStateCreateInfo()
-		.setVertexBindingDescriptionCount(1)
-		.setPVertexBindingDescriptions(&vertex_binding_description)
-		.setVertexAttributeDescriptionCount(vertex_attribute_description.size())
-		.setPVertexAttributeDescriptions(vertex_attribute_description.data());
-
-	auto input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo()
-		.setTopology(vk::PrimitiveTopology::eTriangleList);
-
-	vk::Viewport viewport(0.0f, 0.0f, swapchain_extent.width, swapchain_extent.height, 0.0f, 1.0f);
-	vk::Rect2D scissor({0, 0}, swapchain_extent);
-
-	auto viewport_state_info = vk::PipelineViewportStateCreateInfo()
-		.setViewportCount(1)
-		.setPViewports(&viewport)
-		.setScissorCount(1)
-		.setPScissors(&scissor);
-
-	auto rasterizer_info = vk::PipelineRasterizationStateCreateInfo()
-		.setDepthClampEnable(VK_FALSE)
-		.setRasterizerDiscardEnable(VK_FALSE)
-		.setPolygonMode(vk::PolygonMode::eFill)
-		.setLineWidth(1.0f)
-		.setCullMode(vk::CullModeFlagBits::eBack)
-		.setFrontFace(vk::FrontFace::eCounterClockwise)
-		.setDepthBiasEnable(VK_FALSE);
-
-
-	auto multisample_info = vk::PipelineMultisampleStateCreateInfo()
-		.setSampleShadingEnable(VK_FALSE)
-		.setRasterizationSamples(vk::SampleCountFlagBits::e1);
-
-
-	auto depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo()
-		.setDepthTestEnable(VK_TRUE)
-		.setDepthWriteEnable(VK_TRUE)
-		.setDepthCompareOp(vk::CompareOp::eLess)
-		.setDepthBoundsTestEnable(VK_FALSE)
-		.setStencilTestEnable(VK_FALSE);
-
-
-	auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
-		.setColorWriteMask(vk::ColorComponentFlagBits::eR
-						   | vk::ColorComponentFlagBits::eG
-						   | vk::ColorComponentFlagBits::eB
-						   | vk::ColorComponentFlagBits::eA)
-		.setBlendEnable(VK_FALSE);
-
-	auto color_blend_info = vk::PipelineColorBlendStateCreateInfo()
-		.setLogicOpEnable(VK_FALSE)
-		.setAttachmentCount(1)
-		.setPAttachments(&color_blend_attachment);
-
-
-	std::array<vk::DescriptorSetLayout, 2> descriptor_set_layouts = {
-		descriptor_set_layout, renderer->GetMaterial()->GetDescriptorSetLayout()
-	};
-
-	auto pipeline_layout_info = vk::PipelineLayoutCreateInfo()
-		.setSetLayoutCount(descriptor_set_layouts.size())
-		.setPSetLayouts(descriptor_set_layouts.data());
-
-	pipeline_layout = engine->GetVkDevice().createPipelineLayout(pipeline_layout_info);
-
-
-	auto pipeline_info = vk::GraphicsPipelineCreateInfo()
-		.setStageCount(2)
-		.setPStages(shader_stages)
-		.setPVertexInputState(&vertex_input_info)
-		.setPInputAssemblyState(&input_assembly_info)
-		.setPViewportState(&viewport_state_info)
-		.setPRasterizationState(&rasterizer_info)
-		.setPMultisampleState(&multisample_info)
-		.setPDepthStencilState(&depth_stencil_info)
-		.setPColorBlendState(&color_blend_info)
-		.setPDynamicState(nullptr)
-		.setLayout(pipeline_layout)
-		.setRenderPass(render_pass)
-		.setSubpass(0);
-
-
-	pipeline = engine->GetVkDevice().createGraphicsPipeline(vk::PipelineCache() /*nullptr*/, pipeline_info);
-
-
-	engine->GetVkDevice().destroyShaderModule(vert_shader_module);
-	engine->GetVkDevice().destroyShaderModule(frag_shader_module);
-}
-
-
 void MeshApplication::CreateVertexBuffer()
 {
 	vk::DeviceSize size = sizeof(mesh->vertices[0]) * mesh->vertices.size();
@@ -272,12 +154,6 @@ void MeshApplication::CreateIndexBuffer()
 	engine->DestroyBuffer(staging_buffer);
 }
 
-void MeshApplication::CreateMatrixUniformBuffer()
-{
-	matrix_uniform_buffer = engine->CreateBuffer(sizeof(MatrixUniformBuffer),
-												 vk::BufferUsageFlagBits::eUniformBuffer,
-												 VMA_MEMORY_USAGE_CPU_ONLY);
-}
 
 void MeshApplication::CreateFramebuffers()
 {
@@ -314,6 +190,8 @@ void MeshApplication::CreateCommandPool()
 
 void MeshApplication::CreateCommandBuffers()
 {
+	auto pipeline = renderer->GetMaterialPipeline(0);
+
 	command_buffers = engine->GetVkDevice().allocateCommandBuffers(
 			vk::CommandBufferAllocateInfo()
 					.setCommandPool(command_pool)
@@ -341,14 +219,14 @@ void MeshApplication::CreateCommandBuffers()
 				vk::SubpassContents::eInline);
 
 
-		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_set, nullptr);
+		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
+		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 0, renderer->GetDescriptorSet(), nullptr);
 		command_buffer.bindVertexBuffers(0, { vertex_buffer.buffer }, { 0 });
 		command_buffer.bindIndexBuffer(index_buffer.buffer, 0, vk::IndexType::eUint16);
 
 		for(auto primitive : mesh->primitives)
 		{
-			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 1, primitive.material_instance->GetDescriptorSet(), nullptr);
+			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 1, primitive.material_instance->GetDescriptorSet(), nullptr);
 			command_buffer.drawIndexed(primitive.indices_count, 1, primitive.indices_offset, 0, 0);
 		}
 
@@ -358,70 +236,10 @@ void MeshApplication::CreateCommandBuffers()
 	}
 }
 
-void MeshApplication::CreateDescriptorSetLayout()
-{
-	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setDescriptorCount(1)
-			.setStageFlags(vk::ShaderStageFlagBits::eVertex),
-	};
-
-	auto create_info = vk::DescriptorSetLayoutCreateInfo()
-		.setBindingCount(static_cast<uint32_t>(bindings.size()))
-		.setPBindings(bindings.data());
-
-	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
-}
-
-void MeshApplication::CreateDescriptorSet()
-{
-	vk::DescriptorSetLayout layouts[] = { descriptor_set_layout };
-
-	auto alloc_info = vk::DescriptorSetAllocateInfo()
-		.setDescriptorPool(renderer->GetDescriptorPool())
-		.setDescriptorSetCount(1)
-		.setPSetLayouts(layouts);
-
-	descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
-
-	auto buffer_info = vk::DescriptorBufferInfo()
-		.setBuffer(matrix_uniform_buffer.buffer)
-		.setOffset(0)
-		.setRange(sizeof(MatrixUniformBuffer));
-
-	auto buffer_write = vk::WriteDescriptorSet()
-		.setDstSet(descriptor_set)
-		.setDstBinding(0)
-		.setDstArrayElement(0)
-		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-		.setDescriptorCount(1)
-		.setPBufferInfo(&buffer_info);
-
-	engine->GetVkDevice().updateDescriptorSets({buffer_write}, nullptr);
-}
-
-void MeshApplication::UpdateMatrixUniformBuffer()
-{
-	static auto start_time = std::chrono::high_resolution_clock::now();
-	auto current_time = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration_cast<std::chrono::microseconds>(current_time - start_time).count() / 1e6f;
-
-	MatrixUniformBuffer matrix_ubo;
-	matrix_ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	matrix_ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	matrix_ubo.projection = glm::perspective(glm::radians(60.0f), (float)swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f);
-	matrix_ubo.projection[1][1] *= -1.0f;
-
-	void *data = engine->MapMemory(matrix_uniform_buffer.allocation);
-	memcpy(data, &matrix_ubo, sizeof(matrix_ubo));
-	engine->UnmapMemory(matrix_uniform_buffer.allocation);
-}
 
 void MeshApplication::DrawFrame(uint32_t image_index)
 {
-	UpdateMatrixUniformBuffer();
+	renderer->UpdateMatrixUniformBuffer();
 
 	vk::Semaphore wait_semaphores[] = { image_available_semaphore };
 	vk::PipelineStageFlags wait_stages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
@@ -445,7 +263,7 @@ void MeshApplication::RecreateSwapchain()
 	DemoApplication::RecreateSwapchain();
 
 	CreateRenderPasses();
-	CreatePipeline();
+	//CreatePipeline();
 	CreateDepthResources();
 	CreateFramebuffers();
 	CreateCommandBuffers();
@@ -460,9 +278,6 @@ void MeshApplication::CleanupSwapchain()
 	device.destroyImageView(depth_image_view);
 	engine->DestroyImage(depth_image);
 
-	device.destroyPipeline(pipeline);
-	device.destroyPipelineLayout(pipeline_layout);
-
 	device.destroyRenderPass(render_pass);
 
 	DemoApplication::CleanupSwapchain();
@@ -472,7 +287,6 @@ void MeshApplication::CleanupApplication()
 {
 	auto device = engine->GetVkDevice();
 
-	device.destroyDescriptorSetLayout(descriptor_set_layout);
 
 	device.destroyCommandPool(command_pool);
 
@@ -480,7 +294,6 @@ void MeshApplication::CleanupApplication()
 
 	engine->DestroyBuffer(index_buffer);
 	engine->DestroyBuffer(vertex_buffer);
-	engine->DestroyBuffer(matrix_uniform_buffer);
 }
 
 

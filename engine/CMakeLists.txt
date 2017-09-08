@@ -19,7 +19,9 @@ set(SOURCE_FILES
 		src/gltf_loader.cpp
 		include/gltf_loader.h
 		src/renderer.cpp
-		include/renderer.h)
+		include/renderer.h
+		src/shader_load.cpp
+		include/shader_load.h)
 
 add_library(engine STATIC ${SOURCE_FILES})
 

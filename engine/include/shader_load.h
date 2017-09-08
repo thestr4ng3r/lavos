@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 
+namespace engine
+{
 std::vector<char> ReadSPIRVShader(const std::string shader);
+}
 
 #endif

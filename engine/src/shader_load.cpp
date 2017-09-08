@@ -3,7 +3,9 @@
 
 #include <fstream>
 
-std::vector<char> ReadFile(const std::string &filename)
+using namespace engine;
+
+static std::vector<char> ReadFile(const std::string &filename)
 {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -20,7 +22,7 @@ std::vector<char> ReadFile(const std::string &filename)
 	return buffer;
 }
 
-std::vector<char> ReadSPIRVShader(const std::string shader)
+std::vector<char> engine::ReadSPIRVShader(const std::string shader)
 {
 #if defined(__ANDROID__)
 	return AndroidReadSPIRVShader(shader);

@@ -15,13 +15,6 @@
 
 #include "demo_application.h"
 
-struct MatrixUniformBuffer
-{
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 projection;
-};
-
 class MeshApplication: public DemoApplication
 {
     private:
@@ -31,24 +24,18 @@ class MeshApplication: public DemoApplication
 
 		vk::RenderPass render_pass;
 
-		vk::PipelineLayout pipeline_layout;
-		vk::Pipeline pipeline;
 
 		vk::CommandPool command_pool;
 		std::vector<vk::CommandBuffer> command_buffers;
 
-		vk::DescriptorSetLayout descriptor_set_layout;
-		vk::DescriptorSet descriptor_set;
-
 		engine::Renderer *renderer;
+		engine::Material *material;
 
 		engine::Mesh *mesh;
 
 		engine::Buffer vertex_buffer;
 		engine::Buffer index_buffer;
-		engine::Buffer matrix_uniform_buffer;
 
-		//engine::Material *material;
 		engine::MaterialInstance *material_instance;
 
 		void InitVulkan() override;
@@ -62,20 +49,14 @@ class MeshApplication: public DemoApplication
 
 		void CreateRenderPasses();
 
-		vk::ShaderModule CreateShaderModule(const std::vector<char> &code);
-		void CreatePipeline();
-
 		void CreateFramebuffers();
 
 		void CreateVertexBuffer();
 		void CreateIndexBuffer();
-		void CreateMatrixUniformBuffer();
 
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 
-		void CreateDescriptorSetLayout();
-		void CreateDescriptorSet();
 
 		void UpdateMatrixUniformBuffer();
 

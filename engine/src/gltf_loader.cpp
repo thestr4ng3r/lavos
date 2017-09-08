@@ -123,7 +123,7 @@ static Texture LoadSubParameterTexture(GLTF *gltf, tinygltf::Model &model, const
 
 void GLTF::LoadMaterialInstances(tinygltf::Model &model)
 {
-	Material *material = renderer->GetMaterial();
+	Material *material = renderer->GetMaterialPipeline(0).material;
 
 	for(const auto &gltf_material : model.materials)
 	{
