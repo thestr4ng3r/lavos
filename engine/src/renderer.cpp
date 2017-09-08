@@ -9,16 +9,19 @@
 
 using namespace engine;
 
-Renderer::Renderer(Engine *engine, vk::Extent2D screen_extent, vk::RenderPass render_pass)
+Renderer::Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format)
 	: engine(engine)
 {
 	this->screen_extent = screen_extent;
-	this->render_pass = render_pass;
+	this->format = format;
 
 	CreateDescriptorPool();
 	CreateDescriptorSetLayout();
 	CreateMatrixUniformBuffer();
 	CreateDescriptorSet();
+
+	CreateDepthResources();
+	CreateRenderPasses();
 }
 
 Renderer::~Renderer()
@@ -33,6 +36,9 @@ Renderer::~Renderer()
 	device.destroyDescriptorPool(descriptor_pool);
 
 	engine->DestroyBuffer(matrix_uniform_buffer);
+
+	CleanupDepthResources();
+	CleanupRenderPasses();
 }
 
 void Renderer::CreateDescriptorPool()
@@ -271,6 +277,113 @@ void Renderer::DestroyMaterialPipeline(const Renderer::MaterialPipeline &materia
 	auto &device = engine->GetVkDevice();
 	device.destroyPipeline(material_pipeline.pipeline);
 	device.destroyPipelineLayout(material_pipeline.pipeline_layout);
+}
+
+void Renderer::RecreateAllMaterialPipelines()
+{
+	for(auto &material_pipeline : material_pipelines)
+	{
+		auto material = material_pipeline.material;
+		DestroyMaterialPipeline(material_pipeline);
+		material_pipeline = CreateMaterialPipeline(material);
+	}
+}
+
+
+void Renderer::CreateDepthResources()
+{
+	depth_format = engine->FindDepthFormat();
+
+	depth_image = engine->Create2DImage(screen_extent.width, screen_extent.height, depth_format,
+										vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment,
+										VMA_MEMORY_USAGE_GPU_ONLY);
+
+	depth_image_view = engine->GetVkDevice().createImageView(vk::ImageViewCreateInfo()
+																 .setImage(depth_image.image)
+																 .setViewType(vk::ImageViewType::e2D)
+																 .setFormat(depth_format)
+																 .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1)));
+
+	engine->TransitionImageLayout(depth_image.image, depth_format, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+}
+
+void Renderer::CleanupDepthResources()
+{
+	engine->GetVkDevice().destroyImageView(depth_image_view);
+	engine->DestroyImage(depth_image);
+}
+
+void Renderer::CreateRenderPasses()
+{
+	auto color_attachment = vk::AttachmentDescription()
+		.setFormat(format)
+		.setSamples(vk::SampleCountFlagBits::e1)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eStore)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+	vk::AttachmentReference color_attachment_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
+
+	auto depth_attachment = vk::AttachmentDescription()
+		.setFormat(depth_format)
+		.setSamples(vk::SampleCountFlagBits::e1)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+	vk::AttachmentReference depth_attachment_ref(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+
+
+	auto subpass = vk::SubpassDescription()
+		.setColorAttachmentCount(1)
+		.setPColorAttachments(&color_attachment_ref)
+		.setPDepthStencilAttachment(&depth_attachment_ref);
+
+	auto subpass_dependency = vk::SubpassDependency()
+		.setSrcSubpass(VK_SUBPASS_EXTERNAL)
+		.setDstSubpass(0)
+		.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+			//.setSrcAccessMask(0)
+		.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+		.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
+
+
+	std::array<vk::AttachmentDescription, 2> attachments = { color_attachment, depth_attachment };
+
+	render_pass = engine->GetVkDevice().createRenderPass(
+		vk::RenderPassCreateInfo()
+			.setAttachmentCount(attachments.size())
+			.setPAttachments(attachments.data())
+			.setSubpassCount(1)
+			.setPSubpasses(&subpass)
+			.setDependencyCount(1)
+			.setPDependencies(&subpass_dependency));
+}
+
+void Renderer::CleanupRenderPasses()
+{
+	engine->GetVkDevice().destroyRenderPass(render_pass);
+}
+
+void Renderer::ResizeScreen(vk::Extent2D screen_extent)
+{
+	if(this->screen_extent == screen_extent)
+		return;
+
+	this->screen_extent = screen_extent;
+
+	RecreateAllMaterialPipelines();
+
+	CleanupDepthResources();
+	CreateDepthResources();
+
+	CleanupRenderPasses();
+	CreateRenderPasses();
 }
 
 

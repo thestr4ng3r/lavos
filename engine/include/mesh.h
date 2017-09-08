@@ -4,7 +4,9 @@
 
 #include <string>
 #include <vector>
+
 #include "vertex.h"
+#include "buffer.h"
 #include "material_instance.h"
 
 namespace engine
@@ -12,6 +14,9 @@ namespace engine
 
 class Mesh
 {
+	private:
+		Engine * const engine;
+
 	public:
 		struct Primitive
 		{
@@ -24,8 +29,15 @@ class Mesh
 		std::vector<uint16_t> indices;
 		std::vector<Primitive> primitives;
 
-		Mesh();
+		engine::Buffer vertex_buffer;
+		engine::Buffer index_buffer;
+
+		Mesh(Engine *engine);
 		~Mesh();
+
+		void CreateVertexBuffer();
+		void CreateIndexBuffer();
+		void CreateBuffers();
 };
 
 }

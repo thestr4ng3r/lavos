@@ -18,13 +18,6 @@
 class MeshApplication: public DemoApplication
 {
     private:
-		vk::Format depth_format;
-		engine::Image depth_image;
-		vk::ImageView depth_image_view;
-
-		vk::RenderPass render_pass;
-
-
 		vk::CommandPool command_pool;
 		std::vector<vk::CommandBuffer> command_buffers;
 
@@ -33,32 +26,20 @@ class MeshApplication: public DemoApplication
 
 		engine::Mesh *mesh;
 
-		engine::Buffer vertex_buffer;
-		engine::Buffer index_buffer;
-
 		engine::MaterialInstance *material_instance;
 
 		void InitVulkan() override;
-
-		void CreateDepthResources();
 
 		void RecreateSwapchain() override;
 		void CleanupSwapchain() override;
 
 		void CleanupApplication() override;
 
-		void CreateRenderPasses();
-
 		void CreateFramebuffers();
-
-		void CreateVertexBuffer();
-		void CreateIndexBuffer();
 
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 
-
-		void UpdateMatrixUniformBuffer();
 
 		void DrawFrame(uint32_t image_index) override;
 };

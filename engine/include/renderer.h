@@ -33,6 +33,12 @@ class Renderer
 	private:
 		Engine * const engine;
 
+		vk::Format format;
+
+		vk::Format depth_format;
+		engine::Image depth_image;
+		vk::ImageView depth_image_view;
+
 		vk::RenderPass render_pass;
 
 		vk::Extent2D screen_extent;
@@ -54,9 +60,16 @@ class Renderer
 
 		MaterialPipeline CreateMaterialPipeline(Material *material);
 		void DestroyMaterialPipeline(const MaterialPipeline &material_pipeline);
+		void RecreateAllMaterialPipelines();
+
+		void CreateDepthResources();
+		void CleanupDepthResources();
+
+		void CreateRenderPasses();
+		void CleanupRenderPasses();
 
 	public:
-		Renderer(Engine *engine, vk::Extent2D screen_extent, vk::RenderPass render_pass);
+		Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format);
 		~Renderer();
 
 		Engine *GetEngine() const 						{ return engine; }
@@ -68,8 +81,13 @@ class Renderer
 
 		void UpdateMatrixUniformBuffer();
 
+		void ResizeScreen(vk::Extent2D screen_extent);
+
 		MaterialPipeline GetMaterialPipeline(int index)		{ return material_pipelines[index]; }
-		vk::DescriptorSet GetDescriptorSet()			{ return descriptor_set; }
+		vk::DescriptorSet GetDescriptorSet()				{ return descriptor_set; }
+
+		vk::RenderPass GetRenderPass()						{ return render_pass; }
+		vk::ImageView GetDepthImageView()					{ return depth_image_view; }
 };
 
 }

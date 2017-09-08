@@ -139,7 +139,7 @@ void GLTF::LoadMeshes(tinygltf::Model &model)
 {
 	for(auto &gltf_mesh : model.meshes)
 	{
-		auto *mesh = new Mesh();
+		auto *mesh = new Mesh(renderer->GetEngine());
 		meshes.push_back(mesh);
 		auto &vertices = mesh->vertices;
 		auto &indices = mesh->indices;
@@ -214,5 +214,7 @@ void GLTF::LoadMeshes(tinygltf::Model &model)
 			primitive.indices_count = static_cast<uint32_t>(index_accessor.count);
 			mesh->primitives.push_back(primitive);
 		}
+
+		mesh->CreateBuffers();
 	}
 }
