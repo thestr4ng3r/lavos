@@ -4,6 +4,7 @@
 
 #include "engine.h"
 #include "material.h"
+#include "mesh.h"
 
 namespace engine
 {
@@ -33,11 +34,18 @@ class Renderer
 	private:
 		Engine * const engine;
 
+		vk::CommandPool command_pool;
+		std::vector<vk::CommandBuffer> command_buffers;
+
 		vk::Format format;
+		std::vector<vk::ImageView> dst_image_views;
 
 		vk::Format depth_format;
 		engine::Image depth_image;
 		vk::ImageView depth_image_view;
+
+		std::vector<vk::Framebuffer> dst_framebuffers;
+
 
 		vk::RenderPass render_pass;
 
@@ -51,6 +59,12 @@ class Renderer
 		vk::DescriptorSet descriptor_set;
 
 		engine::Buffer matrix_uniform_buffer;
+
+		void CreateCommandPool();
+		void CleanupCommandPool();
+
+		void CreateFramebuffers();
+		void CleanupFramebuffers();
 
 		void CreateDescriptorPool();
 		void CreateDescriptorSetLayout();
@@ -68,8 +82,10 @@ class Renderer
 		void CreateRenderPasses();
 		void CleanupRenderPasses();
 
+		void CleanupCommandBuffers();
+
 	public:
-		Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format);
+		Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format, std::vector<vk::ImageView> dst_image_views);
 		~Renderer();
 
 		Engine *GetEngine() const 						{ return engine; }
@@ -81,13 +97,23 @@ class Renderer
 
 		void UpdateMatrixUniformBuffer();
 
-		void ResizeScreen(vk::Extent2D screen_extent);
+		void ResizeScreen(vk::Extent2D screen_extent, std::vector<vk::ImageView> dst_image_views);
 
 		MaterialPipeline GetMaterialPipeline(int index)		{ return material_pipelines[index]; }
 		vk::DescriptorSet GetDescriptorSet()				{ return descriptor_set; }
 
 		vk::RenderPass GetRenderPass()						{ return render_pass; }
 		vk::ImageView GetDepthImageView()					{ return depth_image_view; }
+
+		void DrawFrame(std::uint32_t image_index,
+					   std::vector<vk::Semaphore> wait_semaphores,
+					   std::vector<vk::PipelineStageFlags> wait_stages,
+					   std::vector<vk::Semaphore> signal_semaphores);
+
+
+		Mesh *test_mesh; // TODO: remove
+
+		void CreateCommandBuffers(); // TODO: make private
 };
 
 }

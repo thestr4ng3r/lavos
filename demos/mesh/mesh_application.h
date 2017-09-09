@@ -18,9 +18,6 @@
 class MeshApplication: public DemoApplication
 {
     private:
-		vk::CommandPool command_pool;
-		std::vector<vk::CommandBuffer> command_buffers;
-
 		engine::Renderer *renderer;
 		engine::Material *material;
 
@@ -31,15 +28,8 @@ class MeshApplication: public DemoApplication
 		void InitVulkan() override;
 
 		void RecreateSwapchain() override;
-		void CleanupSwapchain() override;
 
 		void CleanupApplication() override;
-
-		void CreateFramebuffers();
-
-		void CreateCommandPool();
-		void CreateCommandBuffers();
-
 
 		void DrawFrame(uint32_t image_index) override;
 };

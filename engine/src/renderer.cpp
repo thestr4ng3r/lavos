@@ -9,8 +9,8 @@
 
 using namespace engine;
 
-Renderer::Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format)
-	: engine(engine)
+Renderer::Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format, std::vector<vk::ImageView> dst_image_views)
+	: engine(engine), dst_image_views(dst_image_views)
 {
 	this->screen_extent = screen_extent;
 	this->format = format;
@@ -22,6 +22,10 @@ Renderer::Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format
 
 	CreateDepthResources();
 	CreateRenderPasses();
+
+	CreateFramebuffers();
+
+	CreateCommandPool();
 }
 
 Renderer::~Renderer()
@@ -37,8 +41,55 @@ Renderer::~Renderer()
 
 	engine->DestroyBuffer(matrix_uniform_buffer);
 
+	CleanupFramebuffers();
+	CleanupCommandPool();
+
 	CleanupDepthResources();
 	CleanupRenderPasses();
+}
+
+void Renderer::CreateCommandPool()
+{
+	auto queue_family_indices = engine->GetQueueFamilyIndices();
+
+	auto command_pool_info = vk::CommandPoolCreateInfo()
+		.setQueueFamilyIndex(static_cast<uint32_t>(queue_family_indices.graphics_family));
+
+	command_pool = engine->GetVkDevice().createCommandPool(command_pool_info);
+}
+
+void Renderer::CleanupCommandPool()
+{
+	engine->GetVkDevice().destroyCommandPool(command_pool);
+}
+
+void Renderer::CreateFramebuffers()
+{
+	dst_framebuffers.resize(dst_image_views.size());
+
+	for(size_t i=0; i<dst_image_views.size(); i++)
+	{
+		std::array<vk::ImageView, 2> attachments = {
+			dst_image_views[i],
+			depth_image_view
+		};
+
+		auto framebuffer_info = vk::FramebufferCreateInfo()
+			.setRenderPass(render_pass)
+			.setAttachmentCount(attachments.size())
+			.setPAttachments(attachments.data())
+			.setWidth(screen_extent.width)
+			.setHeight(screen_extent.height)
+			.setLayers(1);
+
+		dst_framebuffers[i] = engine->GetVkDevice().createFramebuffer(framebuffer_info);
+	}
+}
+
+void Renderer::CleanupFramebuffers()
+{
+	for(vk::Framebuffer framebuffer : dst_framebuffers)
+		engine->GetVkDevice().destroyFramebuffer(framebuffer);
 }
 
 void Renderer::CreateDescriptorPool()
@@ -56,7 +107,6 @@ void Renderer::CreateDescriptorPool()
 	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
 }
 
-
 void Renderer::CreateDescriptorSetLayout()
 {
 	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
@@ -73,6 +123,7 @@ void Renderer::CreateDescriptorSetLayout()
 
 	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
 }
+
 
 void Renderer::CreateMatrixUniformBuffer()
 {
@@ -97,7 +148,6 @@ void Renderer::UpdateMatrixUniformBuffer()
 	memcpy(data, &matrix_ubo, sizeof(matrix_ubo));
 	engine->UnmapMemory(matrix_uniform_buffer.allocation);
 }
-
 
 void Renderer::CreateDescriptorSet()
 {
@@ -126,6 +176,7 @@ void Renderer::CreateDescriptorSet()
 	engine->GetVkDevice().updateDescriptorSets({buffer_write}, nullptr);
 }
 
+
 void Renderer::AddMaterial(Material *material)
 {
 	for(auto pipeline : material_pipelines)
@@ -149,7 +200,6 @@ void Renderer::RemoveMaterial(Material *material)
 		}
 	}
 }
-
 
 vk::ShaderModule CreateShaderModule(vk::Device device, const std::vector<char> &code)
 {
@@ -272,6 +322,7 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 	return pipeline;
 }
 
+
 void Renderer::DestroyMaterialPipeline(const Renderer::MaterialPipeline &material_pipeline)
 {
 	auto &device = engine->GetVkDevice();
@@ -288,7 +339,6 @@ void Renderer::RecreateAllMaterialPipelines()
 		material_pipeline = CreateMaterialPipeline(material);
 	}
 }
-
 
 void Renderer::CreateDepthResources()
 {
@@ -370,20 +420,91 @@ void Renderer::CleanupRenderPasses()
 	engine->GetVkDevice().destroyRenderPass(render_pass);
 }
 
-void Renderer::ResizeScreen(vk::Extent2D screen_extent)
-{
-	if(this->screen_extent == screen_extent)
-		return;
 
+void Renderer::ResizeScreen(vk::Extent2D screen_extent, std::vector<vk::ImageView> dst_image_views)
+{
 	this->screen_extent = screen_extent;
+	this->dst_image_views = dst_image_views;
+
+	//CleanupRenderPasses();
+	//CreateRenderPasses();
 
 	RecreateAllMaterialPipelines();
 
 	CleanupDepthResources();
 	CreateDepthResources();
 
-	CleanupRenderPasses();
-	CreateRenderPasses();
+	CleanupFramebuffers();
+	CreateFramebuffers();
+
+	CleanupCommandBuffers();
+	CreateCommandBuffers();
 }
 
+void Renderer::CreateCommandBuffers()
+{
+	auto pipeline = material_pipelines[0];
 
+	command_buffers = engine->GetVkDevice().allocateCommandBuffers(
+			vk::CommandBufferAllocateInfo()
+					.setCommandPool(command_pool)
+					.setLevel(vk::CommandBufferLevel::ePrimary)
+					.setCommandBufferCount(static_cast<uint32_t>(dst_image_views.size())));
+
+	for(size_t i=0; i<command_buffers.size(); i++)
+	{
+		const auto &command_buffer = command_buffers[i];
+
+		command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
+
+		std::array<vk::ClearValue, 2> clear_values = {
+			vk::ClearColorValue(std::array<float, 4>{{0.0f, 0.0f, 0.0f, 1.0f }}),
+			vk::ClearDepthStencilValue(1.0f, 0)
+		};
+
+		command_buffer.beginRenderPass(
+				vk::RenderPassBeginInfo()
+					.setRenderPass(render_pass)
+					.setFramebuffer(dst_framebuffers[i])
+					.setRenderArea(vk::Rect2D({0, 0 }, screen_extent))
+					.setClearValueCount(clear_values.size())
+					.setPClearValues(clear_values.data()),
+				vk::SubpassContents::eInline);
+
+
+		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
+		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 0, descriptor_set, nullptr);
+		command_buffer.bindVertexBuffers(0, { test_mesh->vertex_buffer.buffer }, { 0 });
+		command_buffer.bindIndexBuffer(test_mesh->index_buffer.buffer, 0, vk::IndexType::eUint16);
+
+		for(auto primitive : test_mesh->primitives)
+		{
+			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 1, primitive.material_instance->GetDescriptorSet(), nullptr);
+			command_buffer.drawIndexed(primitive.indices_count, 1, primitive.indices_offset, 0, 0);
+		}
+
+		command_buffer.endRenderPass();
+
+		command_buffer.end();
+	}
+}
+
+void Renderer::CleanupCommandBuffers()
+{
+	engine->GetVkDevice().freeCommandBuffers(command_pool, command_buffers);
+}
+
+void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> wait_semaphores,
+						 std::vector<vk::PipelineStageFlags> wait_stages, std::vector<vk::Semaphore> signal_semaphores)
+{
+	engine->GetGraphicsQueue().submit(
+		vk::SubmitInfo()
+			.setWaitSemaphoreCount(static_cast<uint32_t>(wait_semaphores.size()))
+			.setPWaitSemaphores(wait_semaphores.data())
+			.setPWaitDstStageMask(wait_stages.data())
+			.setCommandBufferCount(1)
+			.setPCommandBuffers(&command_buffers[image_index])
+			.setSignalSemaphoreCount(static_cast<uint32_t>(signal_semaphores.size()))
+			.setPSignalSemaphores(signal_semaphores.data()),
+		nullptr);
+}

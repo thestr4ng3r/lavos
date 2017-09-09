@@ -312,9 +312,6 @@ void DemoApplication::CleanupSwapchain()
 {
 	auto device = engine->GetVkDevice();
 
-	for(vk::Framebuffer framebuffer : swapchain_framebuffers)
-		device.destroyFramebuffer(framebuffer);
-
 	for(const auto &image_view : swapchain_image_views)
 		device.destroyImageView(image_view);
 
