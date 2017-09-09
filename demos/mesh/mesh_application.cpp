@@ -26,7 +26,7 @@ void MeshApplication::InitVulkan()
 	renderer = new engine::Renderer(engine, swapchain_extent, swapchain_image_format, swapchain_image_views);
 	renderer->AddMaterial(material);
 
-	auto gltf = engine::AssetContainer::LoadFromGLTF(renderer,"data/gltftest.gltf");
+	auto gltf = engine::AssetContainer::LoadFromGLTF(renderer, "data/gltftest.gltf");
 	mesh = gltf->meshes.front();
 	gltf->meshes.clear();
 
@@ -79,5 +79,4 @@ int main()
 
 	return EXIT_SUCCESS;
 }
-
 #endif

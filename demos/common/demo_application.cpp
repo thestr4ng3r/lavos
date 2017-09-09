@@ -29,7 +29,7 @@ void DemoApplication::InitWindow()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    window = glfwCreateWindow(screen_width, screen_height, "Triangle", nullptr, nullptr);
+    window = glfwCreateWindow(screen_width, screen_height, "Vulkan", nullptr, nullptr);
 
 	glfwSetWindowUserPointer(window, this);
 	glfwSetWindowSizeCallback(window, DemoApplication::OnWindowResized);
