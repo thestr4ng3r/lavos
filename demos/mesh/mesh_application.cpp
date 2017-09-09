@@ -15,7 +15,7 @@
 
 #include <vulkan/vulkan.h>
 #include <engine.h>
-#include <gltf_loader.h>
+#include <asset_container.h>
 
 
 void MeshApplication::InitVulkan()
@@ -26,14 +26,14 @@ void MeshApplication::InitVulkan()
 	renderer = new engine::Renderer(engine, swapchain_extent, swapchain_image_format, swapchain_image_views);
 	renderer->AddMaterial(material);
 
-	auto gltf = new engine::GLTF(renderer, "data/gltftest.gltf");
-	mesh = gltf->GetMeshes().front();
-	gltf->GetMeshes().clear();
+	auto gltf = engine::AssetContainer::LoadFromGLTF(renderer,"data/gltftest.gltf");
+	mesh = gltf->meshes.front();
+	gltf->meshes.clear();
 
 	renderer->test_mesh = mesh;
 
-	material_instance = gltf->GetMaterialInstances().front();
-	gltf->GetMaterialInstances().clear();
+	material_instance = gltf->material_instances.front();
+	gltf->material_instances.clear();
 
 	renderer->CreateCommandBuffers();
 }

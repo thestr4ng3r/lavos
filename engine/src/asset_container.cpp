@@ -1,63 +1,49 @@
 
 #include "material.h"
-#include "gltf_loader.h"
+#include "asset_container.h"
 
 #include <tiny_gltf.h>
 #include <iostream>
 
 using namespace engine;
 
-GLTF::GLTF(Renderer *renderer, std::string filename)
+AssetContainer::AssetContainer(Renderer *renderer)
 	: renderer(renderer)
 {
-	auto slash_pos = filename.find_last_of('/');
-	root_path = filename.substr(0, slash_pos);
-
-	tinygltf::TinyGLTF loader;
-	tinygltf::Model model;
-	std::string error;
-
-	bool success = loader.LoadASCIIFromFile(&model, &error, filename);
-	//bool success = loader.LoadBinaryFromFile(&model, &error, filename);
-
-	if(!error.empty())
-		throw std::runtime_error(error);
-
-	if(!success)
-		throw std::runtime_error("Failed to load glTF file.");
-
-	LoadGLTF(model);
 }
 
-GLTF::~GLTF()
+AssetContainer::~AssetContainer()
 {
 	for(auto mesh : meshes)
 		delete mesh;
-}
 
-void GLTF::LoadGLTF(tinygltf::Model &model)
-{
-	LoadMaterialInstances(model);
-	LoadMeshes(model);
+	for(auto material_instance : material_instances)
+		delete material_instance;
 }
 
 
-static Image LoadImage(GLTF *gltf, tinygltf::Model &model, int index)
+// ---------------------------------------
+// glTF
+// ---------------------------------------
+
+
+
+static Image LoadImage(AssetContainer &container, tinygltf::Model &model, int index)
 {
 	auto gltf_image = model.images[index];
-	return Image::LoadFromPixelDataRGBA8UI(gltf->GetRenderer()->GetEngine(),
+	return Image::LoadFromPixelDataRGBA8UI(container.renderer->GetEngine(),
 										   static_cast<uint32_t>(gltf_image.width),
 										   static_cast<uint32_t>(gltf_image.height),
 										   gltf_image.image.data());
 }
 
-static Texture LoadTexture(GLTF *gltf, tinygltf::Model &model, int index)
+static Texture LoadTexture(AssetContainer &container, tinygltf::Model &model, int index)
 {
 	auto gltf_texture = model.textures[index];
 
-	auto device = gltf->GetRenderer()->GetEngine()->GetVkDevice();
+	auto device = container.renderer->GetEngine()->GetVkDevice();
 
-	auto image = LoadImage(gltf, model, gltf_texture.source);
+	auto image = LoadImage(container, model, gltf_texture.source);
 
 	if(image == nullptr)
 		return nullptr;
@@ -112,35 +98,35 @@ static bool GetSubParameter(const tinygltf::ParameterMap &params, std::string na
 	return true;
 }
 
-static Texture LoadSubParameterTexture(GLTF *gltf, tinygltf::Model &model, const tinygltf::ParameterMap &params, std::string name, std::string subname)
+static Texture LoadSubParameterTexture(AssetContainer &container, tinygltf::Model &model, const tinygltf::ParameterMap &params, std::string name, std::string subname)
 {
 	int index;
 	if(!GetSubParameter(params, name, subname, index))
 		return nullptr;
 
-	return LoadTexture(gltf, model, index);
+	return LoadTexture(container, model, index);
 }
 
-void GLTF::LoadMaterialInstances(tinygltf::Model &model)
+static void LoadMaterialInstances(AssetContainer &container, tinygltf::Model &model)
 {
-	Material *material = renderer->GetMaterialPipeline(0).material;
+	Material *material = container.renderer->GetMaterialPipeline(0).material;
 
 	for(const auto &gltf_material : model.materials)
 	{
-		auto material_instance = new MaterialInstance(material, renderer->GetDescriptorPool());
-		material_instance->SetTexture(LoadSubParameterTexture(this, model, gltf_material.values, "baseColorTexture", "index"));
+		auto material_instance = new MaterialInstance(material, container.renderer->GetDescriptorPool());
+		material_instance->SetTexture(LoadSubParameterTexture(container, model, gltf_material.values, "baseColorTexture", "index"));
 		material_instance->WriteDescriptorSet();
-		material_instances.push_back(material_instance);
+		container.material_instances.push_back(material_instance);
 	}
 }
 
 
-void GLTF::LoadMeshes(tinygltf::Model &model)
+static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 {
 	for(auto &gltf_mesh : model.meshes)
 	{
-		auto *mesh = new Mesh(renderer->GetEngine());
-		meshes.push_back(mesh);
+		auto *mesh = new Mesh(container.renderer->GetEngine());
+		container.meshes.push_back(mesh);
 		auto &vertices = mesh->vertices;
 		auto &indices = mesh->indices;
 
@@ -209,7 +195,7 @@ void GLTF::LoadMeshes(tinygltf::Model &model)
 
 
 			Mesh::Primitive primitive;
-			primitive.material_instance = material_instances[gltf_primitive.material]; // TODO: gltf_primitive could have no material
+			primitive.material_instance = container.material_instances[gltf_primitive.material]; // TODO: gltf_primitive could have no material
 			primitive.indices_offset = static_cast<uint32_t>(indices_base);
 			primitive.indices_count = static_cast<uint32_t>(index_accessor.count);
 			mesh->primitives.push_back(primitive);
@@ -217,4 +203,42 @@ void GLTF::LoadMeshes(tinygltf::Model &model)
 
 		mesh->CreateBuffers();
 	}
+}
+
+
+static AssetContainer *LoadGLTF(Renderer *renderer, tinygltf::Model &model)
+{
+	AssetContainer *container = new AssetContainer(renderer);
+
+	try
+	{
+		LoadMaterialInstances(*container, model);
+		LoadMeshes(*container, model);
+	}
+	catch(std::exception e)
+	{
+		delete container;
+		throw e;
+	}
+
+	return container;
+}
+
+
+AssetContainer *AssetContainer::LoadFromGLTF(Renderer *renderer, std::string filename)
+{
+	tinygltf::TinyGLTF loader;
+	tinygltf::Model model;
+	std::string error;
+
+	bool success = loader.LoadASCIIFromFile(&model, &error, filename);
+	//bool success = loader.LoadBinaryFromFile(&model, &error, filename);
+
+	if(!error.empty())
+		throw std::runtime_error(error);
+
+	if(!success)
+		throw std::runtime_error("Failed to load glTF file.");
+
+	return LoadGLTF(renderer, model);
 }

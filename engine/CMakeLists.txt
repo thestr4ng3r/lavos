@@ -16,8 +16,8 @@ set(SOURCE_FILES
 		include/image.h
 		include/texture.h
 		include/glm_config.h
-		src/gltf_loader.cpp
-		include/gltf_loader.h
+		src/asset_container.cpp
+		include/asset_container.h
 		src/renderer.cpp
 		include/renderer.h
 		src/shader_load.cpp
