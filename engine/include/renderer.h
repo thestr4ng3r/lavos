@@ -5,6 +5,7 @@
 #include "engine.h"
 #include "material.h"
 #include "mesh.h"
+#include "scene.h"
 
 namespace engine
 {
@@ -33,6 +34,8 @@ class Renderer
 
 	private:
 		Engine * const engine;
+
+		Scene *scene;
 
 		vk::CommandPool command_pool;
 		std::vector<vk::CommandBuffer> command_buffers;
@@ -88,9 +91,11 @@ class Renderer
 		Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format, std::vector<vk::ImageView> dst_image_views);
 		~Renderer();
 
-		Engine *GetEngine() const 						{ return engine; }
+		Engine *GetEngine() const 							{ return engine; }
 
-		vk::DescriptorPool GetDescriptorPool() const 	{ return descriptor_pool; }
+		vk::DescriptorPool GetDescriptorPool() const 		{ return descriptor_pool; }
+
+		void SetScene(Scene *scene)							{ this->scene = scene; }
 
 		void AddMaterial(Material *material);
 		void RemoveMaterial(Material *material);
@@ -110,8 +115,6 @@ class Renderer
 					   std::vector<vk::PipelineStageFlags> wait_stages,
 					   std::vector<vk::Semaphore> signal_semaphores);
 
-
-		Mesh *test_mesh; // TODO: remove
 
 		void CreateCommandBuffers(); // TODO: make private
 };

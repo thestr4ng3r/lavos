@@ -26,14 +26,14 @@ void MeshApplication::InitVulkan()
 	renderer = new engine::Renderer(engine, swapchain_extent, swapchain_image_format, swapchain_image_views);
 	renderer->AddMaterial(material);
 
-	auto gltf = engine::AssetContainer::LoadFromGLTF(renderer, "data/gltftest.gltf");
-	mesh = gltf->meshes.front();
-	gltf->meshes.clear();
+	asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
+	mesh = asset_container->meshes.front();
 
-	renderer->test_mesh = mesh;
+	scene = new engine::Scene();
+	scene->test_mesh = mesh;
+	renderer->SetScene(scene);
 
-	material_instance = gltf->material_instances.front();
-	gltf->material_instances.clear();
+	material_instance = asset_container->material_instances.front();
 
 	renderer->CreateCommandBuffers();
 }
@@ -56,9 +56,8 @@ void MeshApplication::RecreateSwapchain()
 
 void MeshApplication::CleanupApplication()
 {
+	delete asset_container;
 	delete renderer;
-	delete material_instance;
-	delete mesh;
 }
 
 

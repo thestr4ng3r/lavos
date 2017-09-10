@@ -21,7 +21,9 @@ set(SOURCE_FILES
 		src/renderer.cpp
 		include/renderer.h
 		src/shader_load.cpp
-		include/shader_load.h)
+		include/shader_load.h
+		src/scene.cpp
+		include/scene.h)
 
 add_library(engine STATIC ${SOURCE_FILES})
 

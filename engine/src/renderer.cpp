@@ -95,8 +95,7 @@ void Renderer::CleanupFramebuffers()
 void Renderer::CreateDescriptorPool()
 {
 	std::vector<vk::DescriptorPoolSize> pool_sizes = {
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 2),
+		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1)
 	};
 
 	auto create_info = vk::DescriptorPoolCreateInfo()
@@ -474,10 +473,10 @@ void Renderer::CreateCommandBuffers()
 
 		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
 		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 0, descriptor_set, nullptr);
-		command_buffer.bindVertexBuffers(0, { test_mesh->vertex_buffer.buffer }, { 0 });
-		command_buffer.bindIndexBuffer(test_mesh->index_buffer.buffer, 0, vk::IndexType::eUint16);
+		command_buffer.bindVertexBuffers(0, { scene->test_mesh->vertex_buffer.buffer }, { 0 });
+		command_buffer.bindIndexBuffer(scene->test_mesh->index_buffer.buffer, 0, vk::IndexType::eUint16);
 
-		for(auto primitive : test_mesh->primitives)
+		for(auto primitive : scene->test_mesh->primitives)
 		{
 			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 1, primitive.material_instance->GetDescriptorSet(), nullptr);
 			command_buffer.drawIndexed(primitive.indices_count, 1, primitive.indices_offset, 0, 0);

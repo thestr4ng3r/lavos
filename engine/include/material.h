@@ -26,6 +26,8 @@ class Material
 		Engine *GetEngine() const							 		{ return engine; }
 
 		vk::DescriptorSetLayout GetDescriptorSetLayout() const		{ return descriptor_set_layout; }
+
+		std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes() const;
 };
 
 }

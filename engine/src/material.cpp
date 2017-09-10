@@ -37,3 +37,10 @@ void Material::CreateDescriptorSetLayout()
 void Material::CreateSamplers()
 {
 }
+
+std::vector<vk::DescriptorPoolSize> Material::GetDescriptorPoolSizes() const
+{
+	return {
+		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1)
+	};
+}

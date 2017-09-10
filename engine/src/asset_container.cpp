@@ -7,8 +7,8 @@
 
 using namespace engine;
 
-AssetContainer::AssetContainer(Renderer *renderer)
-	: renderer(renderer)
+AssetContainer::AssetContainer(Engine *engine)
+	: engine(engine)
 {
 }
 
@@ -19,6 +19,9 @@ AssetContainer::~AssetContainer()
 
 	for(auto material_instance : material_instances)
 		delete material_instance;
+
+	if(descriptor_pool)
+		engine->GetVkDevice().destroyDescriptorPool(descriptor_pool);
 }
 
 
@@ -31,7 +34,7 @@ AssetContainer::~AssetContainer()
 static Image LoadImage(AssetContainer &container, tinygltf::Model &model, int index)
 {
 	auto gltf_image = model.images[index];
-	return Image::LoadFromPixelDataRGBA8UI(container.renderer->GetEngine(),
+	return Image::LoadFromPixelDataRGBA8UI(container.engine,
 										   static_cast<uint32_t>(gltf_image.width),
 										   static_cast<uint32_t>(gltf_image.height),
 										   gltf_image.image.data());
@@ -41,7 +44,7 @@ static Texture LoadTexture(AssetContainer &container, tinygltf::Model &model, in
 {
 	auto gltf_texture = model.textures[index];
 
-	auto device = container.renderer->GetEngine()->GetVkDevice();
+	auto device = container.engine->GetVkDevice();
 
 	auto image = LoadImage(container, model, gltf_texture.source);
 
@@ -107,13 +110,11 @@ static Texture LoadSubParameterTexture(AssetContainer &container, tinygltf::Mode
 	return LoadTexture(container, model, index);
 }
 
-static void LoadMaterialInstances(AssetContainer &container, tinygltf::Model &model)
+static void LoadMaterialInstances(AssetContainer &container, Material *material, tinygltf::Model &model)
 {
-	Material *material = container.renderer->GetMaterialPipeline(0).material;
-
 	for(const auto &gltf_material : model.materials)
 	{
-		auto material_instance = new MaterialInstance(material, container.renderer->GetDescriptorPool());
+		auto material_instance = new MaterialInstance(material, container.descriptor_pool);
 		material_instance->SetTexture(LoadSubParameterTexture(container, model, gltf_material.values, "baseColorTexture", "index"));
 		material_instance->WriteDescriptorSet();
 		container.material_instances.push_back(material_instance);
@@ -125,7 +126,7 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 {
 	for(auto &gltf_mesh : model.meshes)
 	{
-		auto *mesh = new Mesh(container.renderer->GetEngine());
+		auto *mesh = new Mesh(container.engine);
 		container.meshes.push_back(mesh);
 		auto &vertices = mesh->vertices;
 		auto &indices = mesh->indices;
@@ -205,14 +206,30 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 	}
 }
 
-
-static AssetContainer *LoadGLTF(Renderer *renderer, tinygltf::Model &model)
+static vk::DescriptorPool CreateDescriptorPoolForGLTF(Engine *engine, Material *material, tinygltf::Model &model)
 {
-	AssetContainer *container = new AssetContainer(renderer);
+	auto material_instances_count = model.materials.size();
+	auto sizes = material->GetDescriptorPoolSizes();
+
+	for(auto &size : sizes)
+		size.descriptorCount *= material_instances_count;
+
+	auto create_info = vk::DescriptorPoolCreateInfo()
+		.setPoolSizeCount(static_cast<uint32_t>(sizes.size()))
+		.setPPoolSizes(sizes.data())
+		.setMaxSets(static_cast<uint32_t>(material_instances_count));
+
+	return engine->GetVkDevice().createDescriptorPool(create_info);
+}
+
+static AssetContainer *LoadGLTF(Engine *engine, Material *material, tinygltf::Model &model)
+{
+	AssetContainer *container = new AssetContainer(engine);
+	container->descriptor_pool = CreateDescriptorPoolForGLTF(engine, material, model);
 
 	try
 	{
-		LoadMaterialInstances(*container, model);
+		LoadMaterialInstances(*container, material, model);
 		LoadMeshes(*container, model);
 	}
 	catch(std::exception e)
@@ -225,7 +242,7 @@ static AssetContainer *LoadGLTF(Renderer *renderer, tinygltf::Model &model)
 }
 
 
-AssetContainer *AssetContainer::LoadFromGLTF(Renderer *renderer, std::string filename)
+AssetContainer *AssetContainer::LoadFromGLTF(Engine *engine, Material *material, std::string filename)
 {
 	tinygltf::TinyGLTF loader;
 	tinygltf::Model model;
@@ -240,5 +257,5 @@ AssetContainer *AssetContainer::LoadFromGLTF(Renderer *renderer, std::string fil
 	if(!success)
 		throw std::runtime_error("Failed to load glTF file.");
 
-	return LoadGLTF(renderer, model);
+	return LoadGLTF(engine, material, model);
 }

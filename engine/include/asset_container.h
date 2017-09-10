@@ -15,15 +15,16 @@ namespace engine
 class AssetContainer
 {
 	public:
-		Renderer * const renderer;
+		Engine * const engine;
+		vk::DescriptorPool descriptor_pool;
 
 		std::vector<MaterialInstance *> material_instances;
 		std::vector<Mesh *> meshes;
 
-		AssetContainer(Renderer *renderer);
+		AssetContainer(Engine *engine);
 		~AssetContainer();
 
-		static AssetContainer *LoadFromGLTF(Renderer *renderer, std::string filename);
+		static AssetContainer *LoadFromGLTF(Engine *engine, Material *material, std::string filename);
 };
 
 }

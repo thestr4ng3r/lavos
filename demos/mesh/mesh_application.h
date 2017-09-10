@@ -12,6 +12,7 @@
 #include <renderer.h>
 
 #include <glm/glm.hpp>
+#include <asset_container.h>
 
 #include "demo_application.h"
 
@@ -20,6 +21,10 @@ class MeshApplication: public DemoApplication
     private:
 		engine::Renderer *renderer;
 		engine::Material *material;
+
+		engine::AssetContainer *asset_container;
+
+		engine::Scene *scene;
 
 		engine::Mesh *mesh;
 
