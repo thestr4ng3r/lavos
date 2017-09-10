@@ -2,6 +2,7 @@
 #include <chrono>
 #include "glm_config.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include <mesh_component.h>
 
 #include "renderer.h"
 #include "shader_load.h"
@@ -470,13 +471,14 @@ void Renderer::CreateCommandBuffers()
 					.setPClearValues(clear_values.data()),
 				vk::SubpassContents::eInline);
 
+		engine::Mesh *mesh = scene->GetRootNode()->GetComponent<MeshComponent>()->GetMesh();
 
 		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
 		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 0, descriptor_set, nullptr);
-		command_buffer.bindVertexBuffers(0, { scene->test_mesh->vertex_buffer.buffer }, { 0 });
-		command_buffer.bindIndexBuffer(scene->test_mesh->index_buffer.buffer, 0, vk::IndexType::eUint16);
+		command_buffer.bindVertexBuffers(0, { mesh->vertex_buffer.buffer }, { 0 });
+		command_buffer.bindIndexBuffer(mesh->index_buffer.buffer, 0, vk::IndexType::eUint16);
 
-		for(auto primitive : scene->test_mesh->primitives)
+		for(auto primitive : mesh->primitives)
 		{
 			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 1, primitive.material_instance->GetDescriptorSet(), nullptr);
 			command_buffer.drawIndexed(primitive.indices_count, 1, primitive.indices_offset, 0, 0);

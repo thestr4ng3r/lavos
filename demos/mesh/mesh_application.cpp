@@ -16,6 +16,7 @@
 #include <vulkan/vulkan.h>
 #include <engine.h>
 #include <asset_container.h>
+#include <mesh_component.h>
 
 
 void MeshApplication::InitVulkan()
@@ -30,7 +31,7 @@ void MeshApplication::InitVulkan()
 	mesh = asset_container->meshes.front();
 
 	scene = new engine::Scene();
-	scene->test_mesh = mesh;
+	scene->GetRootNode()->AddComponent(new engine::MeshComponent(mesh));
 	renderer->SetScene(scene);
 
 	material_instance = asset_container->material_instances.front();

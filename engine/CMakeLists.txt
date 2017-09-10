@@ -23,7 +23,12 @@ set(SOURCE_FILES
 		src/shader_load.cpp
 		include/shader_load.h
 		src/scene.cpp
-		include/scene.h)
+		include/scene.h
+		src/node.cpp
+		include/node.h
+		include/component.h
+		src/mesh_component.cpp
+		include/mesh_component.h)
 
 add_library(engine STATIC ${SOURCE_FILES})
 

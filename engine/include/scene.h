@@ -2,16 +2,23 @@
 #ifndef VULKAN_SCENE_H
 #define VULKAN_SCENE_H
 
-#include "mesh.h"
+#include "node.h"
 
 namespace engine
 {
 
 class Scene
 {
+	private:
+		Node root_node;
+
 	public:
-		Mesh *test_mesh;
+		Scene();
+		~Scene();
+
+		Node *GetRootNode()		{ return &root_node; }
 };
+
 
 }
 
