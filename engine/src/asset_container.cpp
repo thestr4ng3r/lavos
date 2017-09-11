@@ -1,6 +1,8 @@
 
+#include "engine.h"
 #include "material.h"
 #include "asset_container.h"
+#include "mesh_component.h"
 
 #include <tiny_gltf.h>
 #include <iostream>
@@ -25,10 +27,10 @@ AssetContainer::~AssetContainer()
 }
 
 
+
 // ---------------------------------------
 // glTF
 // ---------------------------------------
-
 
 
 static Image LoadImage(AssetContainer &container, tinygltf::Model &model, int index)
@@ -206,6 +208,73 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 	}
 }
 
+
+static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *parent_node, int gltf_node_index)
+{
+	auto &gltf_node = model.nodes[gltf_node_index];
+	auto current_node = new Node();
+	parent_node->AddChild(current_node);
+
+	for(int gltf_child_node_index : gltf_node.children)
+	{
+		LoadNode(container, model, current_node, gltf_child_node_index);
+	}
+
+
+	auto transform_component = new TransformComponent();
+
+	if(gltf_node.translation.size() >= 3)
+	{
+		transform_component->translation = glm::vec3(gltf_node.translation[0],
+													 gltf_node.translation[1],
+													 gltf_node.translation[2]);
+	}
+
+	if(gltf_node.rotation.size() >= 4)
+	{
+		transform_component->rotation = glm::quat(glm::vec4(gltf_node.rotation[0],
+															gltf_node.rotation[1],
+															gltf_node.rotation[2],
+															gltf_node.rotation[3]));
+	}
+
+	if(gltf_node.scale.size() >= 3)
+	{
+		transform_component->scale = glm::vec3(gltf_node.scale[0],
+											   gltf_node.scale[1],
+											   gltf_node.scale[2]);
+	}
+
+	current_node->AddComponent(transform_component);
+
+
+	if(gltf_node.mesh >= 0)
+	{
+		auto mesh = container.meshes[gltf_node.mesh];
+		current_node->AddComponent(new MeshComponent(mesh));
+	}
+
+
+	// TODO: lights, camera(, revolution), ...
+}
+
+static void LoadScenes(AssetContainer &container, tinygltf::Model &model)
+{
+	container.scenes.resize(model.scenes.size());
+
+	for(int i=0; i<model.scenes.size(); i++)
+	{
+		auto &gltf_scene = model.scenes[i];
+		auto scene = new Scene();
+
+		for(int gltf_node_index : gltf_scene.nodes)
+			LoadNode(container, model, scene->GetRootNode(), gltf_node_index);
+
+		container.scenes[i] = scene;
+	}
+}
+
+
 static vk::DescriptorPool CreateDescriptorPoolForGLTF(Engine *engine, Material *material, tinygltf::Model &model)
 {
 	auto material_instances_count = model.materials.size();
@@ -222,6 +291,7 @@ static vk::DescriptorPool CreateDescriptorPoolForGLTF(Engine *engine, Material *
 	return engine->GetVkDevice().createDescriptorPool(create_info);
 }
 
+
 static AssetContainer *LoadGLTF(Engine *engine, Material *material, tinygltf::Model &model)
 {
 	AssetContainer *container = new AssetContainer(engine);
@@ -231,6 +301,7 @@ static AssetContainer *LoadGLTF(Engine *engine, Material *material, tinygltf::Mo
 	{
 		LoadMaterialInstances(*container, material, model);
 		LoadMeshes(*container, model);
+		LoadScenes(*container, model);
 	}
 	catch(std::exception e)
 	{

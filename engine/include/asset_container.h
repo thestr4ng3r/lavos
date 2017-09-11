@@ -7,7 +7,7 @@
 
 #include "material_instance.h"
 #include "mesh.h"
-#include "renderer.h"
+#include "scene.h"
 
 namespace engine
 {
@@ -20,6 +20,7 @@ class AssetContainer
 
 		std::vector<MaterialInstance *> material_instances;
 		std::vector<Mesh *> meshes;
+		std::vector<Scene *> scenes;
 
 		AssetContainer(Engine *engine);
 		~AssetContainer();

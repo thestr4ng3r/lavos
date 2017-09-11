@@ -28,21 +28,14 @@ void MeshApplication::InitVulkan()
 	renderer->AddMaterial(material);
 
 	asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
-	mesh = asset_container->meshes.front();
 
-	scene = new engine::Scene();
-	scene->GetRootNode()->AddComponent(new engine::MeshComponent(mesh));
-	renderer->SetScene(scene);
+	renderer->SetScene(asset_container->scenes[0]);
 
 	material_instance = asset_container->material_instances.front();
-
-	renderer->CreateCommandBuffers();
 }
 
 void MeshApplication::DrawFrame(uint32_t image_index)
 {
-	renderer->UpdateMatrixUniformBuffer();
-
 	renderer->DrawFrame(image_index,
 						{ image_available_semaphore },
 						{ vk::PipelineStageFlagBits::eColorAttachmentOutput },

@@ -28,7 +28,8 @@ set(SOURCE_FILES
 		include/node.h
 		include/component.h
 		src/mesh_component.cpp
-		include/mesh_component.h)
+		include/mesh_component.h
+		include/transform_component.h)
 
 add_library(engine STATIC ${SOURCE_FILES})
 

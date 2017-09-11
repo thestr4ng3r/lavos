@@ -1,11 +1,12 @@
 
 #include <stdexcept>
+#include <functional>
+#include <iostream>
 #include "node.h"
 
 using namespace engine;
 
 Node::Node()
-	: is_root(false), parent(nullptr)
 {
 }
 
@@ -20,6 +21,9 @@ Node::~Node()
 
 void Node::AddComponent(engine::Component *component)
 {
+	if(component->GetNode() != nullptr)
+		throw std::runtime_error("component is already added to a node.");
+
 	for(const auto &c: components)
 	{
 		if(c == component)
@@ -27,15 +31,25 @@ void Node::AddComponent(engine::Component *component)
 	}
 
 	components.push_back(component);
+
+	component->node = this;
+
+	auto transform_component = dynamic_cast<TransformComponent *>(component);
+	if(transform_component != nullptr)
+		this->transform_component = transform_component;
 }
 
 void Node::RemoveComponent(Component *component)
 {
+	if(transform_component == component)
+		transform_component = nullptr;
+
 	for(auto it=components.begin(); it!=components.end(); it++)
 	{
 		if(*it == component)
 		{
 			components.erase(it);
+			component->node = nullptr;
 			return;
 		}
 	}
@@ -64,4 +78,20 @@ void Node::RemoveChild(Node *node)
 			return;
 		}
 	}
+}
+
+void Node::TraversePreOrder(std::function<void(Node *)> func)
+{
+	func(this);
+
+	for(auto &child : children)
+		child->TraversePreOrder(func);
+}
+
+void Node::TraversePostOrder(std::function<void(Node *)> func)
+{
+	for(auto &child : children)
+		child->TraversePreOrder(func);
+
+	func(this);
 }

@@ -1,8 +1,8 @@
 
 #include <chrono>
 #include "glm_config.h"
-#include <glm/gtc/matrix_transform.hpp>
 #include <mesh_component.h>
+#include <iostream>
 
 #include "renderer.h"
 #include "shader_load.h"
@@ -26,7 +26,8 @@ Renderer::Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format
 
 	CreateFramebuffers();
 
-	CreateCommandPool();
+	CreateRenderCommandPool();
+	CreateRenderCommandBuffer();
 }
 
 Renderer::~Renderer()
@@ -43,25 +44,26 @@ Renderer::~Renderer()
 	engine->DestroyBuffer(matrix_uniform_buffer);
 
 	CleanupFramebuffers();
-	CleanupCommandPool();
+	CleanupRenderCommandPool();
 
 	CleanupDepthResources();
 	CleanupRenderPasses();
 }
 
-void Renderer::CreateCommandPool()
+void Renderer::CreateRenderCommandPool()
 {
 	auto queue_family_indices = engine->GetQueueFamilyIndices();
 
 	auto command_pool_info = vk::CommandPoolCreateInfo()
+		.setFlags(vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
 		.setQueueFamilyIndex(static_cast<uint32_t>(queue_family_indices.graphics_family));
 
-	command_pool = engine->GetVkDevice().createCommandPool(command_pool_info);
+	render_command_pool = engine->GetVkDevice().createCommandPool(command_pool_info);
 }
 
-void Renderer::CleanupCommandPool()
+void Renderer::CleanupRenderCommandPool()
 {
-	engine->GetVkDevice().destroyCommandPool(command_pool);
+	engine->GetVkDevice().destroyCommandPool(render_command_pool);
 }
 
 void Renderer::CreateFramebuffers()
@@ -139,8 +141,7 @@ void Renderer::UpdateMatrixUniformBuffer()
 	float time = std::chrono::duration_cast<std::chrono::microseconds>(current_time - start_time).count() / 1e6f;
 
 	MatrixUniformBuffer matrix_ubo;
-	matrix_ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	matrix_ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	matrix_ubo.modelview = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	matrix_ubo.projection = glm::perspective(glm::radians(60.0f), (float)screen_extent.width / (float)screen_extent.height, 0.1f, 10.0f);
 	matrix_ubo.projection[1][1] *= -1.0f;
 
@@ -290,9 +291,20 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 		descriptor_set_layout, material->GetDescriptorSetLayout()
 	};
 
+
+
+
+	auto push_constant_range = vk::PushConstantRange()
+		.setStageFlags(vk::ShaderStageFlagBits::eVertex)
+		.setOffset(0)
+		.setSize(sizeof(TransformPushConstant));
+
+
 	auto pipeline_layout_info = vk::PipelineLayoutCreateInfo()
 		.setSetLayoutCount(descriptor_set_layouts.size())
-		.setPSetLayouts(descriptor_set_layouts.data());
+		.setPSetLayouts(descriptor_set_layouts.data())
+		.setPushConstantRangeCount(1)
+		.setPPushConstantRanges(&push_constant_range);
 
 	pipeline.pipeline_layout = engine->GetVkDevice().createPipelineLayout(pipeline_layout_info);
 
@@ -436,75 +448,96 @@ void Renderer::ResizeScreen(vk::Extent2D screen_extent, std::vector<vk::ImageVie
 
 	CleanupFramebuffers();
 	CreateFramebuffers();
-
-	CleanupCommandBuffers();
-	CreateCommandBuffers();
 }
 
-void Renderer::CreateCommandBuffers()
+void Renderer::CreateRenderCommandBuffer()
 {
+	render_command_buffer = engine->GetVkDevice().allocateCommandBuffers(
+			vk::CommandBufferAllocateInfo()
+					.setCommandPool(render_command_pool)
+					.setLevel(vk::CommandBufferLevel::ePrimary)
+					.setCommandBufferCount(1)).front();
+}
+
+void Renderer::CleanupRenderCommandBuffer()
+{
+	engine->GetVkDevice().freeCommandBuffers(render_command_pool, render_command_buffer);
+}
+
+
+
+void Renderer::RecordRenderCommandBuffer(vk::Framebuffer dst_framebuffer)
+{
+	// TODO: here is a LOT of potential for optimization
+
+	const auto &command_buffer = render_command_buffer;
+
+	command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
+
+	std::array<vk::ClearValue, 2> clear_values = {
+		vk::ClearColorValue(std::array<float, 4>{{0.0f, 0.0f, 0.0f, 1.0f }}),
+		vk::ClearDepthStencilValue(1.0f, 0)
+	};
+
+	command_buffer.beginRenderPass(
+		vk::RenderPassBeginInfo()
+			.setRenderPass(render_pass)
+			.setFramebuffer(dst_framebuffer)
+			.setRenderArea(vk::Rect2D({0, 0 }, screen_extent))
+			.setClearValueCount(clear_values.size())
+			.setPClearValues(clear_values.data()),
+		vk::SubpassContents::eInline);
+
 	auto pipeline = material_pipelines[0];
 
-	command_buffers = engine->GetVkDevice().allocateCommandBuffers(
-			vk::CommandBufferAllocateInfo()
-					.setCommandPool(command_pool)
-					.setLevel(vk::CommandBufferLevel::ePrimary)
-					.setCommandBufferCount(static_cast<uint32_t>(dst_image_views.size())));
+	command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
+	command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 0, descriptor_set, nullptr);
 
-	for(size_t i=0; i<command_buffers.size(); i++)
-	{
-		const auto &command_buffer = command_buffers[i];
+	scene->GetRootNode()->TraversePreOrder([command_buffer, pipeline] (Node *node) {
+		auto mesh_component = node->GetComponent<MeshComponent>();
+		if(mesh_component == nullptr)
+			return;
 
-		command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
+		auto mesh = mesh_component->GetMesh();
+		if(mesh == nullptr)
+			return;
 
-		std::array<vk::ClearValue, 2> clear_values = {
-			vk::ClearColorValue(std::array<float, 4>{{0.0f, 0.0f, 0.0f, 1.0f }}),
-			vk::ClearDepthStencilValue(1.0f, 0)
-		};
-
-		command_buffer.beginRenderPass(
-				vk::RenderPassBeginInfo()
-					.setRenderPass(render_pass)
-					.setFramebuffer(dst_framebuffers[i])
-					.setRenderArea(vk::Rect2D({0, 0 }, screen_extent))
-					.setClearValueCount(clear_values.size())
-					.setPClearValues(clear_values.data()),
-				vk::SubpassContents::eInline);
-
-		engine::Mesh *mesh = scene->GetRootNode()->GetComponent<MeshComponent>()->GetMesh();
-
-		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
-		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 0, descriptor_set, nullptr);
 		command_buffer.bindVertexBuffers(0, { mesh->vertex_buffer.buffer }, { 0 });
 		command_buffer.bindIndexBuffer(mesh->index_buffer.buffer, 0, vk::IndexType::eUint16);
+
+		auto transform_component = node->GetTransformComponent();
+		TransformPushConstant transform_push_constant;
+		if(transform_component != nullptr)
+			transform_push_constant.transform = transform_component->GetMatrix();
+
+		command_buffer.pushConstants(pipeline.pipeline_layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(TransformPushConstant), &transform_push_constant);
 
 		for(auto primitive : mesh->primitives)
 		{
 			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 1, primitive.material_instance->GetDescriptorSet(), nullptr);
 			command_buffer.drawIndexed(primitive.indices_count, 1, primitive.indices_offset, 0, 0);
 		}
+	});
 
-		command_buffer.endRenderPass();
 
-		command_buffer.end();
-	}
-}
+	command_buffer.endRenderPass();
 
-void Renderer::CleanupCommandBuffers()
-{
-	engine->GetVkDevice().freeCommandBuffers(command_pool, command_buffers);
+	command_buffer.end();
 }
 
 void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> wait_semaphores,
 						 std::vector<vk::PipelineStageFlags> wait_stages, std::vector<vk::Semaphore> signal_semaphores)
 {
+	UpdateMatrixUniformBuffer();
+	RecordRenderCommandBuffer(dst_framebuffers[image_index]);
+
 	engine->GetGraphicsQueue().submit(
 		vk::SubmitInfo()
 			.setWaitSemaphoreCount(static_cast<uint32_t>(wait_semaphores.size()))
 			.setPWaitSemaphores(wait_semaphores.data())
 			.setPWaitDstStageMask(wait_stages.data())
 			.setCommandBufferCount(1)
-			.setPCommandBuffers(&command_buffers[image_index])
+			.setPCommandBuffers(&render_command_buffer)
 			.setSignalSemaphoreCount(static_cast<uint32_t>(signal_semaphores.size()))
 			.setPSignalSemaphores(signal_semaphores.data()),
 		nullptr);

@@ -24,10 +24,6 @@ class MeshApplication: public DemoApplication
 
 		engine::AssetContainer *asset_container;
 
-		engine::Scene *scene;
-
-		engine::Mesh *mesh;
-
 		engine::MaterialInstance *material_instance;
 
 		void InitVulkan() override;

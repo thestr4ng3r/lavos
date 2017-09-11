@@ -3,11 +3,14 @@
 
 layout(set = 0, binding = 0) uniform MatrixBuffer
 {
-	mat4 model;
-	mat4 view;
+	mat4 modelview;
 	mat4 projection;
 } matrix_uni;
 
+layout(push_constant) uniform TransformPushConstant
+{
+	mat4 transform;
+} transform_push_constant;
 
 layout(location = 0) in vec3 position_in;
 layout(location = 1) in vec3 color_in;
@@ -25,7 +28,12 @@ layout(location = 1) out vec2 uv_out;
 
 void main()
 {
-	gl_Position = matrix_uni.projection * matrix_uni.view * matrix_uni.model * vec4(position_in, 1.0);
+	gl_Position =
+		matrix_uni.projection
+		* matrix_uni.modelview
+		* transform_push_constant.transform
+		* vec4(position_in, 1.0);
+
 	uv_out = uv_in;
 	frag_color_out = color_in;
 }

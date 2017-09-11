@@ -13,9 +13,13 @@ namespace engine
 
 struct MatrixUniformBuffer
 {
-	glm::mat4 model;
-	glm::mat4 view;
+	glm::mat4 modelview;
 	glm::mat4 projection;
+};
+
+struct TransformPushConstant
+{
+	glm::mat4 transform;
 };
 
 class Renderer
@@ -37,8 +41,8 @@ class Renderer
 
 		Scene *scene;
 
-		vk::CommandPool command_pool;
-		std::vector<vk::CommandBuffer> command_buffers;
+		vk::CommandPool render_command_pool;
+		vk::CommandBuffer render_command_buffer;
 
 		vk::Format format;
 		std::vector<vk::ImageView> dst_image_views;
@@ -63,8 +67,8 @@ class Renderer
 
 		engine::Buffer matrix_uniform_buffer;
 
-		void CreateCommandPool();
-		void CleanupCommandPool();
+		void CreateRenderCommandPool();
+		void CleanupRenderCommandPool();
 
 		void CreateFramebuffers();
 		void CleanupFramebuffers();
@@ -85,7 +89,10 @@ class Renderer
 		void CreateRenderPasses();
 		void CleanupRenderPasses();
 
-		void CleanupCommandBuffers();
+		void CreateRenderCommandBuffer();
+		void CleanupRenderCommandBuffer();
+
+		void RecordRenderCommandBuffer(vk::Framebuffer dst_framebuffer);
 
 	public:
 		Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format, std::vector<vk::ImageView> dst_image_views);
@@ -114,9 +121,6 @@ class Renderer
 					   std::vector<vk::Semaphore> wait_semaphores,
 					   std::vector<vk::PipelineStageFlags> wait_stages,
 					   std::vector<vk::Semaphore> signal_semaphores);
-
-
-		void CreateCommandBuffers(); // TODO: make private
 };
 
 }

@@ -3,8 +3,10 @@
 #define VULKAN_NODE_H
 
 #include <vector>
+#include <functional>
 
 #include "component.h"
+#include "transform_component.h"
 
 namespace engine
 {
@@ -14,11 +16,13 @@ class Node
 	friend class Scene;
 
 	private:
-		bool is_root;
-		Node *parent;
+		bool is_root = false;
+		Node *parent = nullptr;
 
 		std::vector<Component *> components;
 		std::vector<Node *> children;
+
+		TransformComponent *transform_component = nullptr;
 
 	public:
 		Node();
@@ -30,6 +34,9 @@ class Node
 		template<class T>
 		std::vector<T *> GetComponents() const;
 
+		TransformComponent *GetTransformComponent() const	{ return transform_component; }
+
+
 		const std::vector<Node *> &GetChildren() const		{ return children; }
 
 
@@ -38,6 +45,9 @@ class Node
 
 		void AddChild(Node *node);
 		void RemoveChild(Node *node);
+
+		void TraversePreOrder(std::function<void (Node *)> func);
+		void TraversePostOrder(std::function<void (Node *)> func);
 };
 
 
