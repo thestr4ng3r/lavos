@@ -3,6 +3,7 @@
 #define VULKAN_TRANSFORM_COMPONENT_H
 
 #include "component.h"
+#include "node.h"
 
 #include "glm_config.h"
 #include <glm/gtc/quaternion.hpp>
@@ -22,6 +23,21 @@ class TransformComponent: public Component
 		glm::mat4 GetMatrix()
 		{
 			return glm::scale(glm::translate(glm::mat4(1.0f), translation), scale) * glm::toMat4(rotation);
+		}
+
+		glm::mat4 GetMatrixWorld()
+		{
+			glm::mat4 m = GetMatrix();
+
+			Node *parent = GetNode()->GetParent();
+			if(parent == nullptr)
+				return m;
+
+			TransformComponent *parent_transform = parent->GetTransformComponent();
+			if(parent_transform == nullptr)
+				return m;
+
+			return parent_transform->GetMatrixWorld() * m;
 		}
 };
 

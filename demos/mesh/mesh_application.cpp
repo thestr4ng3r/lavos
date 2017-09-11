@@ -16,7 +16,8 @@
 #include <vulkan/vulkan.h>
 #include <engine.h>
 #include <asset_container.h>
-#include <mesh_component.h>
+#include <component/mesh_component.h>
+#include <component/camera_component.h>
 
 
 void MeshApplication::InitVulkan()
@@ -29,7 +30,10 @@ void MeshApplication::InitVulkan()
 
 	asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
 
-	renderer->SetScene(asset_container->scenes[0]);
+	engine::Scene *scene = asset_container->scenes[0];
+
+	renderer->SetScene(scene);
+	renderer->SetCamera(scene->GetRootNode()->GetComponentInChildren<engine::CameraComponent>());
 
 	material_instance = asset_container->material_instances.front();
 }

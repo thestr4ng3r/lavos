@@ -1,5 +1,5 @@
 
-#include "mesh_component.h"
+#include "component/mesh_component.h"
 
 engine::MeshComponent::MeshComponent(engine::Mesh *mesh)
 {

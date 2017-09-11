@@ -1,12 +1,12 @@
 
 #include <chrono>
 #include "glm_config.h"
-#include <mesh_component.h>
 #include <iostream>
 
 #include "renderer.h"
 #include "shader_load.h"
 #include "vertex.h"
+#include "component/mesh_component.h"
 
 using namespace engine;
 
@@ -136,13 +136,12 @@ void Renderer::CreateMatrixUniformBuffer()
 
 void Renderer::UpdateMatrixUniformBuffer()
 {
-	static auto start_time = std::chrono::high_resolution_clock::now();
-	auto current_time = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration_cast<std::chrono::microseconds>(current_time - start_time).count() / 1e6f;
+	if(auto_set_camera_aspect && camera->GetType() == CameraComponent::Type::PERSPECTIVE)
+		camera->SetPerspectiveAspect((float)screen_extent.width / (float)screen_extent.height);
 
 	MatrixUniformBuffer matrix_ubo;
-	matrix_ubo.modelview = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	matrix_ubo.projection = glm::perspective(glm::radians(60.0f), (float)screen_extent.width / (float)screen_extent.height, 0.1f, 10.0f);
+	matrix_ubo.modelview = camera->GetModelViewMatrix();
+	matrix_ubo.projection = camera->GetProjectionMatrix();
 	matrix_ubo.projection[1][1] *= -1.0f;
 
 	void *data = engine->MapMemory(matrix_uniform_buffer.allocation);
@@ -528,6 +527,12 @@ void Renderer::RecordRenderCommandBuffer(vk::Framebuffer dst_framebuffer)
 void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> wait_semaphores,
 						 std::vector<vk::PipelineStageFlags> wait_stages, std::vector<vk::Semaphore> signal_semaphores)
 {
+	if(scene == nullptr)
+		throw std::runtime_error("renderer has no scene.");
+
+	if(camera == nullptr)
+		throw std::runtime_error("renderer has no camera.");
+
 	UpdateMatrixUniformBuffer();
 	RecordRenderCommandBuffer(dst_framebuffers[image_index]);
 

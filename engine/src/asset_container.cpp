@@ -2,7 +2,8 @@
 #include "engine.h"
 #include "material.h"
 #include "asset_container.h"
-#include "mesh_component.h"
+#include "component/mesh_component.h"
+#include "component/camera_component.h"
 
 #include <tiny_gltf.h>
 #include <iostream>
@@ -254,8 +255,26 @@ static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *pa
 		current_node->AddComponent(new MeshComponent(mesh));
 	}
 
+	if(gltf_node.camera >= 0)
+	{
+		auto gltf_camera = model.cameras[gltf_node.camera];
+		auto camera = new CameraComponent();
 
-	// TODO: lights, camera(, revolution), ...
+		if(gltf_camera.type == "orthographic")
+		{
+			// TODO
+		}
+		else
+		{
+			camera->SetType(CameraComponent::Type::PERSPECTIVE);
+
+			// TODO: parameters
+		}
+
+		current_node->AddComponent(camera);
+	}
+
+	// TODO: lights, ...
 }
 
 static void LoadScenes(AssetContainer &container, tinygltf::Model &model)

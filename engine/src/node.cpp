@@ -2,7 +2,10 @@
 #include <stdexcept>
 #include <functional>
 #include <iostream>
+
 #include "node.h"
+#include "component/transform_component.h"
+
 
 using namespace engine;
 

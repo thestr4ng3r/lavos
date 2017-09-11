@@ -2,6 +2,7 @@
 #ifndef VULKAN_RENDERER_H
 #define VULKAN_RENDERER_H
 
+#include <component/camera_component.h>
 #include "engine.h"
 #include "material.h"
 #include "mesh.h"
@@ -39,7 +40,10 @@ class Renderer
 	private:
 		Engine * const engine;
 
-		Scene *scene;
+		Scene *scene = nullptr;
+		CameraComponent *camera = nullptr;
+
+		bool auto_set_camera_aspect = true;
 
 		vk::CommandPool render_command_pool;
 		vk::CommandBuffer render_command_buffer;
@@ -103,6 +107,7 @@ class Renderer
 		vk::DescriptorPool GetDescriptorPool() const 		{ return descriptor_pool; }
 
 		void SetScene(Scene *scene)							{ this->scene = scene; }
+		void SetCamera(CameraComponent *camera)				{ this->camera = camera; }
 
 		void AddMaterial(Material *material);
 		void RemoveMaterial(Material *material);
@@ -114,8 +119,11 @@ class Renderer
 		MaterialPipeline GetMaterialPipeline(int index)		{ return material_pipelines[index]; }
 		vk::DescriptorSet GetDescriptorSet()				{ return descriptor_set; }
 
-		vk::RenderPass GetRenderPass()						{ return render_pass; }
+		vk::RenderPass GetRenderPass() const				{ return render_pass; }
 		vk::ImageView GetDepthImageView()					{ return depth_image_view; }
+
+		bool GetAutoSetCameraAspect() const 				{ return auto_set_camera_aspect; }
+		void SetAutoSetCameraAspect(bool enabled)			{ auto_set_camera_aspect = enabled; }
 
 		void DrawFrame(std::uint32_t image_index,
 					   std::vector<vk::Semaphore> wait_semaphores,

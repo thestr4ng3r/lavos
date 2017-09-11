@@ -26,10 +26,11 @@ set(SOURCE_FILES
 		include/scene.h
 		src/node.cpp
 		include/node.h
-		include/component.h
-		src/mesh_component.cpp
-		include/mesh_component.h
-		include/transform_component.h)
+		include/component/component.h
+		src/component/mesh_component.cpp
+		include/component/mesh_component.h
+		include/component/transform_component.h
+		include/component/camera_component.h)
 
 add_library(engine STATIC ${SOURCE_FILES})
 
