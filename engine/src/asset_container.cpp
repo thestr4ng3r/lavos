@@ -8,6 +8,8 @@
 #include <tiny_gltf.h>
 #include <iostream>
 
+#include <glm/gtx/quaternion.hpp>
+
 using namespace engine;
 
 AssetContainer::AssetContainer(Engine *engine)
@@ -209,6 +211,7 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 	}
 }
 
+#include "glm_stream.h"
 
 static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *parent_node, int gltf_node_index)
 {
@@ -221,7 +224,6 @@ static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *pa
 		LoadNode(container, model, current_node, gltf_child_node_index);
 	}
 
-
 	auto transform_component = new TransformComponent();
 
 	if(gltf_node.translation.size() >= 3)
@@ -233,10 +235,14 @@ static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *pa
 
 	if(gltf_node.rotation.size() >= 4)
 	{
-		transform_component->rotation = glm::quat(glm::vec4(gltf_node.rotation[0],
-															gltf_node.rotation[1],
-															gltf_node.rotation[2],
-															gltf_node.rotation[3]));
+		float x = static_cast<float>(gltf_node.rotation[0]);
+		float y = static_cast<float>(gltf_node.rotation[1]);
+		float z = static_cast<float>(gltf_node.rotation[2]);
+		float w = static_cast<float>(gltf_node.rotation[3]);
+
+		transform_component->rotation = glm::quat(w, x, y, z);
+
+		glm::vec3 euler = glm::eulerAngles(transform_component->rotation);
 	}
 
 	if(gltf_node.scale.size() >= 3)
