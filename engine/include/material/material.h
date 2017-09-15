@@ -25,6 +25,9 @@ class Material
 		vk::DescriptorSetLayout GetDescriptorSetLayout() const		{ return descriptor_set_layout; }
 
 		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes() const =0;
+		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos() const =0;
+
+		static vk::ShaderModule CreateShaderModule(vk::Device device, const std::vector<char> &code);
 };
 
 }

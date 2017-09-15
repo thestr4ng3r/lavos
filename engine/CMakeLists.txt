@@ -1,5 +1,20 @@
 
 
+set(GLSLC_EXECUTABLE glslc) # TODO: Write a find module or something
+
+macro(add_spirv_shaders SPIRV_FILES_VAR GLSL_FILES_VAR)
+	set(${SPIRV_FILES_VAR} "")
+	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/shader")
+	foreach(glsl_file ${${GLSL_FILES_VAR}})
+		set(spirv_file "${CMAKE_CURRENT_BINARY_DIR}/shader/${glsl_file}.spv")
+		set(glsl_file "${CMAKE_CURRENT_SOURCE_DIR}/glsl/${glsl_file}")
+		list(APPEND ${SPIRV_FILES_VAR} "${spirv_file}")
+		add_custom_command(OUTPUT "${spirv_file}"
+				COMMAND ${GLSLC_EXECUTABLE} "${glsl_file}" -o "${spirv_file}"
+				MAIN_DEPENDENCY "${glsl_file}")
+	endforeach()
+endmacro()
+
 set(SOURCE_FILES
 		src/thirdparty_impl.cpp
 		src/engine.cpp
@@ -36,7 +51,13 @@ set(SOURCE_FILES
 		include/component/camera_component.h
 		src/glm_stream.h)
 
-add_library(engine STATIC ${SOURCE_FILES})
+set(GLSL_FILES
+		unlit.vert
+		unlit.frag)
+
+add_spirv_shaders(SPIRV_FILES GLSL_FILES)
+
+add_library(engine STATIC ${SOURCE_FILES} ${SPIRV_FILES})
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 

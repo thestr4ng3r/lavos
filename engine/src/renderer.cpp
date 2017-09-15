@@ -201,33 +201,13 @@ void Renderer::RemoveMaterial(Material *material)
 	}
 }
 
-vk::ShaderModule CreateShaderModule(vk::Device device, const std::vector<char> &code)
-{
-	return device.createShaderModule(
-		vk::ShaderModuleCreateInfo()
-			.setCodeSize(code.size())
-			.setPCode(reinterpret_cast<const uint32_t *>(code.data())));
-}
-
 Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 {
 	auto device = engine->GetVkDevice();
 
 	auto pipeline = MaterialPipeline(material);
 
-	auto vert_shader_module = CreateShaderModule(device, ReadSPIRVShader("texture.vert"));
-	auto frag_shader_module = CreateShaderModule(device, ReadSPIRVShader("texture.frag"));
-
-	vk::PipelineShaderStageCreateInfo shader_stages[] = {
-		vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
-										  vk::ShaderStageFlagBits::eVertex,
-										  vert_shader_module,
-										  "main"),
-		vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
-										  vk::ShaderStageFlagBits::eFragment,
-										  frag_shader_module,
-										  "main")
-	};
+	auto shader_stages = material->GetShaderStageCreateInfos();
 
 	auto vertex_binding_description = Vertex::GetBindingDescription();
 	auto vertex_attribute_description = Vertex::GetAttributeDescription();
@@ -287,7 +267,8 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 
 
 	std::array<vk::DescriptorSetLayout, 2> descriptor_set_layouts = {
-		descriptor_set_layout, material->GetDescriptorSetLayout()
+		descriptor_set_layout,
+		material->GetDescriptorSetLayout()
 	};
 
 
@@ -305,12 +286,12 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 		.setPushConstantRangeCount(1)
 		.setPPushConstantRanges(&push_constant_range);
 
-	pipeline.pipeline_layout = engine->GetVkDevice().createPipelineLayout(pipeline_layout_info);
+	pipeline.pipeline_layout = device.createPipelineLayout(pipeline_layout_info);
 
 
 	auto pipeline_info = vk::GraphicsPipelineCreateInfo()
-		.setStageCount(2)
-		.setPStages(shader_stages)
+		.setStageCount(static_cast<uint32_t>(shader_stages.size()))
+		.setPStages(shader_stages.data())
 		.setPVertexInputState(&vertex_input_info)
 		.setPInputAssemblyState(&input_assembly_info)
 		.setPViewportState(&viewport_state_info)
@@ -324,11 +305,7 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 		.setSubpass(0);
 
 
-	pipeline.pipeline = engine->GetVkDevice().createGraphicsPipeline(vk::PipelineCache() /*nullptr*/, pipeline_info);
-
-
-	engine->GetVkDevice().destroyShaderModule(vert_shader_module);
-	engine->GetVkDevice().destroyShaderModule(frag_shader_module);
+	pipeline.pipeline = device.createGraphicsPipeline(nullptr, pipeline_info);
 
 	return pipeline;
 }

@@ -2,15 +2,24 @@
 #include "engine.h"
 #include "material/unlit_material.h"
 
+#include "shader_load.h"
+
 using namespace engine;
 
 UnlitMaterial::UnlitMaterial(engine::Engine *engine) : Material(engine)
 {
 	CreateDescriptorSetLayout();
+
+	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("unlit.vert"));
+	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("unlit.frag"));
 }
 
 UnlitMaterial::~UnlitMaterial()
 {
+	auto &device = engine->GetVkDevice();
+
+	device.destroyShaderModule(vert_shader_module);
+	device.destroyShaderModule(frag_shader_module);
 }
 
 void UnlitMaterial::CreateDescriptorSetLayout()
@@ -35,5 +44,19 @@ std::vector<vk::DescriptorPoolSize> UnlitMaterial::GetDescriptorPoolSizes() cons
 {
 	return {
 		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1)
+	};
+}
+
+std::vector<vk::PipelineShaderStageCreateInfo> UnlitMaterial::GetShaderStageCreateInfos() const
+{
+	return {
+		vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
+										  vk::ShaderStageFlagBits::eVertex,
+										  vert_shader_module,
+										  "main"),
+		vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
+										  vk::ShaderStageFlagBits::eFragment,
+										  frag_shader_module,
+										  "main")
 	};
 }
