@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.hpp>
 #include <engine.h>
 #include <vertex.h>
-#include <material.h>
+#include <material/material.h>
 #include <material_instance.h>
 #include <mesh.h>
 #include <renderer.h>

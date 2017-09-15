@@ -1,22 +1,19 @@
 
-#include "material.h"
 #include "engine.h"
+#include "material/unlit_material.h"
 
 using namespace engine;
 
-Material::Material(engine::Engine *engine)
-	: engine(engine)
+UnlitMaterial::UnlitMaterial(engine::Engine *engine) : Material(engine)
 {
 	CreateDescriptorSetLayout();
-	CreateSamplers();
 }
 
-Material::~Material()
+UnlitMaterial::~UnlitMaterial()
 {
-	engine->GetVkDevice().destroyDescriptorSetLayout(descriptor_set_layout);
 }
 
-void Material::CreateDescriptorSetLayout()
+void UnlitMaterial::CreateDescriptorSetLayout()
 {
 	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
 		vk::DescriptorSetLayoutBinding()
@@ -34,11 +31,7 @@ void Material::CreateDescriptorSetLayout()
 	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
 }
 
-void Material::CreateSamplers()
-{
-}
-
-std::vector<vk::DescriptorPoolSize> Material::GetDescriptorPoolSizes() const
+std::vector<vk::DescriptorPoolSize> UnlitMaterial::GetDescriptorPoolSizes() const
 {
 	return {
 		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1)

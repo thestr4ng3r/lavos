@@ -7,8 +7,10 @@ set(SOURCE_FILES
 		include/vertex.h
 		src/mesh.cpp
 		include/mesh.h
-		src/material.cpp
-		include/material.h
+		src/material/material.cpp
+		include/material/material.h
+		src/material/unlit_material.cpp
+		include/material/unlit_material.h
 		src/material_instance.cpp
 		include/material_instance.h
 		include/buffer.h

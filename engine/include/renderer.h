@@ -4,7 +4,7 @@
 
 #include <component/camera_component.h>
 #include "engine.h"
-#include "material.h"
+#include "material/material.h"
 #include "mesh.h"
 #include "scene.h"
 

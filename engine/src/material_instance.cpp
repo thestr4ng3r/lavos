@@ -1,5 +1,5 @@
 
-#include "material.h"
+#include "material/material.h"
 #include "material_instance.h"
 #include "engine.h"
 

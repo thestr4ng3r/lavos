@@ -1,6 +1,6 @@
 
 #include "engine.h"
-#include "material.h"
+#include "material/material.h"
 #include "asset_container.h"
 #include "component/mesh_component.h"
 #include "component/camera_component.h"

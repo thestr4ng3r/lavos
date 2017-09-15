@@ -11,23 +11,20 @@ class Engine;
 
 class Material
 {
-	private:
+	protected:
 		Engine *engine;
 
 		vk::DescriptorSetLayout descriptor_set_layout;
 
-		void CreateDescriptorSetLayout();
-		void CreateSamplers();
-
 	public:
 		Material(Engine *engine);
-		~Material();
+		virtual ~Material();
 
 		Engine *GetEngine() const							 		{ return engine; }
 
 		vk::DescriptorSetLayout GetDescriptorSetLayout() const		{ return descriptor_set_layout; }
 
-		std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes() const;
+		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes() const =0;
 };
 
 }
