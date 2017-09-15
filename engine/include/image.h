@@ -23,7 +23,7 @@ class Image
 			: image(image), allocation(allocation) {}
 
 
-		static Image LoadFromPixelDataRGBA8UI(Engine *engine, uint32_t width, uint32_t height, unsigned char *pixels);
+		static Image LoadFromPixelData(Engine *engine, vk::Format format, uint32_t width, uint32_t height, unsigned char *pixels);
 		static Image LoadFromFile(Engine *engine, std::string file);
 		static Image LoadFromMemory(Engine *engine, unsigned char *data, size_t size);
 

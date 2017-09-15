@@ -43,10 +43,11 @@ void MeshApplication::InitVulkan()
 
 		camera_node->AddComponent(new engine::TransformComponent());
 
-		camera_node->GetTransformComponent()->translation = glm::vec3(0.0f, 0.1f, 0.1f);
-		camera_node->GetTransformComponent()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera_node->GetTransformComponent()->translation = glm::vec3(0.3f, 0.3f, -0.3f);
+		camera_node->GetTransformComponent()->SetLookAt(glm::vec3(0.0f, 0.1f, -0.1f));
 
 		camera = new engine::CameraComponent();
+		camera->SetNearClip(0.01f);
 		camera_node->AddComponent(camera);
 	}
 

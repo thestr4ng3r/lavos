@@ -39,7 +39,27 @@ AssetContainer::~AssetContainer()
 static Image LoadImage(AssetContainer &container, tinygltf::Model &model, int index)
 {
 	auto gltf_image = model.images[index];
-	return Image::LoadFromPixelDataRGBA8UI(container.engine,
+
+	vk::Format format;
+	switch(gltf_image.component)
+	{
+		case 1:
+			format = vk::Format::eR8Unorm;
+			break;
+		case 2:
+			format = vk::Format::eR8G8Unorm;
+			break;
+		case 3:
+			format = vk::Format::eR8G8B8Unorm;
+			break;
+		case 4:
+			format = vk::Format::eR8G8B8A8Unorm;
+			break;
+		default:
+			throw std::runtime_error("invalid component count for image.");
+	}
+
+	return Image::LoadFromPixelData(container.engine, format,
 										   static_cast<uint32_t>(gltf_image.width),
 										   static_cast<uint32_t>(gltf_image.height),
 										   gltf_image.image.data());
