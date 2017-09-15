@@ -26,6 +26,8 @@ set(SOURCE_FILES
 		include/material/material.h
 		src/material/unlit_material.cpp
 		include/material/unlit_material.h
+		src/material/phong_material.cpp
+		include/material/phong_material.h
 		src/material_instance.cpp
 		include/material_instance.h
 		include/buffer.h
@@ -53,7 +55,9 @@ set(SOURCE_FILES
 
 set(GLSL_FILES
 		unlit.vert
-		unlit.frag)
+		unlit.frag
+		phong.vert
+		phong.frag)
 
 add_spirv_shaders(SPIRV_FILES GLSL_FILES)
 

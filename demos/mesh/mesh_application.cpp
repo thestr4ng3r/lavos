@@ -18,14 +18,14 @@
 #include <asset_container.h>
 #include <component/mesh_component.h>
 #include <component/camera_component.h>
-#include <material/unlit_material.h>
+#include <material/phong_material.h>
 
 
 void MeshApplication::InitVulkan()
 {
 	DemoApplication::InitVulkan();
 
-	material = new engine::UnlitMaterial(engine);
+	material = new engine::PhongMaterial(engine);
 	renderer = new engine::Renderer(engine, swapchain_extent, swapchain_image_format, swapchain_image_views);
 	renderer->AddMaterial(material);
 

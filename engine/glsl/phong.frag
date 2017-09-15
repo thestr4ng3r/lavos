@@ -10,5 +10,5 @@ layout(location = 1) in vec2 uv_in;
 
 void main()
 {
-	out_color = texture(tex_uni, uv_in);
+	out_color = texture(tex_uni, uv_in).bgra;
 }
