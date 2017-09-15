@@ -74,10 +74,7 @@ class CameraComponent: public Component
 				throw std::runtime_error("node with a camera component does not have a transform component.");
 
 			glm::mat4 transform_mat = transform_component->GetMatrixWorld();
-			glm::vec3 eye = transform_mat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-			glm::vec3 center = transform_mat * glm::vec4(0.0f, 0.0f, -1.0f, 1.0f);
-
-			return  glm::lookAt(eye, center, up_vector);
+			return glm::inverse(transform_mat);
 		}
 
 		glm::mat4 GetProjectionMatrix()

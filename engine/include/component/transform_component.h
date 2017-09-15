@@ -39,6 +39,8 @@ class TransformComponent: public Component
 
 			return parent_transform->GetMatrixWorld() * m;
 		}
+
+		void SetLookAt(glm::vec3 target, glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f));
 };
 
 }

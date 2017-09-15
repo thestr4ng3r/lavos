@@ -33,7 +33,24 @@ void MeshApplication::InitVulkan()
 	engine::Scene *scene = asset_container->scenes[0];
 
 	renderer->SetScene(scene);
-	renderer->SetCamera(scene->GetRootNode()->GetComponentInChildren<engine::CameraComponent>());
+
+	engine::CameraComponent *camera = scene->GetRootNode()->GetComponentInChildren<engine::CameraComponent>();
+
+	if(camera == nullptr)
+	{
+		engine::Node *camera_node = new engine::Node();
+		scene->GetRootNode()->AddChild(camera_node);
+
+		camera_node->AddComponent(new engine::TransformComponent());
+
+		camera_node->GetTransformComponent()->translation = glm::vec3(0.0f, 0.1f, 0.1f);
+		camera_node->GetTransformComponent()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+
+		camera = new engine::CameraComponent();
+		camera_node->AddComponent(camera);
+	}
+
+	renderer->SetCamera(camera);
 
 	material_instance = asset_container->material_instances.front();
 }

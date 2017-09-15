@@ -30,6 +30,7 @@ set(SOURCE_FILES
 		src/component/mesh_component.cpp
 		include/component/mesh_component.h
 		include/component/transform_component.h
+		src/component/transform_component.cpp
 		include/component/camera_component.h
 		src/glm_stream.h)
 
