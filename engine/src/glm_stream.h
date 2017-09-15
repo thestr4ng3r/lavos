@@ -6,22 +6,26 @@
 #include <glm/gtc/quaternion.hpp>
 #include <ostream>
 
-inline std::ostream& operator<<(std::ostream& stream, const glm::vec2 &v)
+template<class T, glm::precision P>
+inline std::ostream& operator<<(std::ostream& stream, const glm::tvec2<T, P> &v)
 {
 	return stream << "(" << v.x << ", " << v.y << ")";
 }
 
-inline std::ostream& operator<<(std::ostream& stream, const glm::vec3 &v)
+template<class T, glm::precision P>
+inline std::ostream& operator<<(std::ostream& stream, const glm::tvec3<T, P> &v)
 {
 	return stream << "(" << v.x << ", " << v.y << ", " << v.z << ")";
 }
 
-inline std::ostream& operator<<(std::ostream& stream, const glm::vec4 &v)
+template<class T, glm::precision P>
+inline std::ostream& operator<<(std::ostream& stream, const glm::tvec4<T, P> &v)
 {
 	return stream << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
 }
 
-inline std::ostream& operator<<(std::ostream& stream, const glm::quat &v)
+template<class T, glm::precision P>
+inline std::ostream& operator<<(std::ostream& stream, const glm::tquat<T, P> &v)
 {
 	return stream << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
 }
