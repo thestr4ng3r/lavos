@@ -4,6 +4,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "texture.h"
+
 namespace engine
 {
 
@@ -28,6 +30,8 @@ class Material
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos() const =0;
 
 		static vk::ShaderModule CreateShaderModule(vk::Device device, const std::vector<char> &code);
+
+		virtual Texture GetTextureDefaultImage() const 		{ return nullptr; };
 };
 
 }

@@ -1,5 +1,6 @@
 
 #include <engine.h>
+#include <glm/vec4.hpp>
 #include "image.h"
 
 #include "stb_image.h"
@@ -129,4 +130,27 @@ Image Image::LoadFromMemory(Engine *engine, unsigned char *data, size_t size)
 	stbi_image_free(pixels);
 
 	return r;
+}
+
+Image Image::CreateColor(Engine *engine, vk::Format format, glm::vec4 color)
+{
+	unsigned int components = GetComponentsCount(format);
+	size_t component_size = GetComponentSize(format);
+
+	if(component_size != 1)
+	{
+		// TODO: add support for more formats
+		throw std::runtime_error("unsupported format for creating single color image.");
+	}
+
+	unsigned char *pixels = new unsigned char[components * component_size];
+
+	for(unsigned int i=0; i<components; i++)
+		pixels[i] = static_cast<unsigned char>(color[i] * 255.0f);
+
+	Image image = LoadFromPixelData(engine, format, 1, 1, pixels);
+
+	delete[] pixels;
+
+	return image;
 }

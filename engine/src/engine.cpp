@@ -469,7 +469,7 @@ Image Engine::CreateImage(vk::ImageCreateInfo create_info, VmaMemoryUsage vma_us
 	if(result != VK_SUCCESS)
 		throw std::runtime_error("Failed to create image.");
 
-	return Image(image, allocation);
+	return Image(image, allocation, create_info.format);
 }
 
 void Engine::DestroyImage(const Image &image)

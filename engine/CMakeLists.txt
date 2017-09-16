@@ -33,6 +33,7 @@ set(SOURCE_FILES
 		include/buffer.h
 		src/image.cpp
 		include/image.h
+		src/texture.cpp
 		include/texture.h
 		include/glm_config.h
 		src/asset_container.cpp

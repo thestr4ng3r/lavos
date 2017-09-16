@@ -8,7 +8,10 @@
 #include <tiny_gltf.h>
 #include <iostream>
 
+#include "glm_config.h"
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 using namespace engine;
 
@@ -80,7 +83,7 @@ static Texture LoadTexture(AssetContainer &container, tinygltf::Model &model, in
 	auto image_view_info = vk::ImageViewCreateInfo()
 		.setImage(image.image)
 		.setViewType(vk::ImageViewType::e2D)
-		.setFormat(vk::Format::eR8G8B8A8Unorm)
+		.setFormat(image.format)
 		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
 
 	auto image_view = device.createImageView(image_view_info);
@@ -217,6 +220,10 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 					indices[indices_base + i] += vertices_base;
 				}
 			}
+			else if(index_accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+			{
+				throw std::runtime_error("32 bit indices not supported.");
+			}
 
 
 
@@ -230,8 +237,6 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 		mesh->CreateBuffers();
 	}
 }
-
-#include "glm_stream.h"
 
 static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *parent_node, int gltf_node_index)
 {
@@ -270,6 +275,19 @@ static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *pa
 		transform_component->scale = glm::vec3(gltf_node.scale[0],
 											   gltf_node.scale[1],
 											   gltf_node.scale[2]);
+	}
+
+	if(gltf_node.matrix.size() >= 16)
+	{
+		float matrix_data[16];
+		for(unsigned int i=0; i<16; i++)
+			matrix_data[i] = static_cast<float>(gltf_node.matrix[i]);
+
+		glm::mat4 matrix = glm::make_mat4(matrix_data);
+		glm::vec3 skew;
+		glm::vec4 perspective;
+		glm::decompose(matrix, transform_component->scale, transform_component->rotation,
+					   transform_component->translation, skew, perspective);
 	}
 
 	current_node->AddComponent(transform_component);

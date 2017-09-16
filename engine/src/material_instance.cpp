@@ -35,6 +35,10 @@ void MaterialInstance::CreateDescriptorSet(vk::DescriptorPool descriptor_pool)
 
 void MaterialInstance::WriteDescriptorSet()
 {
+	Texture texture = (this->texture != nullptr)
+					  ? this->texture
+					  : material->GetTextureDefaultImage();
+
 	auto image_info = vk::DescriptorImageInfo()
 		.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
 		.setImageView(texture.image_view)

@@ -23,6 +23,9 @@ class Texture
 			: image(image), image_view(image_view), sampler(sampler) {}
 
 
+		static Texture CreateColor(Engine *engine, vk::Format format, glm::vec4 color);
+
+
 		bool operator==(Texture const &rhs) const
 		{
 			return image == rhs.image
