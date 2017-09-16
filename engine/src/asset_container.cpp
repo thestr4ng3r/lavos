@@ -161,47 +161,80 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 
 		for(auto &gltf_primitive : gltf_mesh.primitives)
 		{
+			// position
+
 			auto &position_accessor = model.accessors[gltf_primitive.attributes["POSITION"]];
 			auto &position_buffer_view = model.bufferViews[position_accessor.bufferView];
 			auto &position_buffer = model.buffers[position_buffer_view.buffer];
 
-			auto &uv_accessor = model.accessors[gltf_primitive.attributes["TEXCOORD_0"]];
-			auto &uv_buffer_view = model.bufferViews[uv_accessor.bufferView];
-			auto &uv_buffer = model.buffers[uv_buffer_view.buffer];
+			size_t position_buffer_stride = position_buffer_view.byteStride;
+			if(position_buffer_stride == 0)
+				position_buffer_stride = sizeof(float) * 3;
 
 			size_t vertices_base = vertices.size();
-			vertices.resize(vertices_base + position_accessor.count);
-			for(size_t i=0; i<position_accessor.count; i++)
+			size_t vertices_count = position_accessor.count;
+			vertices.resize(vertices_base + vertices_count);
+
+			for(size_t i=0; i<vertices_count; i++)
 			{
-				const auto *position_data = position_buffer.data.data() + position_buffer_view.byteOffset
-											+ (position_buffer_view.byteStride + sizeof(float) * 3) * i
-											+ position_accessor.byteOffset;
+				const auto *data = position_buffer.data.data() + position_buffer_view.byteOffset
+								   + position_buffer_stride * i
+								   + position_accessor.byteOffset;
 
-				memcpy(&vertices[vertices_base + i].pos, position_data, sizeof(float) * 3);
-				//vertices[vertices_base + i].pos *= 4.0f;
-
-
-				const auto *uv_data = uv_buffer.data.data() + uv_buffer_view.byteOffset
-									  + (uv_buffer_view.byteStride + sizeof(float) * 2) * i
-									  + uv_accessor.byteOffset;
-
-				memcpy(&vertices[vertices_base + i].uv, uv_data, sizeof(float) * 2);
+				memcpy(&vertices[vertices_base + i].pos, data, sizeof(float) * 3);
 			}
 
+
+			// uv
+
+			auto uv_it = gltf_primitive.attributes.find("TEXCOORD_0");
+			if(uv_it != gltf_primitive.attributes.end())
+			{
+				auto &accessor = model.accessors[uv_it->second];
+				auto &buffer_view = model.bufferViews[accessor.bufferView];
+				auto &buffer = model.buffers[buffer_view.buffer];
+
+				size_t stride = buffer_view.byteStride;
+				if(stride == 0)
+					stride = sizeof(float) * 2;
+
+				for(size_t i=0; i<vertices_count; i++)
+				{
+					const auto *data = buffer.data.data() + buffer_view.byteOffset
+									   + stride * i
+									   + accessor.byteOffset;
+
+					memcpy(&vertices[vertices_base + i].uv, data, sizeof(float) * 2);
+				}
+			}
+			else
+			{
+				for(size_t i=0; i<vertices_count; i++)
+				{
+					vertices[vertices_base + i].uv = glm::vec2(0.0f);
+				}
+			}
+
+
+			// index
 
 			auto &index_accessor = model.accessors[gltf_primitive.indices];
 			auto &index_buffer_view = model.bufferViews[index_accessor.bufferView];
 			auto &index_buffer = model.buffers[index_buffer_view.buffer];
+			size_t index_buffer_stride = index_buffer_view.byteStride;
 
 			size_t indices_base = indices.size();
 			indices.resize(indices_base + index_accessor.count);
 
 			if(index_accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
 			{
+				if(index_buffer_stride == 0)
+					index_buffer_stride = 1;
+
 				for(size_t i=0; i<index_accessor.count; i++)
 				{
 					const auto *data = index_buffer.data.data() + index_buffer_view.byteOffset
-									   + (index_buffer_view.byteStride + 1) * i
+									   + index_buffer_stride * i
 									   + index_accessor.byteOffset;
 
 					indices[indices_base + i] = *data;
@@ -210,10 +243,13 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 			}
 			else if(index_accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
 			{
+				if(index_buffer_stride == 0)
+					index_buffer_stride = sizeof(uint16_t);
+
 				for(size_t i=0; i<index_accessor.count; i++)
 				{
 					const auto *data = index_buffer.data.data() + index_buffer_view.byteOffset
-									   + (index_buffer_view.byteStride + sizeof(uint16_t)) * i
+									   + index_buffer_stride * i
 									   + index_accessor.byteOffset;
 
 					memcpy(&indices[indices_base + i], data, sizeof(uint16_t));
@@ -226,7 +262,6 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 			}
 
 
-
 			Mesh::Primitive primitive;
 			primitive.material_instance = container.material_instances[gltf_primitive.material]; // TODO: gltf_primitive could have no material
 			primitive.indices_offset = static_cast<uint32_t>(indices_base);
@@ -237,6 +272,8 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 		mesh->CreateBuffers();
 	}
 }
+
+#include "glm_stream.h"
 
 static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *parent_node, int gltf_node_index)
 {

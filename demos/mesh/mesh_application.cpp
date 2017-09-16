@@ -32,6 +32,7 @@ void MeshApplication::InitVulkan()
 
 	//asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "/home/florian/dev/glTF-Sample-Models/2.0/GearboxAssy/glTF/GearboxAssy.gltf");
 	//asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "/home/florian/dev/glTF-Sample-Models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf");
+	//asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "/home/florian/dev/glTF-Sample-Models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf");
 	asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
 
 	engine::Scene *scene = asset_container->scenes[0];
@@ -47,8 +48,8 @@ void MeshApplication::InitVulkan()
 
 		camera_node->AddComponent(new engine::TransformComponent());
 
-		camera_node->GetTransformComponent()->translation = glm::vec3(7.0f, 5.0f, 7.0f);
-		camera_node->GetTransformComponent()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera_node->GetTransformComponent()->translation = glm::vec3(1.5f, -0.2f, -1.5f);
+		camera_node->GetTransformComponent()->SetLookAt(glm::vec3(0.0f, -0.1f, 0.0f));
 
 		camera = new engine::CameraComponent();
 		camera->SetNearClip(0.01f);

@@ -484,7 +484,7 @@ void Renderer::RecordRenderCommandBuffer(vk::Framebuffer dst_framebuffer)
 		auto transform_component = node->GetTransformComponent();
 		TransformPushConstant transform_push_constant;
 		if(transform_component != nullptr)
-			transform_push_constant.transform = transform_component->GetMatrix();
+			transform_push_constant.transform = transform_component->GetMatrixWorld();
 
 		command_buffer.pushConstants(pipeline.pipeline_layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(TransformPushConstant), &transform_push_constant);
 
