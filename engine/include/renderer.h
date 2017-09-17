@@ -18,6 +18,15 @@ struct MatrixUniformBuffer
 	glm::mat4 projection;
 };
 
+struct alignas(1) LightingUniformBuffer
+{
+	std::uint32_t directional_light_enabled;
+	std::uint8_t unused_0[3*4];
+	glm::vec3 directional_light_dir;
+	std::uint8_t unused_1[4];
+	glm::vec3 directional_light_intensity;
+};
+
 struct TransformPushConstant
 {
 	glm::mat4 transform;
@@ -70,6 +79,7 @@ class Renderer
 		vk::DescriptorSet descriptor_set;
 
 		engine::Buffer matrix_uniform_buffer;
+		engine::Buffer lighting_uniform_buffer;
 
 		void CreateRenderCommandPool();
 		void CleanupRenderCommandPool();
@@ -81,7 +91,7 @@ class Renderer
 		void CreateDescriptorSetLayout();
 		void CreateDescriptorSet();
 
-		void CreateMatrixUniformBuffer();
+		void CreateUniformBuffers();
 
 		MaterialPipeline CreateMaterialPipeline(Material *material);
 		void DestroyMaterialPipeline(const MaterialPipeline &material_pipeline);
@@ -113,6 +123,7 @@ class Renderer
 		void RemoveMaterial(Material *material);
 
 		void UpdateMatrixUniformBuffer();
+		void UpdateLightingUniformBuffer();
 
 		void ResizeScreen(vk::Extent2D screen_extent, std::vector<vk::ImageView> dst_image_views);
 

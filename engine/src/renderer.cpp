@@ -2,6 +2,7 @@
 #include <chrono>
 #include "glm_config.h"
 #include <iostream>
+#include <component/directional_light_component.h>
 
 #include "renderer.h"
 #include "shader_load.h"
@@ -18,7 +19,7 @@ Renderer::Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format
 
 	CreateDescriptorPool();
 	CreateDescriptorSetLayout();
-	CreateMatrixUniformBuffer();
+	CreateUniformBuffers();
 	CreateDescriptorSet();
 
 	CreateDepthResources();
@@ -98,13 +99,13 @@ void Renderer::CleanupFramebuffers()
 void Renderer::CreateDescriptorPool()
 {
 	std::vector<vk::DescriptorPoolSize> pool_sizes = {
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1)
+		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 2)
 	};
 
 	auto create_info = vk::DescriptorPoolCreateInfo()
 		.setPoolSizeCount(static_cast<uint32_t>(pool_sizes.size()))
 		.setPPoolSizes(pool_sizes.data())
-		.setMaxSets(3);
+		.setMaxSets(1);
 
 	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
 }
@@ -112,11 +113,19 @@ void Renderer::CreateDescriptorPool()
 void Renderer::CreateDescriptorSetLayout()
 {
 	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
+		// matrix
 		vk::DescriptorSetLayoutBinding()
 			.setBinding(0)
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eVertex),
+
+		// lighting
+		vk::DescriptorSetLayoutBinding()
+			.setBinding(1)
+			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
 	};
 
 	auto create_info = vk::DescriptorSetLayoutCreateInfo()
@@ -127,11 +136,15 @@ void Renderer::CreateDescriptorSetLayout()
 }
 
 
-void Renderer::CreateMatrixUniformBuffer()
+void Renderer::CreateUniformBuffers()
 {
 	matrix_uniform_buffer = engine->CreateBuffer(sizeof(MatrixUniformBuffer),
 												 vk::BufferUsageFlagBits::eUniformBuffer,
 												 VMA_MEMORY_USAGE_CPU_ONLY);
+
+	lighting_uniform_buffer = engine->CreateBuffer(sizeof(LightingUniformBuffer),
+												   vk::BufferUsageFlagBits::eUniformBuffer,
+												   VMA_MEMORY_USAGE_CPU_ONLY);
 }
 
 void Renderer::UpdateMatrixUniformBuffer()
@@ -149,6 +162,29 @@ void Renderer::UpdateMatrixUniformBuffer()
 	engine->UnmapMemory(matrix_uniform_buffer.allocation);
 }
 
+void Renderer::UpdateLightingUniformBuffer()
+{
+	LightingUniformBuffer ubo;
+	memset(&ubo, 0, sizeof(ubo));
+
+	auto dir_light = scene->GetRootNode()->GetComponentInChildren<DirectionalLightComponent>();
+	if(dir_light != nullptr)
+	{
+		ubo.directional_light_enabled = 1;
+		ubo.directional_light_dir = dir_light->GetNode()->GetTransformComponent()->GetMatrixWorld() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+		ubo.directional_light_intensity = dir_light->GetIntensity();
+	}
+	else
+	{
+		ubo.directional_light_enabled = 0;
+	}
+
+	void *data = engine->MapMemory(lighting_uniform_buffer.allocation);
+	memcpy(data, &ubo, sizeof(ubo));
+	engine->UnmapMemory(lighting_uniform_buffer.allocation);
+}
+
+
 void Renderer::CreateDescriptorSet()
 {
 	vk::DescriptorSetLayout layouts[] = { descriptor_set_layout };
@@ -160,22 +196,35 @@ void Renderer::CreateDescriptorSet()
 
 	descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
 
-	auto buffer_info = vk::DescriptorBufferInfo()
+	auto matrix_buffer_info = vk::DescriptorBufferInfo()
 		.setBuffer(matrix_uniform_buffer.buffer)
 		.setOffset(0)
 		.setRange(sizeof(MatrixUniformBuffer));
 
-	auto buffer_write = vk::WriteDescriptorSet()
+	auto matrix_buffer_write = vk::WriteDescriptorSet()
 		.setDstSet(descriptor_set)
 		.setDstBinding(0)
 		.setDstArrayElement(0)
 		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 		.setDescriptorCount(1)
-		.setPBufferInfo(&buffer_info);
+		.setPBufferInfo(&matrix_buffer_info);
 
-	engine->GetVkDevice().updateDescriptorSets({buffer_write}, nullptr);
+
+	auto lighting_buffer_info = vk::DescriptorBufferInfo()
+		.setBuffer(matrix_uniform_buffer.buffer)
+		.setOffset(0)
+		.setRange(sizeof(MatrixUniformBuffer));
+
+	auto lighting_buffer_write = vk::WriteDescriptorSet()
+		.setDstSet(descriptor_set)
+		.setDstBinding(1)
+		.setDstArrayElement(0)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setDescriptorCount(1)
+		.setPBufferInfo(&lighting_buffer_info);
+
+	engine->GetVkDevice().updateDescriptorSets({matrix_buffer_write, lighting_buffer_write}, nullptr);
 }
-
 
 void Renderer::AddMaterial(Material *material)
 {
@@ -200,6 +249,7 @@ void Renderer::RemoveMaterial(Material *material)
 		}
 	}
 }
+
 
 Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 {
@@ -310,7 +360,6 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 	return pipeline;
 }
 
-
 void Renderer::DestroyMaterialPipeline(const Renderer::MaterialPipeline &material_pipeline)
 {
 	auto &device = engine->GetVkDevice();
@@ -403,11 +452,11 @@ void Renderer::CreateRenderPasses()
 			.setPDependencies(&subpass_dependency));
 }
 
+
 void Renderer::CleanupRenderPasses()
 {
 	engine->GetVkDevice().destroyRenderPass(render_pass);
 }
-
 
 void Renderer::ResizeScreen(vk::Extent2D screen_extent, std::vector<vk::ImageView> dst_image_views)
 {
@@ -435,12 +484,12 @@ void Renderer::CreateRenderCommandBuffer()
 					.setCommandBufferCount(1)).front();
 }
 
+
+
 void Renderer::CleanupRenderCommandBuffer()
 {
 	engine->GetVkDevice().freeCommandBuffers(render_command_pool, render_command_buffer);
 }
-
-
 
 void Renderer::RecordRenderCommandBuffer(vk::Framebuffer dst_framebuffer)
 {
@@ -511,6 +560,8 @@ void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> w
 		throw std::runtime_error("renderer has no camera.");
 
 	UpdateMatrixUniformBuffer();
+	UpdateLightingUniformBuffer();
+
 	RecordRenderCommandBuffer(dst_framebuffers[image_index]);
 
 	engine->GetGraphicsQueue().submit(

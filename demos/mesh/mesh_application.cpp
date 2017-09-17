@@ -20,13 +20,14 @@
 #include <component/camera_component.h>
 #include <material/phong_material.h>
 #include <material/unlit_material.h>
+#include <component/directional_light_component.h>
 
 
 void MeshApplication::InitVulkan()
 {
 	DemoApplication::InitVulkan();
 
-	material = new engine::UnlitMaterial(engine);
+	material = new engine::PhongMaterial(engine);
 	renderer = new engine::Renderer(engine, swapchain_extent, swapchain_image_format, swapchain_image_views);
 	renderer->AddMaterial(material);
 
@@ -55,6 +56,15 @@ void MeshApplication::InitVulkan()
 		camera->SetNearClip(0.01f);
 		camera_node->AddComponent(camera);
 	}
+
+	engine::Node *light_node = new engine::Node();
+	scene->GetRootNode()->AddChild(light_node);
+
+	light_node->AddComponent(new engine::TransformComponent());
+	light_node->GetTransformComponent()->SetLookAt(glm::vec3(-1.0f, -1.0f, -1.0f));
+
+	engine::DirectionalLightComponent *light = new engine::DirectionalLightComponent();
+	light_node->AddComponent(light);
 
 	renderer->SetCamera(camera);
 

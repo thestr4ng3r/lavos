@@ -1,6 +1,7 @@
 
 #include "engine.h"
 #include "material/phong_material.h"
+#include "material/material_instance.h"
 
 #include "shader_load.h"
 
@@ -10,13 +11,17 @@ PhongMaterial::PhongMaterial(engine::Engine *engine) : Material(engine)
 {
 	CreateDescriptorSetLayout();
 
-	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("phong.vert"));
-	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("phong.frag"));
+	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("material/phong.vert"));
+	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("material/phong.frag"));
+
+	texture_default_image = Texture::CreateColor(engine, vk::Format::eR8G8B8Unorm, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f));
 }
 
 PhongMaterial::~PhongMaterial()
 {
 	auto &device = engine->GetVkDevice();
+
+	engine->DestroyTexture(texture_default_image);
 
 	device.destroyShaderModule(vert_shader_module);
 	device.destroyShaderModule(frag_shader_module);
@@ -59,4 +64,27 @@ std::vector<vk::PipelineShaderStageCreateInfo> PhongMaterial::GetShaderStageCrea
 										  frag_shader_module,
 										  "main")
 	};
+}
+
+
+void PhongMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance)
+{
+	Texture *texture = instance->GetTexture(MaterialInstance::texture_slot_base_color);
+	if(texture == nullptr)
+		texture = &texture_default_image;
+
+	auto image_info = vk::DescriptorImageInfo()
+		.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+		.setImageView(texture->image_view)
+		.setSampler(texture->sampler);
+
+	auto image_write = vk::WriteDescriptorSet()
+		.setDstSet(descriptor_set)
+		.setDstBinding(0)
+		.setDstArrayElement(0)
+		.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+		.setDescriptorCount(1)
+		.setPImageInfo(&image_info);
+
+	engine->GetVkDevice().updateDescriptorSets(image_write, nullptr);
 }

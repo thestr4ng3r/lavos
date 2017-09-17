@@ -1,7 +1,7 @@
 
-#include <material/material_instance.h>
 #include "engine.h"
 #include "material/unlit_material.h"
+#include "material/material_instance.h"
 
 #include "shader_load.h"
 
@@ -11,8 +11,8 @@ UnlitMaterial::UnlitMaterial(engine::Engine *engine) : Material(engine)
 {
 	CreateDescriptorSetLayout();
 
-	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("unlit.vert"));
-	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("unlit.frag"));
+	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("material/unlit.vert"));
+	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("material/unlit.frag"));
 
 	texture_default_image = Texture::CreateColor(engine, vk::Format::eR8G8B8Unorm, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f));
 }
@@ -20,6 +20,8 @@ UnlitMaterial::UnlitMaterial(engine::Engine *engine) : Material(engine)
 UnlitMaterial::~UnlitMaterial()
 {
 	auto &device = engine->GetVkDevice();
+
+	engine->DestroyTexture(texture_default_image);
 
 	device.destroyShaderModule(vert_shader_module);
 	device.destroyShaderModule(frag_shader_module);

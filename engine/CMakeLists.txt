@@ -5,6 +5,7 @@ set(GLSLC_EXECUTABLE glslc) # TODO: Write a find module or something
 macro(add_spirv_shaders SPIRV_FILES_VAR GLSL_FILES_VAR)
 	set(${SPIRV_FILES_VAR} "")
 	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/shader")
+	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/shader/material")
 	foreach(glsl_file ${${GLSL_FILES_VAR}})
 		set(spirv_file "${CMAKE_CURRENT_BINARY_DIR}/shader/${glsl_file}.spv")
 		set(glsl_file "${CMAKE_CURRENT_SOURCE_DIR}/glsl/${glsl_file}")
@@ -52,13 +53,15 @@ set(SOURCE_FILES
 		include/component/transform_component.h
 		src/component/transform_component.cpp
 		include/component/camera_component.h
-		src/glm_stream.h)
+		src/glm_stream.h
+		src/component/directional_light_component.cpp
+		include/component/directional_light_component.h)
 
 set(GLSL_FILES
-		unlit.vert
-		unlit.frag
-		phong.vert
-		phong.frag)
+		material/unlit.vert
+		material/unlit.frag
+		material/phong.vert
+		material/phong.frag)
 
 add_spirv_shaders(SPIRV_FILES GLSL_FILES)
 

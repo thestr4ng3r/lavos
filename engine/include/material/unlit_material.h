@@ -24,9 +24,7 @@ class UnlitMaterial: public Material
 		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes() const override;
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos() const override;
 
-		virtual void WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance) override ;
-
-		Texture GetTextureDefaultImage() const override		{ return texture_default_image; }
+		virtual void WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
 };
 
 }

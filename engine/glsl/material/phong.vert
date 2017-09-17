@@ -1,7 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-#include "material_common_vert.glsl"
+#include "common_vert.glsl"
 
 out gl_PerVertex
 {

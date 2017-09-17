@@ -1,5 +1,10 @@
 
-layout(set = 0, binding = 0) uniform MatrixBuffer
+#ifndef _MATERIAL_COMMON_VERT_H
+#define _MATERIAL_COMMON_VERT_H
+
+#include "common.glsl"
+
+layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = 0) uniform MatrixBuffer
 {
 	mat4 modelview;
 	mat4 projection;
@@ -21,3 +26,5 @@ vec4 CalculateVertexPosition()
 		* transform_push_constant.transform
 		* vec4(position_in, 1.0);
 }
+
+#endif
