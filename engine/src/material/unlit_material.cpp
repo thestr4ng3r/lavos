@@ -1,4 +1,5 @@
 
+#include <material/material_instance.h>
 #include "engine.h"
 #include "material/unlit_material.h"
 
@@ -61,4 +62,26 @@ std::vector<vk::PipelineShaderStageCreateInfo> UnlitMaterial::GetShaderStageCrea
 										  frag_shader_module,
 										  "main")
 	};
+}
+
+void UnlitMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance)
+{
+	Texture *texture = instance->GetTexture(MaterialInstance::texture_slot_base_color);
+	if(texture == nullptr)
+		texture = &texture_default_image;
+
+	auto image_info = vk::DescriptorImageInfo()
+		.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+		.setImageView(texture->image_view)
+		.setSampler(texture->sampler);
+
+	auto image_write = vk::WriteDescriptorSet()
+		.setDstSet(descriptor_set)
+		.setDstBinding(0)
+		.setDstArrayElement(0)
+		.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+		.setDescriptorCount(1)
+		.setPImageInfo(&image_info);
+
+	engine->GetVkDevice().updateDescriptorSets(image_write, nullptr);
 }

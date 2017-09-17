@@ -5,7 +5,7 @@
 #include <string>
 #include <map>
 
-#include "material_instance.h"
+#include "material/material_instance.h"
 #include "mesh.h"
 #include "scene.h"
 

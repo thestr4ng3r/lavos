@@ -28,8 +28,8 @@ set(SOURCE_FILES
 		include/material/unlit_material.h
 		src/material/phong_material.cpp
 		include/material/phong_material.h
-		src/material_instance.cpp
-		include/material_instance.h
+		src/material/material_instance.cpp
+		include/material/material_instance.h
 		include/buffer.h
 		src/image.cpp
 		include/image.h

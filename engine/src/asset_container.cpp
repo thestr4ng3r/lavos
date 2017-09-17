@@ -143,7 +143,10 @@ static void LoadMaterialInstances(AssetContainer &container, Material *material,
 	for(const auto &gltf_material : model.materials)
 	{
 		auto material_instance = new MaterialInstance(material, container.descriptor_pool);
-		material_instance->SetTexture(LoadSubParameterTexture(container, model, gltf_material.values, "baseColorTexture", "index"));
+
+		material_instance->SetTexture(MaterialInstance::texture_slot_base_color,
+									  LoadSubParameterTexture(container, model, gltf_material.values, "baseColorTexture", "index"));
+
 		material_instance->WriteDescriptorSet();
 		container.material_instances.push_back(material_instance);
 	}
@@ -384,6 +387,7 @@ static vk::DescriptorPool CreateDescriptorPoolForGLTF(Engine *engine, Material *
 		size.descriptorCount *= material_instances_count;
 
 	auto create_info = vk::DescriptorPoolCreateInfo()
+		.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
 		.setPoolSizeCount(static_cast<uint32_t>(sizes.size()))
 		.setPPoolSizes(sizes.data())
 		.setMaxSets(static_cast<uint32_t>(material_instances_count));

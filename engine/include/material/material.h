@@ -10,6 +10,7 @@ namespace engine
 {
 
 class Engine;
+class MaterialInstance;
 
 class Material
 {
@@ -28,6 +29,8 @@ class Material
 
 		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes() const =0;
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos() const =0;
+
+		virtual void WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance) =0;
 
 		static vk::ShaderModule CreateShaderModule(vk::Device device, const std::vector<char> &code);
 

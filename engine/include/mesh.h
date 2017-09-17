@@ -7,7 +7,7 @@
 
 #include "vertex.h"
 #include "buffer.h"
-#include "material_instance.h"
+#include "material/material_instance.h"
 
 namespace engine
 {

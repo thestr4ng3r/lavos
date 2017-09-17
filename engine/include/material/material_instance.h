@@ -2,6 +2,8 @@
 #ifndef VULKAN_MATERIAL_INSTANCE_H
 #define VULKAN_MATERIAL_INSTANCE_H
 
+#include <map>
+
 #include "texture.h"
 #include "material/material.h"
 
@@ -12,14 +14,19 @@ class Engine;
 
 class MaterialInstance
 {
+	public:
+		typedef unsigned int TextureSlot;
+		static const TextureSlot texture_slot_base_color = 0;
+
 	private:
 		Material * const material;
 
-		Texture texture;
+		std::map<TextureSlot, Texture> textures;
 
+		vk::DescriptorPool descriptor_pool;
 		vk::DescriptorSet descriptor_set;
 
-		void CreateDescriptorSet(vk::DescriptorPool descriptor_pool);
+		void CreateDescriptorSet();
 
 	public:
 		MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool);
@@ -27,9 +34,10 @@ class MaterialInstance
 
 		void WriteDescriptorSet();
 
-		vk::DescriptorSet GetDescriptorSet() const 		{ return descriptor_set; }
+		vk::DescriptorSet GetDescriptorSet() const 				{ return descriptor_set; }
 
-		void SetTexture(Texture texture)				{ this->texture = texture; };
+		void SetTexture(TextureSlot slot, Texture texture);
+		Texture *GetTexture(TextureSlot slot);
 };
 
 }
