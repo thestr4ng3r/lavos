@@ -6,10 +6,22 @@
 
 layout(set = DESCRIPTOR_SET_INDEX_MATERIAL, binding = 0) uniform sampler2D tex_uni;
 
-layout(location = 0) in vec3 frag_color_in;
-layout(location = 1) in vec2 uv_in;
+layout(location = 0) in vec2 uv_in;
+
+layout(location = 1) in vec3 normal_in;
 
 void main()
 {
-	out_color = texture(tex_uni, uv_in).rgba;
+	vec4 base_color = texture(tex_uni, uv_in).rgba;
+	vec3 normal = normalize(normal_in);
+
+	vec3 color = base_color.rgb * lighting_uni.ambient_intensity;
+
+	if(lighting_uni.directional_light_enabled)
+	{
+		float lambert = max(0.0, dot(-lighting_uni.directional_light_dir, normal));
+		color += base_color.rgb * lambert;
+	}
+
+	out_color = vec4(color, base_color.a);
 }

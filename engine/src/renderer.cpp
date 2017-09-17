@@ -167,11 +167,14 @@ void Renderer::UpdateLightingUniformBuffer()
 	LightingUniformBuffer ubo;
 	memset(&ubo, 0, sizeof(ubo));
 
+	ubo.ambient_intensity = scene->GetAmbientLightIntensity();
+
 	auto dir_light = scene->GetRootNode()->GetComponentInChildren<DirectionalLightComponent>();
 	if(dir_light != nullptr)
 	{
 		ubo.directional_light_enabled = 1;
-		ubo.directional_light_dir = dir_light->GetNode()->GetTransformComponent()->GetMatrixWorld() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+		ubo.directional_light_dir = glm::normalize(dir_light->GetNode()->GetTransformComponent()->GetMatrixWorld()
+												   * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
 		ubo.directional_light_intensity = dir_light->GetIntensity();
 	}
 	else
@@ -211,9 +214,9 @@ void Renderer::CreateDescriptorSet()
 
 
 	auto lighting_buffer_info = vk::DescriptorBufferInfo()
-		.setBuffer(matrix_uniform_buffer.buffer)
+		.setBuffer(lighting_uniform_buffer.buffer)
 		.setOffset(0)
-		.setRange(sizeof(MatrixUniformBuffer));
+		.setRange(sizeof(LightingUniformBuffer));
 
 	auto lighting_buffer_write = vk::WriteDescriptorSet()
 		.setDstSet(descriptor_set)

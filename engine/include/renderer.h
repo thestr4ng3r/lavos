@@ -20,10 +20,10 @@ struct MatrixUniformBuffer
 
 struct alignas(1) LightingUniformBuffer
 {
+	glm::vec3 ambient_intensity;
 	std::uint32_t directional_light_enabled;
-	std::uint8_t unused_0[3*4];
 	glm::vec3 directional_light_dir;
-	std::uint8_t unused_1[4];
+	std::uint8_t unused_2[4];
 	glm::vec3 directional_light_intensity;
 };
 

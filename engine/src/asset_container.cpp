@@ -219,6 +219,30 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 			}
 
 
+			// normal
+
+			auto normal_it = gltf_primitive.attributes.find("NORMAL");
+			if(normal_it != gltf_primitive.attributes.end())
+			{
+				auto &accessor = model.accessors[normal_it->second];
+				auto &buffer_view = model.bufferViews[accessor.bufferView];
+				auto &buffer = model.buffers[buffer_view.buffer];
+
+				size_t stride = buffer_view.byteStride;
+				if(stride == 0)
+					stride = sizeof(float) * 3;
+
+				for(size_t i=0; i<vertices_count; i++)
+				{
+					const auto *data = buffer.data.data() + buffer_view.byteOffset
+									   + stride * i
+									   + accessor.byteOffset;
+
+					memcpy(&vertices[vertices_base + i].normal, data, sizeof(float) * 3);
+				}
+			}
+
+
 			// index
 
 			auto &index_accessor = model.accessors[gltf_primitive.indices];

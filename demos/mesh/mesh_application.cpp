@@ -33,10 +33,11 @@ void MeshApplication::InitVulkan()
 
 	//asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "/home/florian/dev/glTF-Sample-Models/2.0/GearboxAssy/glTF/GearboxAssy.gltf");
 	//asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "/home/florian/dev/glTF-Sample-Models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf");
-	//asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "/home/florian/dev/glTF-Sample-Models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf");
-	asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
+	asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "/home/florian/dev/glTF-Sample-Models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf");
+	//asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
 
 	engine::Scene *scene = asset_container->scenes[0];
+	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
 
 	renderer->SetScene(scene);
 

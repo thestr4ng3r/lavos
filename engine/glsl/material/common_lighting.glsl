@@ -6,6 +6,8 @@
 
 layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = 1, std140) uniform LightingBuffer
 {
+	vec3 ambient_intensity;
+
 	bool directional_light_enabled;
 	vec3 directional_light_dir;
 	vec3 directional_light_intensity;

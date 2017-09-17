@@ -9,8 +9,8 @@
 struct Vertex
 {
 	glm::vec3 pos;
-	glm::vec3 color;
 	glm::vec2 uv;
+	glm::vec3 normal;
 
 	static vk::VertexInputBindingDescription GetBindingDescription()
 	{
@@ -32,14 +32,14 @@ struct Vertex
 			vk::VertexInputAttributeDescription()
 				.setBinding(0)
 				.setLocation(1)
-				.setFormat(vk::Format::eR32G32B32Sfloat)
-				.setOffset(static_cast<uint32_t>(offsetof(Vertex, color))),
+				.setFormat(vk::Format::eR32G32Sfloat)
+				.setOffset(static_cast<uint32_t>(offsetof(Vertex, uv))),
 
 			vk::VertexInputAttributeDescription()
 				.setBinding(0)
 				.setLocation(2)
-				.setFormat(vk::Format::eR32G32Sfloat)
-				.setOffset(static_cast<uint32_t>(offsetof(Vertex, uv))),
+				.setFormat(vk::Format::eR32G32B32Sfloat)
+				.setOffset(static_cast<uint32_t>(offsetof(Vertex, normal))),
 		};
 	};
 };
