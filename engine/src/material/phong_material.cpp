@@ -69,7 +69,7 @@ std::vector<vk::PipelineShaderStageCreateInfo> PhongMaterial::GetShaderStageCrea
 
 void PhongMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance)
 {
-	Texture *texture = instance->GetTexture(MaterialInstance::texture_slot_base_color);
+	Texture *texture = instance->GetTexture(texture_slot_base_color);
 	if(texture == nullptr)
 		texture = &texture_default_image;
 

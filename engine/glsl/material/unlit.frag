@@ -3,12 +3,17 @@
 
 #include "common_frag.glsl"
 
-layout(set = 1, binding = 0) uniform sampler2D tex_uni;
+layout(set = DESCRIPTOR_SET_INDEX_MATERIAL, binding = 0, std140) uniform MaterialBuffer
+{
+	vec3 color_factor;
+} material_uni;
 
-layout(location = 0) in vec3 frag_color_in;
+layout(set = 1, binding = 1) uniform sampler2D tex_uni;
+
 layout(location = 1) in vec2 uv_in;
 
 void main()
 {
-	out_color = texture(tex_uni, uv_in);
+	vec4 tex_color = texture(tex_uni, uv_in);
+	out_color = vec4(tex_color.rgb * material_uni.color_factor, tex_color.a);
 }

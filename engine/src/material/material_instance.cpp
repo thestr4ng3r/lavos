@@ -9,6 +9,7 @@ MaterialInstance::MaterialInstance(Material *material, vk::DescriptorPool descri
 	: material(material), descriptor_pool(descriptor_pool)
 {
 	CreateDescriptorSet();
+	CreateUniformBuffer();
 }
 
 MaterialInstance::~MaterialInstance()
@@ -35,9 +36,19 @@ void MaterialInstance::CreateDescriptorSet()
 	descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
 }
 
+void MaterialInstance::CreateUniformBuffer()
+{
+	uniform_buffer = material->CreateUniformBuffer();
+}
+
 void MaterialInstance::WriteDescriptorSet()
 {
 	material->WriteDescriptorSet(descriptor_set, this);
+}
+
+void MaterialInstance::WriteUniformBuffer()
+{
+	material->WriteUniformBuffer(uniform_buffer, this);
 }
 
 void MaterialInstance::SetTexture(MaterialInstance::TextureSlot slot, Texture texture)
@@ -59,4 +70,65 @@ Texture *MaterialInstance::GetTexture(MaterialInstance::TextureSlot slot)
 		return &it->second;
 
 	return nullptr;
+}
+
+void MaterialInstance::SetParameter(MaterialInstance::ParameterSlot slot, MaterialInstance::Parameter parameter)
+{
+	parameters.insert(std::make_pair(slot, parameter));
+}
+
+MaterialInstance::Parameter *MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot)
+{
+	auto it = parameters.find(slot);
+
+	if(it != parameters.end())
+		return &it->second;
+
+	return nullptr;
+}
+
+float MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, float default_value)
+{
+	auto it = parameters.find(slot);
+
+	if(it != parameters.end())
+		return it->second.f;
+
+	return default_value;
+}
+
+glm::vec2 MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, glm::vec2 default_value)
+{
+	auto it = parameters.find(slot);
+
+	if(it != parameters.end())
+		return it->second.v2;
+
+	return default_value;
+}
+
+glm::vec3 MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, glm::vec3 default_value)
+{
+	auto it = parameters.find(slot);
+
+	if(it != parameters.end())
+		return it->second.v3;
+
+	return default_value;
+}
+
+glm::vec4 MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, glm::vec4 default_value)
+{
+	auto it = parameters.find(slot);
+
+	if(it != parameters.end())
+		return it->second.v4;
+
+	return default_value;
+}
+
+void MaterialInstance::WriteAllData()
+{
+	WriteUniformBuffer();
+	WriteDescriptorSet();
 }

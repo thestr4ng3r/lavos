@@ -14,11 +14,24 @@ class Buffer
 		vk::Buffer buffer;
 		VmaAllocation allocation;
 
-		Buffer()
+		Buffer(nullptr_t = nullptr)
 			: buffer(nullptr), allocation(nullptr) {}
 
 		Buffer(vk::Buffer buffer, VmaAllocation allocation)
 			: buffer(buffer), allocation(allocation) {}
+
+
+		bool operator==(Buffer const &rhs) const
+		{
+			return buffer == rhs.buffer
+				   && allocation == rhs.allocation;
+		}
+
+		bool operator!=(Buffer const &rhs) const
+		{
+			return buffer != rhs.buffer
+				   || allocation != rhs.allocation;
+		}
 };
 
 }

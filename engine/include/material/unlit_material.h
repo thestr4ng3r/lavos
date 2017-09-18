@@ -25,6 +25,9 @@ class UnlitMaterial: public Material
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos() const override;
 
 		virtual void WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
+
+		virtual engine::Buffer CreateUniformBuffer();
+		virtual void WriteUniformBuffer(engine::Buffer buffer, MaterialInstance *instance) override;
 };
 
 }

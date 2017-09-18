@@ -129,6 +129,20 @@ static bool GetSubParameter(const tinygltf::ParameterMap &params, std::string na
 	return true;
 }
 
+template<class T, glm::precision P>
+static bool GetParameter(const tinygltf::ParameterMap &params, std::string name, glm::tvec4<T, P> &dst)
+{
+	auto it = params.find(name);
+	if(it == params.end())
+		return false;
+
+	unsigned int i;
+	for(i=0; i<std::max(static_cast<unsigned long>(4), it->second.number_array.size()); i++)
+		dst[i] = static_cast<T>(it->second.number_array[i]);
+
+	return i == 4;
+}
+
 static Texture LoadSubParameterTexture(AssetContainer &container, tinygltf::Model &model, const tinygltf::ParameterMap &params, std::string name, std::string subname)
 {
 	int index;
@@ -144,10 +158,14 @@ static void LoadMaterialInstances(AssetContainer &container, Material *material,
 	{
 		auto material_instance = new MaterialInstance(material, container.descriptor_pool);
 
-		material_instance->SetTexture(MaterialInstance::texture_slot_base_color,
+		material_instance->SetTexture(Material::texture_slot_base_color,
 									  LoadSubParameterTexture(container, model, gltf_material.values, "baseColorTexture", "index"));
 
-		material_instance->WriteDescriptorSet();
+		glm::vec4 base_color(1.0f);
+		GetParameter(gltf_material.values, "baseColorFactor", base_color);
+		material_instance->SetParameter(Material::parameter_slot_base_color_factor, base_color);
+
+		material_instance->WriteAllData();
 		container.material_instances.push_back(material_instance);
 	}
 }
