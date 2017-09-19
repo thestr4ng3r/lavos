@@ -37,8 +37,9 @@ class Material
 
 		virtual void WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance) =0;
 
-		virtual engine::Buffer CreateUniformBuffer() 				{ return nullptr; }
-		virtual void WriteUniformBuffer(engine::Buffer buffer, MaterialInstance *instance) {}
+		virtual void *CreateInstanceData()											{ return nullptr; }
+		virtual void DestroyInstanceData(void *data)								{}
+		virtual void UpdateInstanceData(void *data, MaterialInstance *instance)		{}
 
 		static vk::ShaderModule CreateShaderModule(vk::Device device, const std::vector<char> &code);
 

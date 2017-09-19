@@ -16,6 +16,8 @@ MaterialInstance::~MaterialInstance()
 {
 	auto engine = material->GetEngine();
 
+	material->DestroyInstanceData(instance_data);
+
 	for(auto &entry : textures)
 		engine->DestroyTexture(entry.second);
 
@@ -38,7 +40,7 @@ void MaterialInstance::CreateDescriptorSet()
 
 void MaterialInstance::CreateUniformBuffer()
 {
-	uniform_buffer = material->CreateUniformBuffer();
+	instance_data = material->CreateInstanceData();
 }
 
 void MaterialInstance::WriteDescriptorSet()
@@ -48,7 +50,7 @@ void MaterialInstance::WriteDescriptorSet()
 
 void MaterialInstance::WriteUniformBuffer()
 {
-	material->WriteUniformBuffer(uniform_buffer, this);
+	material->UpdateInstanceData(instance_data, this);
 }
 
 void MaterialInstance::SetTexture(MaterialInstance::TextureSlot slot, Texture texture)

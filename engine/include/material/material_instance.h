@@ -44,7 +44,7 @@ class MaterialInstance
 		vk::DescriptorPool descriptor_pool;
 		vk::DescriptorSet descriptor_set;
 
-		engine::Buffer uniform_buffer;
+		void *instance_data;
 
 		void CreateDescriptorSet();
 		void CreateUniformBuffer();
@@ -59,7 +59,7 @@ class MaterialInstance
 		void WriteAllData();
 
 		vk::DescriptorSet GetDescriptorSet() const 				{ return descriptor_set; }
-		engine::Buffer GetUniformBuffer() const 				{ return uniform_buffer; }
+		void *GetInstanceData() const 							{ return instance_data; }
 
 		void SetTexture(TextureSlot slot, Texture texture);
 		Texture *GetTexture(TextureSlot slot);

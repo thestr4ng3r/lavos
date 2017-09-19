@@ -10,6 +10,11 @@ namespace engine
 class UnlitMaterial: public Material
 {
 	private:
+		struct InstanceData
+		{
+			engine::Buffer uniform_buffer;
+		};
+
 		void CreateDescriptorSetLayout();
 
 		vk::ShaderModule vert_shader_module;
@@ -26,8 +31,9 @@ class UnlitMaterial: public Material
 
 		virtual void WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
 
-		virtual engine::Buffer CreateUniformBuffer();
-		virtual void WriteUniformBuffer(engine::Buffer buffer, MaterialInstance *instance) override;
+		virtual void *CreateInstanceData() override;
+		virtual void DestroyInstanceData(void *data) override;
+		virtual void UpdateInstanceData(void *data, MaterialInstance *instance) override;
 };
 
 }

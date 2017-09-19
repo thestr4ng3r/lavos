@@ -81,8 +81,10 @@ std::vector<vk::PipelineShaderStageCreateInfo> UnlitMaterial::GetShaderStageCrea
 
 void UnlitMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance)
 {
+	auto instance_data = reinterpret_cast<InstanceData *>(instance->GetInstanceData());
+
 	auto ubo_info = vk::DescriptorBufferInfo()
-		.setBuffer(instance->GetUniformBuffer().buffer)
+		.setBuffer(instance_data->uniform_buffer.buffer)
 		.setOffset(0)
 		.setRange(sizeof(UniformBuffer));
 
@@ -117,20 +119,33 @@ void UnlitMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, Materia
 	engine->GetVkDevice().updateDescriptorSets({image_write, ubo_write}, nullptr);
 }
 
-engine::Buffer UnlitMaterial::CreateUniformBuffer()
+void *UnlitMaterial::CreateInstanceData()
 {
-	return engine->CreateBuffer(sizeof(UniformBuffer),
-								vk::BufferUsageFlagBits::eUniformBuffer,
-								VMA_MEMORY_USAGE_CPU_ONLY);
+	InstanceData *data = new InstanceData();
+
+	data->uniform_buffer = engine->CreateBuffer(sizeof(UniformBuffer),
+												vk::BufferUsageFlagBits::eUniformBuffer,
+												VMA_MEMORY_USAGE_CPU_ONLY);
+
+	return data;
 }
 
-void UnlitMaterial::WriteUniformBuffer(engine::Buffer buffer, MaterialInstance *instance)
+void UnlitMaterial::DestroyInstanceData(void *data_p)
 {
+	auto data = reinterpret_cast<InstanceData *>(data_p);
+	engine->DestroyBuffer(data->uniform_buffer);
+	delete data;
+}
+
+void UnlitMaterial::UpdateInstanceData(void *data_p, MaterialInstance *instance)
+{
+	auto data = reinterpret_cast<InstanceData *>(data_p);
+
 	UniformBuffer ubo;
 
 	ubo.color_factor = instance->GetParameter(parameter_slot_base_color_factor, glm::vec3(1.0f, 1.0f, 1.0f));
 
-	void *data = engine->MapMemory(buffer.allocation);
-	memcpy(data, &ubo, sizeof(ubo));
-	engine->UnmapMemory(buffer.allocation);
+	void *buffer_data = engine->MapMemory(data->uniform_buffer.allocation);
+	memcpy(buffer_data, &ubo, sizeof(ubo));
+	engine->UnmapMemory(data->uniform_buffer.allocation);
 }
