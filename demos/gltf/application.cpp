@@ -11,7 +11,7 @@
 
 #include <glm_config.h>
 
-#include "mesh_application.h"
+#include "application.h"
 
 #include <vulkan/vulkan.h>
 #include <engine.h>
@@ -23,7 +23,12 @@
 #include <component/directional_light_component.h>
 
 
-void MeshApplication::InitVulkan()
+Application::Application(std::string gltf_filename)
+{
+	this->gltf_filename = gltf_filename;
+}
+
+void Application::InitVulkan()
 {
 	DemoApplication::InitVulkan();
 
@@ -31,10 +36,7 @@ void MeshApplication::InitVulkan()
 	renderer = new engine::Renderer(engine, swapchain_extent, swapchain_image_format, swapchain_image_views);
 	renderer->AddMaterial(material);
 
-	//asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "/home/florian/dev/glTF-Sample-Models/2.0/GearboxAssy/glTF/GearboxAssy.gltf");
-	asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "/home/florian/dev/glTF-Sample-Models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf");
-	//asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "/home/florian/dev/glTF-Sample-Models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf");
-	//asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
+	asset_container = engine::AssetContainer::LoadFromGLTF(engine, material, gltf_filename);
 
 	engine::Scene *scene = asset_container->scenes[0];
 	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
@@ -72,7 +74,7 @@ void MeshApplication::InitVulkan()
 	material_instance = asset_container->material_instances.front();
 }
 
-void MeshApplication::DrawFrame(uint32_t image_index)
+void Application::DrawFrame(uint32_t image_index)
 {
 	renderer->DrawFrame(image_index,
 						{ image_available_semaphore },
@@ -80,13 +82,13 @@ void MeshApplication::DrawFrame(uint32_t image_index)
 						{ render_finished_semaphore });
 }
 
-void MeshApplication::RecreateSwapchain()
+void Application::RecreateSwapchain()
 {
 	DemoApplication::RecreateSwapchain();
 	renderer->ResizeScreen(swapchain_extent, swapchain_image_views);
 }
 
-void MeshApplication::CleanupApplication()
+void Application::CleanupApplication()
 {
 	delete asset_container;
 	delete renderer;
@@ -94,9 +96,13 @@ void MeshApplication::CleanupApplication()
 
 
 #ifndef __ANDROID__
-int main()
+int main(int argc, const char **argv)
 {
-	MeshApplication app;
+	std::string gltf_filename = "data/gltftest.gltf";
+	if(argc > 1)
+		gltf_filename = argv[1];
+
+	Application app(gltf_filename);
 
 	try
 	{

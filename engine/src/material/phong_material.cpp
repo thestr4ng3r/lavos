@@ -141,7 +141,7 @@ void PhongMaterial::UpdateInstanceData(void *data_p, MaterialInstance *instance)
 
 	UniformBuffer ubo;
 
-	ubo.color_factor = instance->GetParameter(parameter_slot_base_color_factor, glm::vec3(1.0f, 1.0f, 1.0f));
+	ubo.color_factor = instance->GetParameter(parameter_slot_base_color_factor, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	void *buffer_data = engine->MapMemory(data->uniform_buffer.allocation);
 	memcpy(buffer_data, &ubo, sizeof(ubo));

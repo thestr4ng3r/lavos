@@ -16,9 +16,11 @@
 
 #include "demo_application.h"
 
-class MeshApplication: public DemoApplication
+class Application: public DemoApplication
 {
     private:
+		std::string gltf_filename;
+
 		engine::Renderer *renderer;
 		engine::Material *material;
 
@@ -33,6 +35,9 @@ class MeshApplication: public DemoApplication
 		void CleanupApplication() override;
 
 		void DrawFrame(uint32_t image_index) override;
+
+	public:
+		Application(std::string gltf_filename);
 };
 
 #endif

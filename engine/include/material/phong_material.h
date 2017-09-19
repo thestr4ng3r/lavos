@@ -12,7 +12,7 @@ class PhongMaterial: public Material
 	private:
 		struct UniformBuffer
 		{
-			glm::vec3 color_factor;
+			glm::vec4 color_factor;
 		};
 
 		struct InstanceData

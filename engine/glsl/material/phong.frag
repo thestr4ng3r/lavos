@@ -7,7 +7,7 @@
 
 layout(set = DESCRIPTOR_SET_INDEX_MATERIAL, binding = 0, std140) uniform MaterialBuffer
 {
-	vec3 base_color_factor;
+	vec4 base_color_factor;
 } material_uni;
 
 layout(set = DESCRIPTOR_SET_INDEX_MATERIAL, binding = 1) uniform sampler2D tex_uni;
@@ -20,7 +20,7 @@ layout(location = 1) in vec3 normal_in;
 void main()
 {
 	vec4 base_color = texture(tex_uni, uv_in).rgba;
-	base_color.rgb *= material_uni.base_color_factor;
+	base_color *= material_uni.base_color_factor;
 
 	vec3 normal = normalize(normal_in);
 
