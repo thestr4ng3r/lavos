@@ -8,7 +8,7 @@ layout(set = DESCRIPTOR_SET_INDEX_MATERIAL, binding = 0, std140) uniform Materia
 	vec3 color_factor;
 } material_uni;
 
-layout(set = 1, binding = 1) uniform sampler2D tex_uni;
+layout(set = DESCRIPTOR_SET_INDEX_MATERIAL, binding = 1) uniform sampler2D tex_uni;
 
 layout(location = 1) in vec2 uv_in;
 

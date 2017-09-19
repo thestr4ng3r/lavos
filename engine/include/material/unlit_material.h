@@ -10,6 +10,11 @@ namespace engine
 class UnlitMaterial: public Material
 {
 	private:
+		struct UniformBuffer
+		{
+			glm::vec3 color_factor;
+		};
+
 		struct InstanceData
 		{
 			engine::Buffer uniform_buffer;

@@ -7,11 +7,6 @@
 
 using namespace engine;
 
-struct UniformBuffer
-{
-	glm::vec3 color_factor;
-};
-
 UnlitMaterial::UnlitMaterial(engine::Engine *engine) : Material(engine)
 {
 	CreateDescriptorSetLayout();
