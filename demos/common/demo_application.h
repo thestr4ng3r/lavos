@@ -27,8 +27,6 @@ class DemoApplication
 		vk::Extent2D swapchain_extent;
 		std::vector<vk::Image> swapchain_images;
 		std::vector<vk::ImageView> swapchain_image_views;
-		std::vector<vk::Framebuffer> swapchain_framebuffers;
-
 
 		vk::Semaphore image_available_semaphore;
 		vk::Semaphore render_finished_semaphore;

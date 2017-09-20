@@ -18,6 +18,8 @@ layout(push_constant) uniform TransformPushConstant
 layout(location = 0) in vec3 position_in;
 layout(location = 1) in vec2 uv_in;
 layout(location = 2) in vec3 normal_in;
+layout(location = 3) in vec3 tang_in;
+layout(location = 4) in vec3 bitang_in;
 
 vec4 CalculateVertexPosition()
 {

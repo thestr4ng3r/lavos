@@ -28,6 +28,9 @@ class Application: public DemoApplication
 
 		engine::MaterialInstance *material_instance;
 
+		engine::Node *camera_node;
+
+
 		void InitVulkan() override;
 
 		void RecreateSwapchain() override;

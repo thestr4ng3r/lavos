@@ -170,6 +170,47 @@ static void LoadMaterialInstances(AssetContainer &container, Material *material,
 	}
 }
 
+template<typename F>
+static inline void TraverseAccessor(tinygltf::Model &model, tinygltf::Accessor &accessor, size_t default_stride, const F &func)
+{
+	auto &buffer_view = model.bufferViews[accessor.bufferView];
+	auto &buffer = model.buffers[buffer_view.buffer];
+
+	size_t stride = buffer_view.byteStride;
+	if(stride == 0)
+		stride = default_stride;
+
+	const auto *data = buffer.data.data()
+					   + buffer_view.byteOffset
+					   + accessor.byteOffset;
+
+	for(size_t i=0; i<accessor.count; i++)
+	{
+		func(i, data);
+		data += stride;
+	}
+}
+
+template<typename F>
+static inline void TraverseAccessor(tinygltf::Model &model, int accessor_index, size_t default_stride, const F &func)
+{
+
+	auto &accessor = model.accessors[accessor_index];
+	TraverseAccessor(model, accessor, default_stride, func);
+}
+
+template<typename F>
+static inline bool TraverseOptionalAccessor(tinygltf::Model &model, std::map<std::string, int> &accessor_indices,
+											std::string key, size_t default_stride, const F &func)
+{
+	auto it = accessor_indices.find(key);
+
+	if(it == accessor_indices.end())
+		return false;
+
+	TraverseAccessor(model, it->second, default_stride, func);
+	return true;
+}
 
 static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 {
@@ -182,124 +223,61 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 
 		for(auto &gltf_primitive : gltf_mesh.primitives)
 		{
-			// position
-
 			auto &position_accessor = model.accessors[gltf_primitive.attributes["POSITION"]];
-			auto &position_buffer_view = model.bufferViews[position_accessor.bufferView];
-			auto &position_buffer = model.buffers[position_buffer_view.buffer];
-
-			size_t position_buffer_stride = position_buffer_view.byteStride;
-			if(position_buffer_stride == 0)
-				position_buffer_stride = sizeof(float) * 3;
-
 			size_t vertices_base = vertices.size();
 			size_t vertices_count = position_accessor.count;
 			vertices.resize(vertices_base + vertices_count);
 
-			for(size_t i=0; i<vertices_count; i++)
+			TraverseAccessor(model, position_accessor, sizeof(float) * 3,
+							 [&vertices, &vertices_base] (size_t index, const unsigned char *data)
 			{
-				const auto *data = position_buffer.data.data() + position_buffer_view.byteOffset
-								   + position_buffer_stride * i
-								   + position_accessor.byteOffset;
+				memcpy(&vertices[vertices_base + index].pos, data, sizeof(float) * 3);
+			});
 
-				memcpy(&vertices[vertices_base + i].pos, data, sizeof(float) * 3);
-			}
-
-
-			// uv
-
-			auto uv_it = gltf_primitive.attributes.find("TEXCOORD_0");
-			if(uv_it != gltf_primitive.attributes.end())
+			if(!TraverseOptionalAccessor(model, gltf_primitive.attributes, "TEXCOORD_0", sizeof(float) * 2,
+									 [&vertices, &vertices_base] (size_t index, const unsigned char *data)
 			{
-				auto &accessor = model.accessors[uv_it->second];
-				auto &buffer_view = model.bufferViews[accessor.bufferView];
-				auto &buffer = model.buffers[buffer_view.buffer];
+				memcpy(&vertices[vertices_base + index].uv, data, sizeof(float) * 2);
+			}));
 
-				size_t stride = buffer_view.byteStride;
-				if(stride == 0)
-					stride = sizeof(float) * 2;
-
-				for(size_t i=0; i<vertices_count; i++)
-				{
-					const auto *data = buffer.data.data() + buffer_view.byteOffset
-									   + stride * i
-									   + accessor.byteOffset;
-
-					memcpy(&vertices[vertices_base + i].uv, data, sizeof(float) * 2);
-				}
-			}
-			else
+			if(!TraverseOptionalAccessor(model, gltf_primitive.attributes, "NORMAL", sizeof(float) * 3,
+										 [&vertices, &vertices_base] (size_t index, const unsigned char *data)
 			{
-				for(size_t i=0; i<vertices_count; i++)
-				{
-					vertices[vertices_base + i].uv = glm::vec2(0.0f);
-				}
-			}
+				memcpy(&vertices[vertices_base + index].normal, data, sizeof(float) * 3);
+			}));
 
-
-			// normal
-
-			auto normal_it = gltf_primitive.attributes.find("NORMAL");
-			if(normal_it != gltf_primitive.attributes.end())
+			if(!TraverseOptionalAccessor(model, gltf_primitive.attributes, "TANGENT", sizeof(float) * 4,
+										 [&vertices, &vertices_base] (size_t index, const unsigned char *data)
 			{
-				auto &accessor = model.accessors[normal_it->second];
-				auto &buffer_view = model.bufferViews[accessor.bufferView];
-				auto &buffer = model.buffers[buffer_view.buffer];
-
-				size_t stride = buffer_view.byteStride;
-				if(stride == 0)
-					stride = sizeof(float) * 3;
-
-				for(size_t i=0; i<vertices_count; i++)
-				{
-					const auto *data = buffer.data.data() + buffer_view.byteOffset
-									   + stride * i
-									   + accessor.byteOffset;
-
-					memcpy(&vertices[vertices_base + i].normal, data, sizeof(float) * 3);
-				}
-			}
+				auto &vertex = vertices[vertices_base + index];
+				glm::vec4 tang(glm::uninitialize);
+				memcpy(&tang, data, sizeof(float) * 4);
+				vertex.SetNormalTangComputeBitang(vertex.normal, tang);
+			}));
 
 
-			// index
 
 			auto &index_accessor = model.accessors[gltf_primitive.indices];
-			auto &index_buffer_view = model.bufferViews[index_accessor.bufferView];
-			auto &index_buffer = model.buffers[index_buffer_view.buffer];
-			size_t index_buffer_stride = index_buffer_view.byteStride;
-
 			size_t indices_base = indices.size();
 			indices.resize(indices_base + index_accessor.count);
 
 			if(index_accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
 			{
-				if(index_buffer_stride == 0)
-					index_buffer_stride = 1;
-
-				for(size_t i=0; i<index_accessor.count; i++)
+				TraverseAccessor(model, index_accessor, 1,
+								 [&indices, &indices_base, &vertices_base] (size_t index, const unsigned char *data)
 				{
-					const auto *data = index_buffer.data.data() + index_buffer_view.byteOffset
-									   + index_buffer_stride * i
-									   + index_accessor.byteOffset;
-
-					indices[indices_base + i] = *data;
-					indices[indices_base + i] += vertices_base;
-				}
+					indices[indices_base + index] = static_cast<unsigned short>(*data)
+													+ static_cast<unsigned short>(vertices_base);
+				});
 			}
 			else if(index_accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
 			{
-				if(index_buffer_stride == 0)
-					index_buffer_stride = sizeof(uint16_t);
-
-				for(size_t i=0; i<index_accessor.count; i++)
+				TraverseAccessor(model, index_accessor, sizeof(unsigned short),
+								 [&indices, &indices_base, &vertices_base] (size_t index, const unsigned char *data)
 				{
-					const auto *data = index_buffer.data.data() + index_buffer_view.byteOffset
-									   + index_buffer_stride * i
-									   + index_accessor.byteOffset;
-
-					memcpy(&indices[indices_base + i], data, sizeof(uint16_t));
-					indices[indices_base + i] += vertices_base;
-				}
+					indices[indices_base + index] = *reinterpret_cast<const unsigned short *>(data)
+													+ static_cast<unsigned short>(vertices_base);
+				});
 			}
 			else if(index_accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
 			{
@@ -317,8 +295,6 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 		mesh->CreateBuffers();
 	}
 }
-
-#include "glm_stream.h"
 
 static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *parent_node, int gltf_node_index)
 {

@@ -6,11 +6,22 @@
 
 #include <vulkan/vulkan.hpp>
 
-struct Vertex
+#include <iostream>
+
+struct alignas(1) Vertex
 {
 	glm::vec3 pos;
 	glm::vec2 uv;
 	glm::vec3 normal;
+	glm::vec3 tang;
+	glm::vec3 bitang;
+
+	void SetNormalTangComputeBitang(const glm::vec3 &normal, const glm::vec4 &tang)
+	{
+		this->normal = normal;
+		this->tang = tang.xyz;
+		this->bitang = glm::cross(normal, this->tang) * tang.w;
+	}
 
 	static vk::VertexInputBindingDescription GetBindingDescription()
 	{
@@ -20,7 +31,7 @@ struct Vertex
 			.setInputRate(vk::VertexInputRate::eVertex);
 	}
 
-	static std::array<vk::VertexInputAttributeDescription, 3> GetAttributeDescription()
+	static std::array<vk::VertexInputAttributeDescription, 5> GetAttributeDescription()
 	{
 		return {
 			vk::VertexInputAttributeDescription()
@@ -40,6 +51,18 @@ struct Vertex
 				.setLocation(2)
 				.setFormat(vk::Format::eR32G32B32Sfloat)
 				.setOffset(static_cast<uint32_t>(offsetof(Vertex, normal))),
+
+			vk::VertexInputAttributeDescription()
+				.setBinding(0)
+				.setLocation(3)
+				.setFormat(vk::Format::eR32G32B32Sfloat)
+				.setOffset(static_cast<uint32_t>(offsetof(Vertex, tang))),
+
+			vk::VertexInputAttributeDescription()
+				.setBinding(0)
+				.setLocation(4)
+				.setFormat(vk::Format::eR32G32B32Sfloat)
+				.setOffset(static_cast<uint32_t>(offsetof(Vertex, bitang))),
 		};
 	};
 };
