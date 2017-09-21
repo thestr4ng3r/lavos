@@ -16,7 +16,7 @@ class Texture
 		vk::ImageView image_view;
 		vk::Sampler sampler;
 
-		Texture(nullptr_t = nullptr)
+		Texture(std::nullptr_t = nullptr)
 			: image(), image_view(nullptr), sampler(nullptr) {}
 
 		Texture(Image image, vk::ImageView image_view, vk::Sampler sampler)

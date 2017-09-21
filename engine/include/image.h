@@ -19,7 +19,7 @@ class Image
 		VmaAllocation allocation;
 		vk::Format format;
 
-		Image(nullptr_t = nullptr)
+		Image(std::nullptr_t = nullptr)
 			: image(nullptr), allocation(nullptr), format(vk::Format::eUndefined) {}
 
 		Image(vk::Image image, VmaAllocation allocation, vk::Format format)

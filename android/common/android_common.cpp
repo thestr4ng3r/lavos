@@ -1,8 +1,13 @@
 
 #include <cassert>
 #include <iostream>
-#include "common.h"
-#include "../../demos/triangle/triangle_application.h"
+#include <stdexcept>
+#include "android_common.h"
+
+
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#include "../../thirdparty/tiny_gltf.h"
 
 static android_app *app;
 
@@ -70,9 +75,13 @@ void AndroidGetWindowSize(int32_t *width, int32_t *height)
 
 std::vector<char> AndroidReadSPIRVShader(const std::string shader)
 {
-	assert(app != nullptr);
-
 	std::string filename = "shader/" + shader + ".spv";
+	return AndroidReadAssetBinary(filename);
+}
+
+std::vector<char> AndroidReadAssetBinary(const std::string filename)
+{
+	assert(app != nullptr);
 
 	AAsset *asset = AAssetManager_open(app->activity->assetManager, filename.c_str(), AASSET_MODE_BUFFER);
 
@@ -129,6 +138,7 @@ bool Android_process_command()
 	return app->destroyRequested;
 }
 
+
 extern "C" void android_main(struct android_app *state)
 {
 	AndroidSetApp(state);
@@ -146,14 +156,5 @@ extern "C" void android_main(struct android_app *state)
 	}  // Check if system requested to quit the application
 	while (app->destroyRequested == 0);
 
-	TriangleApplication demo_app;
-
-	try
-	{
-		demo_app.Run();
-	}
-	catch(const std::runtime_error &e)
-	{
-		LOGE("%s\n", e.what());
-	}
+	//sample_main();
 }

@@ -7,6 +7,7 @@
 
 #include <tiny_gltf.h>
 #include <iostream>
+#include <algorithm>
 
 #include "glm_config.h"
 #include <glm/gtx/quaternion.hpp>
@@ -137,7 +138,10 @@ static bool GetParameter(const tinygltf::ParameterMap &params, std::string name,
 		return false;
 
 	unsigned int i;
-	for(i=0; i<std::max(static_cast<unsigned long>(4), it->second.number_array.size()); i++)
+	unsigned int max = static_cast<unsigned int>(it->second.number_array.size());
+	if(max < 4)
+		max = 4;
+	for(i=0; i<max; i++)
 		dst[i] = static_cast<T>(it->second.number_array[i]);
 
 	return i == 4;
@@ -234,26 +238,26 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 				memcpy(&vertices[vertices_base + index].pos, data, sizeof(float) * 3);
 			});
 
-			if(!TraverseOptionalAccessor(model, gltf_primitive.attributes, "TEXCOORD_0", sizeof(float) * 2,
+			TraverseOptionalAccessor(model, gltf_primitive.attributes, "TEXCOORD_0", sizeof(float) * 2,
 									 [&vertices, &vertices_base] (size_t index, const unsigned char *data)
 			{
 				memcpy(&vertices[vertices_base + index].uv, data, sizeof(float) * 2);
-			}));
+			});
 
-			if(!TraverseOptionalAccessor(model, gltf_primitive.attributes, "NORMAL", sizeof(float) * 3,
+			TraverseOptionalAccessor(model, gltf_primitive.attributes, "NORMAL", sizeof(float) * 3,
 										 [&vertices, &vertices_base] (size_t index, const unsigned char *data)
 			{
 				memcpy(&vertices[vertices_base + index].normal, data, sizeof(float) * 3);
-			}));
+			});
 
-			if(!TraverseOptionalAccessor(model, gltf_primitive.attributes, "TANGENT", sizeof(float) * 4,
+			TraverseOptionalAccessor(model, gltf_primitive.attributes, "TANGENT", sizeof(float) * 4,
 										 [&vertices, &vertices_base] (size_t index, const unsigned char *data)
 			{
 				auto &vertex = vertices[vertices_base + index];
 				glm::vec4 tang(glm::uninitialize);
 				memcpy(&tang, data, sizeof(float) * 4);
 				vertex.SetNormalTangComputeBitang(vertex.normal, tang);
-			}));
+			});
 
 
 
@@ -435,14 +439,24 @@ static AssetContainer *LoadGLTF(Engine *engine, Material *material, tinygltf::Mo
 }
 
 
+#ifdef __ANDROID__
+#include <android_common.h>
+#endif
+
 AssetContainer *AssetContainer::LoadFromGLTF(Engine *engine, Material *material, std::string filename)
 {
 	tinygltf::TinyGLTF loader;
 	tinygltf::Model model;
 	std::string error;
 
+#ifdef __ANDROID__
+	auto gltf_data = AndroidReadAssetBinary(filename);
+	bool success = loader.LoadASCIIFromString(&model, &error, reinterpret_cast<char *>(gltf_data.data()),
+											  static_cast<const unsigned int>(gltf_data.size()), "");
+#else
 	bool success = loader.LoadASCIIFromFile(&model, &error, filename);
 	//bool success = loader.LoadBinaryFromFile(&model, &error, filename);
+#endif
 
 	if(!error.empty())
 		throw std::runtime_error(error);

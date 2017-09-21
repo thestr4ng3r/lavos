@@ -2,8 +2,13 @@
 #include "shader_load.h"
 
 #include <fstream>
+#include <stdexcept>
 
 using namespace engine;
+
+#if defined(__ANDROID__)
+#include <android_common.h>
+#endif
 
 static std::vector<char> ReadFile(const std::string &filename)
 {

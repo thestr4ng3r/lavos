@@ -1,14 +1,17 @@
 cmake_minimum_required(VERSION 3.2)
 project(vulkan)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glm")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 
 if(ANDROID)
-    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/android/vulkan_wrapper")
-    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/android/vulkan-hpp")
+    #include_directories("${CMAKE_CURRENT_SOURCE_DIR}/android/vulkan_wrapper")
+    include_directories("${CMAKE_SOURCE_DIR}/android/vulkan-hpp"
+                        "${CMAKE_SOURCE_DIR}/android/common")
+    include_directories("${ANDROID_NDK}/sources/third_party/vulkan/src/include"
+                        "${ANDROID_NDK}/sources/android/native_app_glue")
 
     set(Vulkan_LIBRARIES vulkan)
 
@@ -18,7 +21,6 @@ if(ANDROID)
 else()
     find_package(Vulkan REQUIRED)
     include_directories(${Vulkan_INCLUDE_DIRS})
-    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vulkan-hpp")
 
     set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)

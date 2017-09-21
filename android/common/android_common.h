@@ -16,7 +16,9 @@
 void AndroidSetApp(android_app *_app);
 ANativeWindow *AndroidGetApplicationWindow();
 void AndroidGetWindowSize(int32_t *width, int32_t *height);
+
 std::vector<char> AndroidReadSPIRVShader(const std::string shader);
+std::vector<char> AndroidReadAssetBinary(const std::string filename);
 
 void sample_main();
 

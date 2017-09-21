@@ -681,7 +681,7 @@ class TinyGLTF {
 
 #ifdef _WIN32
 #include <Windows.h>
-#else
+#elif !defined(__ANDROID__)
 #include <wordexp.h>
 #endif
 
@@ -744,7 +744,7 @@ static std::string ExpandFilePath(const std::string &filepath) {
   return s;
 #else
 
-#if defined(TARGET_OS_IPHONE) || defined(TARGET_IPHONE_SIMULATOR)
+#if defined(TARGET_OS_IPHONE) || defined(TARGET_IPHONE_SIMULATOR) || defined(__ANDROID__)
   // no expansion
   std::string s = filepath;
 #else
@@ -912,11 +912,22 @@ std::string base64_decode(std::string const &encoded_string) {
 #pragma clang diagnostic pop
 #endif
 
+#ifdef __ANDROID__
+#include <android_common.h>
+#endif
+
 static bool LoadExternalFile(std::vector<unsigned char> *out, std::string *err,
                              const std::string &filename,
                              const std::string &basedir, size_t reqBytes,
                              bool checkSize) {
   out->clear();
+
+#ifdef __ANDROID__
+  auto file_data = AndroidReadAssetBinary(basedir + filename);
+  out->resize(file_data.size());
+  memcpy(out->data(), file_data.data(), file_data.size());
+  return true;
+#else
 
   std::vector<std::string> paths;
   paths.push_back(basedir);
@@ -973,6 +984,7 @@ static bool LoadExternalFile(std::vector<unsigned char> *out, std::string *err,
 
   out->swap(buf);
   return true;
+#endif
 }
 
 static bool LoadImageData(Image *image, std::string *err, int req_width,

@@ -18,7 +18,7 @@ struct MatrixUniformBuffer
 	glm::mat4 projection;
 };
 
-struct alignas(1) LightingUniformBuffer
+struct alignas(sizeof(float)) LightingUniformBuffer
 {
 	glm::vec3 ambient_intensity;
 	std::uint32_t directional_light_enabled;

@@ -1,6 +1,10 @@
 
 #include "demo_application.h"
 
+#ifdef __ANDROID__
+#include "android_common.h"
+#endif
+
 static const int screen_width = 800;
 static const int screen_height = 600;
 
@@ -95,14 +99,14 @@ void DemoApplication::CreateSurface()
 	VkSurfaceKHR c_surface;
 
 #if defined(__ANDROID__)
-	auto CreateAndroidSurfaceKHR = (PFN_vkCreateAndroidSurfaceKHR) vkGetInstanceProcAddr(static_cast<VkInstance>(instance), "vkCreateAndroidSurfaceKHR");
+	auto CreateAndroidSurfaceKHR = (PFN_vkCreateAndroidSurfaceKHR) vkGetInstanceProcAddr(static_cast<VkInstance>(engine->GetVkInstance()), "vkCreateAndroidSurfaceKHR");
 
     VkAndroidSurfaceCreateInfoKHR createInfo;
     createInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
     createInfo.pNext = nullptr;
     createInfo.flags = 0;
     createInfo.window = AndroidGetApplicationWindow();
-    VkResult result = CreateAndroidSurfaceKHR(static_cast<VkInstance>(instance), &createInfo, nullptr, &c_surface);
+    VkResult result = CreateAndroidSurfaceKHR(static_cast<VkInstance>(engine->GetVkInstance()), &createInfo, nullptr, &c_surface);
 #else
 	VkResult result = glfwCreateWindowSurface(static_cast<VkInstance>(engine->GetVkInstance()), window, nullptr, &c_surface);
 #endif

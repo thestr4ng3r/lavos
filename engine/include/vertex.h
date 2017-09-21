@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-struct alignas(1) Vertex
+struct alignas(sizeof(float)) Vertex
 {
 	glm::vec3 pos;
 	glm::vec2 uv;

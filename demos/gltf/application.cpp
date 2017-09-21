@@ -1,7 +1,6 @@
 
 #if defined(__ANDROID__)
-#define VULKAN_HPP_TYPESAFE_CONVERSION
-#include <common.h>
+#include <android_common.h>
 #endif
 
 #include <iostream>
@@ -115,5 +114,19 @@ int main(int argc, const char **argv)
 	}
 
 	return EXIT_SUCCESS;
+}
+#else
+void sample_main()
+{
+	Application demo_app("gltftest.gltf");
+
+	try
+	{
+		demo_app.Run();
+	}
+	catch(const std::runtime_error &e)
+	{
+		LOGE("%s\n", e.what());
+	}
 }
 #endif

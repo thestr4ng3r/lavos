@@ -7,9 +7,10 @@ macro(add_demo DEMO_NAME SOURCE_FILES_VAR)
 
 		target_include_directories(${DEMO_NAME} PRIVATE
 				${ANDROID_NDK}/sources/third_party/vulkan/src/include
-				${CMAKE_SOURCE_DIR}/android/vulkan-hpp
 				${ANDROID_NDK}/sources/android/native_app_glue
 				${ANDROID_NDK}/sources/third_party/shaderc/include)
+
+		target_link_libraries(${DEMO_NAME} engine)
 	else()
 		add_executable(${DEMO_NAME} ${SOURCE_FILES})
 

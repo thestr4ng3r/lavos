@@ -14,7 +14,7 @@ class Buffer
 		vk::Buffer buffer;
 		VmaAllocation allocation;
 
-		Buffer(nullptr_t = nullptr)
+		Buffer(std::nullptr_t = nullptr)
 			: buffer(nullptr), allocation(nullptr) {}
 
 		Buffer(vk::Buffer buffer, VmaAllocation allocation)
