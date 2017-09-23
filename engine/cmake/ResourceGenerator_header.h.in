@@ -1,0 +1,16 @@
+
+#ifndef _@RESOURCE_GENERATOR_INCLUDE_GUARD@_H
+#define _@RESOURCE_GENERATOR_INCLUDE_GUARD@_H
+
+namespace engine
+{
+
+const @RESOURCE_GENERATOR_TYPE@ *@RESOURCE_GENERATOR_FUNCTION_PREFIX@_get(const char *filename, size_t *size);
+inline const @RESOURCE_GENERATOR_TYPE@ *@RESOURCE_GENERATOR_FUNCTION_PREFIX@_get(const char *filename)
+{
+	return @RESOURCE_GENERATOR_FUNCTION_PREFIX@_get(filename, 0);
+}
+
+}
+
+#endif // _@RESOURCE_GENERATOR_INCLUDE_GUARD@_H

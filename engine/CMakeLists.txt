@@ -4,6 +4,7 @@ option(ENGINE_IMPLEMENT_TINYGLTF "Compile implementation of tinygltf inside the 
 option(ENGINE_IMPLEMENT_STB_IMAGE "Compile implementation of stb_image inside the engine." ON)
 option(ENGINE_IMPLEMENT_VMA "Compile implementation of Vulkan Memory Allocator inside the engine." ON)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(GLSLC_EXECUTABLE glslc) # TODO: Write a find module or something
 
@@ -69,6 +70,8 @@ set(GLSL_FILES
 		material/phong.frag)
 
 
+
+
 if(ENGINE_IMPLEMENT_TINYGLTF)
 	add_definitions(-DENGINE_IMPLEMENT_TINYGLTF)
 endif()
@@ -84,8 +87,49 @@ endif()
 
 add_spirv_shaders(SPIRV_FILES GLSL_FILES)
 
-add_library(engine STATIC ${SOURCE_FILES} ${SPIRV_FILES})
+set(RESOURCES_SRC_DIR "${CMAKE_CURRENT_BINARY_DIR}/spirv_resources")
+set(RESOURCES_HEADER "${RESOURCES_SRC_DIR}/spirv_resources.h")
+set(RESOURCES_SRC "${RESOURCES_SRC_DIR}/spirv_resources.cpp")
+set(RESOURCES_RELATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/shader")
+
+
+
+add_library(engine STATIC ${SOURCE_FILES} ${RESOURCES_HEADERS} ${RESOURCES_SRC})
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 target_link_libraries(engine ${Vulkan_LIBRARIES})
+
+
+
+# resources
+
+include(ResourceGenerator)
+
+file(MAKE_DIRECTORY ${RESOURCES_SRC_DIR})
+include_directories(${RESOURCES_SRC_DIR})
+
+set(GENERATE_RESOURCES_ARGS
+		BINARY
+		RELATIVE_PATH ${RESOURCES_RELATIVE_PATH}
+		HEADER_FILE ${RESOURCES_HEADER}
+		HEADER_FILE_RELATIVE_PATH ${RESOURCES_SRC_DIR}
+		SOURCE_FILE ${RESOURCES_SRC}
+		FUNCTION_PREFIX "spirv_resources"
+		INCLUDE_GUARD "SPIRV_RESOURCES"
+		FILES ${SPIRV_FILES})
+
+generate_resources(GENERATE_HEADER ${GENERATE_RESOURCES_ARGS})
+
+set(RESOURCE_GENERATOR_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ResourceGenerator.cmake")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_resources_src.cmake.in"
+		"${CMAKE_CURRENT_BINARY_DIR}/generate_resources_src.cmake")
+
+add_custom_command(OUTPUT ${RESOURCES_SRC}
+		COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/generate_resources_src.cmake"
+		DEPENDS ${SPIRV_FILES})
+
+add_custom_target(resources DEPENDS ${RESOURCES_HEADERS} ${RESOURCES_SRC})
+add_dependencies(engine resources)
+
+

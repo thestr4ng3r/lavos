@@ -40,26 +40,13 @@ android {
 
     sourceSets {
         main.jniLibs.srcDirs = ["${layersDir}"]
-        main.assets.srcDirs = ["src/main/assets", "build/additional_assets", "../../demos/data"]
+        main.assets.srcDirs = ["src/main/assets", "../../demos/data"]
     }
 }
-
-task collectShaders(type: Copy) {
-    from(".externalNativeBuild/cmake/debug/armeabi-v7a/engine/shader") { // TODO: release, other architechtures. This is completely broken.
-        include '**/*.spv'
-    }
-    into 'build/additional_assets/shader'
-}
-
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:26.1.0'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
-}
-
-project.afterEvaluate {
-    preBuild.dependsOn collectShaders // TODO: preBuild is not the right place
 }

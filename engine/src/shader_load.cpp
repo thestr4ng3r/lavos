@@ -4,6 +4,8 @@
 #include <fstream>
 #include <stdexcept>
 
+#include "spirv_resources.h"
+
 using namespace engine;
 
 #if defined(__ANDROID__)
@@ -27,7 +29,7 @@ static std::vector<char> ReadFile(const std::string &filename)
 	return buffer;
 }
 
-std::vector<char> engine::ReadSPIRVShader(const std::string shader)
+/*std::vector<char> engine::ReadSPIRVShader(const std::string shader)
 {
 #if defined(__ANDROID__)
 	return AndroidReadSPIRVShader(shader);
@@ -38,4 +40,11 @@ std::vector<char> engine::ReadSPIRVShader(const std::string shader)
 
 	return ReadFile(std::string(shader_path) + "/" + shader + ".spv");
 #endif
+}*/
+
+
+const uint32_t *engine::GetSPIRVShader(const std::string shader, size_t *size)
+{
+	std::string filename = shader + ".spv";
+	return reinterpret_cast<const uint32_t *>(spirv_resources_get(filename.c_str(), size));
 }

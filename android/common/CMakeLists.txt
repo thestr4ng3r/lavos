@@ -1,6 +1,6 @@
 
 
-add_library(demo_android STATIC
+add_library(demo_android SHARED
     android_common.cpp
     android_common.h
     ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)

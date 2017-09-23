@@ -11,8 +11,8 @@ PhongMaterial::PhongMaterial(engine::Engine *engine) : Material(engine)
 {
 	CreateDescriptorSetLayout();
 
-	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("material/phong.vert"));
-	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("material/phong.frag"));
+	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/phong.vert");
+	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/phong.frag");
 
 	texture_default_image = Texture::CreateColor(engine, vk::Format::eR8G8B8Unorm, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f));
 }

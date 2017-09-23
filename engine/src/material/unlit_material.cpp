@@ -11,8 +11,8 @@ UnlitMaterial::UnlitMaterial(engine::Engine *engine) : Material(engine)
 {
 	CreateDescriptorSetLayout();
 
-	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("material/unlit.vert"));
-	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), ReadSPIRVShader("material/unlit.frag"));
+	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/unlit.vert");
+	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/unlit.frag");
 
 	texture_default_image = Texture::CreateColor(engine, vk::Format::eR8G8B8Unorm, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f));
 }

@@ -7,7 +7,7 @@
 
 namespace engine
 {
-std::vector<char> ReadSPIRVShader(const std::string shader);
+const uint32_t *GetSPIRVShader(const std::string shader, size_t *size);
 }
 
 #endif

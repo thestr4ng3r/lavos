@@ -1,0 +1,15 @@
+
+#include <string.h>
+#include "@RESOURCE_GENERATOR_HEADER_FILE_RELATIVE@"
+
+@RESOURCE_GENERATOR_RESOURCES_SOURCE@
+
+static const unsigned int resources_count = @RESOURCE_GENERATOR_RESOURCES_COUNT@;
+static const char *all_resources_names[] = {@RESOURCE_GENERATOR_RESOURCES_ALL_NAMES@};
+static const @RESOURCE_GENERATOR_TYPE@ *all_resources[] = {@RESOURCE_GENERATOR_RESOURCES_ALL@};
+
+const @RESOURCE_GENERATOR_TYPE@ *engine::@RESOURCE_GENERATOR_FUNCTION_PREFIX@_get(const char *filename, size_t *size)
+{
+@RESOURCE_GENERATOR_GET_FUNCTION_SOURCE@
+	return 0;
+}
