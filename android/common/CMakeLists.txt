@@ -1,14 +1,17 @@
 
 
-add_library(common STATIC
+add_library(demo_android STATIC
     android_common.cpp
-    android_common.h)
+    android_common.h
+    ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
-target_include_directories(common PRIVATE
+target_include_directories(demo_android PRIVATE
                           ${ANDROID_NDK}/sources/android/native_app_glue
                           ${ANDROID_NDK}/sources/third_party/shaderc/include)
 
-target_link_libraries(common
+target_link_libraries(demo_android
     android
     log
-    vulkan)
+    vulkan
+    ${MODULE_NAME}
+    demo_common)
