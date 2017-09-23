@@ -4,11 +4,6 @@
 #include <stdexcept>
 #include "android_common.h"
 
-
-#define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#include "../../thirdparty/tiny_gltf.h"
-
 static android_app *app;
 
 

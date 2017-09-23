@@ -1,5 +1,10 @@
 
 
+option(ENGINE_IMPLEMENT_TINYGLTF "Compile implementation of tinygltf inside the engine." ON)
+option(ENGINE_IMPLEMENT_STB_IMAGE "Compile implementation of stb_image inside the engine." ON)
+option(ENGINE_IMPLEMENT_VMA "Compile implementation of Vulkan Memory Allocator inside the engine." ON)
+
+
 set(GLSLC_EXECUTABLE glslc) # TODO: Write a find module or something
 
 macro(add_spirv_shaders SPIRV_FILES_VAR GLSL_FILES_VAR)
@@ -62,6 +67,20 @@ set(GLSL_FILES
 		material/unlit.frag
 		material/phong.vert
 		material/phong.frag)
+
+
+if(ENGINE_IMPLEMENT_TINYGLTF)
+	add_definitions(-DENGINE_IMPLEMENT_TINYGLTF)
+endif()
+
+if(ENGINE_IMPLEMENT_STB_IMAGE)
+	add_definitions(-DENGINE_IMPLEMENT_STB_IMAGE)
+endif()
+
+if(ENGINE_IMPLEMENT_VMA)
+	add_definitions(-DENGINE_IMPLEMENT_VMA)
+endif()
+
 
 add_spirv_shaders(SPIRV_FILES GLSL_FILES)
 

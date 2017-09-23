@@ -449,14 +449,14 @@ AssetContainer *AssetContainer::LoadFromGLTF(Engine *engine, Material *material,
 	tinygltf::Model model;
 	std::string error;
 
-#ifdef __ANDROID__
+/*#ifdef __ANDROID__
 	auto gltf_data = AndroidReadAssetBinary(filename);
 	bool success = loader.LoadASCIIFromString(&model, &error, reinterpret_cast<char *>(gltf_data.data()),
 											  static_cast<const unsigned int>(gltf_data.size()), "");
-#else
+#else*/
 	bool success = loader.LoadASCIIFromFile(&model, &error, filename);
 	//bool success = loader.LoadBinaryFromFile(&model, &error, filename);
-#endif
+//#endif
 
 	if(!error.empty())
 		throw std::runtime_error(error);

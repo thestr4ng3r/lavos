@@ -11,5 +11,4 @@ target_include_directories(common PRIVATE
 target_link_libraries(common
     android
     log
-    vulkan
-    native_app_glue)
+    vulkan)

@@ -17,6 +17,8 @@ if(ANDROID)
 
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}/android/common")
 
+    #set(ENGINE_IMPLEMENT_VMA OFF CACHE BOOL "Compile implementation of Vulkan Memory Allocator inside the engine.")
+
     add_subdirectory(android)
 else()
     find_package(Vulkan REQUIRED)

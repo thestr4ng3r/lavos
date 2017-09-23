@@ -118,7 +118,7 @@ int main(int argc, const char **argv)
 #else
 void sample_main()
 {
-	Application demo_app("gltftest.gltf");
+	Application demo_app("/storage/emulated/0/vulkan/flux/gltftest.gltf");
 
 	try
 	{
