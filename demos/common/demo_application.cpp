@@ -1,4 +1,5 @@
 
+#include <chrono>
 #include "demo_application.h"
 
 #ifdef __ANDROID__
@@ -253,9 +254,13 @@ void DemoApplication::CreateSemaphores()
 	render_finished_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
 }
 
+#include <iostream>
 
 void DemoApplication::MainLoop()
 {
+	float delta_time = 0.0f;
+
+	auto last_frame_time = std::chrono::high_resolution_clock::now();
 	while(true)
 	{
 #if defined(__ANDROID__)
@@ -267,7 +272,13 @@ void DemoApplication::MainLoop()
 		glfwPollEvents();
 #endif
 
+		Update(delta_time);
+
 		DrawAndPresentFrame();
+
+		auto time = std::chrono::high_resolution_clock::now();
+		delta_time = std::chrono::duration<float, std::ratio<1>>(time - last_frame_time).count();
+		last_frame_time = time;
 	}
 
 	engine->GetVkDevice().waitIdle();

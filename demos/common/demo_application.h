@@ -32,9 +32,11 @@ class DemoApplication
 		vk::Semaphore render_finished_semaphore;
 
 
+		virtual void InitWindow();
 		virtual void InitVulkan();
 
 		virtual void MainLoop();
+		virtual void Update(float delta_time) {};
 		virtual void DrawFrame(uint32_t image_index) {};
 		virtual void CleanupApplication() {};
 
@@ -42,8 +44,6 @@ class DemoApplication
 		virtual void CleanupSwapchain();
 
 	private:
-		void InitWindow();
-
 		void CreateEngine();
 
 		void CreateSurface();

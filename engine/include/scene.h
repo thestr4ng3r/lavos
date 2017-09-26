@@ -24,6 +24,8 @@ class Scene
 
 		glm::vec3 GetAmbientLightIntensity() const 			{ return ambient_light_intensity; }
 		void SetAmbientLightIntensity(glm::vec3 intensity)	{ ambient_light_intensity = intensity; }
+
+		void Update(float delta_time)						{ root_node.Update(delta_time); }
 };
 
 

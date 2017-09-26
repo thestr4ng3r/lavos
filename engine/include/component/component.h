@@ -18,6 +18,8 @@ class Component
 		virtual ~Component() {}
 
 		Node *GetNode() const			{ return node; }
+
+		virtual void Update(float delta_time) {}
 };
 
 }

@@ -61,7 +61,9 @@ set(SOURCE_FILES
 		include/component/camera_component.h
 		src/glm_stream.h
 		src/component/directional_light_component.cpp
-		include/component/directional_light_component.h)
+		include/component/directional_light_component.h
+		src/component/fp_controller_component.cpp
+		include/component/fp_controller_component.h)
 
 set(GLSL_FILES
 		material/unlit.vert

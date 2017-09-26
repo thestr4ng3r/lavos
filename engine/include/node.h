@@ -56,6 +56,15 @@ class Node
 
 		void TraversePreOrder(std::function<void (Node *)> func);
 		void TraversePostOrder(std::function<void (Node *)> func);
+
+		void Update(float delta_time)
+		{
+			for(auto component : components)
+				component->Update(delta_time);
+
+			for(auto child : children)
+				child->Update(delta_time);
+		}
 };
 
 
