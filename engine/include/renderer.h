@@ -27,6 +27,11 @@ struct alignas(sizeof(float)) LightingUniformBuffer
 	glm::vec3 directional_light_intensity;
 };
 
+struct alignas(sizeof(float)) CameraUniformBuffer
+{
+	glm::vec3 position;
+};
+
 struct TransformPushConstant
 {
 	glm::mat4 transform;
@@ -80,6 +85,7 @@ class Renderer
 
 		engine::Buffer matrix_uniform_buffer;
 		engine::Buffer lighting_uniform_buffer;
+		engine::Buffer camera_uniform_buffer;
 
 		void CreateRenderCommandPool();
 		void CleanupRenderCommandPool();
@@ -123,6 +129,7 @@ class Renderer
 		void RemoveMaterial(Material *material);
 
 		void UpdateMatrixUniformBuffer();
+		void UpdateCameraUniformBuffer();
 		void UpdateLightingUniformBuffer();
 
 		void ResizeScreen(vk::Extent2D screen_extent, std::vector<vk::ImageView> dst_image_views);

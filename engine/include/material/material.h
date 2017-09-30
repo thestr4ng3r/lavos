@@ -21,6 +21,7 @@ class Material
 
 	public:
 		static const MaterialInstance::TextureSlot texture_slot_base_color = 0;
+		static const MaterialInstance::TextureSlot texture_slot_normal = 1;
 
 		static const MaterialInstance::ParameterSlot parameter_slot_base_color_factor = 0;
 

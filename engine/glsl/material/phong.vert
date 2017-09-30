@@ -10,12 +10,19 @@ out gl_PerVertex
 
 layout(location = 0) out vec2 uv_out;
 
-layout(location = 1) out vec3 normal_out;
+layout(location = 1) out vec3 position_out;
+layout(location = 2) out vec3 normal_out;
+layout(location = 3) out vec3 tang_out;
+layout(location = 4) out vec3 bitang_out;
 
 void main()
 {
 	uv_out = uv_in;
+
+	position_out = position_in;
 	normal_out = normal_in;
+	tang_out = tang_in;
+	bitang_out = bitang_in;
 
 	gl_Position = CalculateVertexPosition();
 }

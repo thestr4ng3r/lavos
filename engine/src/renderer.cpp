@@ -99,7 +99,7 @@ void Renderer::CleanupFramebuffers()
 void Renderer::CreateDescriptorPool()
 {
 	std::vector<vk::DescriptorPoolSize> pool_sizes = {
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 2)
+		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 3)
 	};
 
 	auto create_info = vk::DescriptorPoolCreateInfo()
@@ -125,6 +125,13 @@ void Renderer::CreateDescriptorSetLayout()
 			.setBinding(1)
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),
+
+		// camera
+		vk::DescriptorSetLayoutBinding()
+			.setBinding(2)
+			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
 	};
 
@@ -145,6 +152,10 @@ void Renderer::CreateUniformBuffers()
 	lighting_uniform_buffer = engine->CreateBuffer(sizeof(LightingUniformBuffer),
 												   vk::BufferUsageFlagBits::eUniformBuffer,
 												   VMA_MEMORY_USAGE_CPU_ONLY);
+
+	camera_uniform_buffer = engine->CreateBuffer(sizeof(CameraUniformBuffer),
+												 vk::BufferUsageFlagBits::eUniformBuffer,
+												 VMA_MEMORY_USAGE_CPU_ONLY);
 }
 
 void Renderer::UpdateMatrixUniformBuffer()
@@ -160,6 +171,16 @@ void Renderer::UpdateMatrixUniformBuffer()
 	void *data = engine->MapMemory(matrix_uniform_buffer.allocation);
 	memcpy(data, &matrix_ubo, sizeof(matrix_ubo));
 	engine->UnmapMemory(matrix_uniform_buffer.allocation);
+}
+
+void Renderer::UpdateCameraUniformBuffer()
+{
+	CameraUniformBuffer ubo;
+	ubo.position = camera->GetNode()->GetTransformComponent()->GetMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	void *data = engine->MapMemory(camera_uniform_buffer.allocation);
+	memcpy(data, &ubo, sizeof(ubo));
+	engine->UnmapMemory(camera_uniform_buffer.allocation);
 }
 
 void Renderer::UpdateLightingUniformBuffer()
@@ -226,7 +247,21 @@ void Renderer::CreateDescriptorSet()
 		.setDescriptorCount(1)
 		.setPBufferInfo(&lighting_buffer_info);
 
-	engine->GetVkDevice().updateDescriptorSets({matrix_buffer_write, lighting_buffer_write}, nullptr);
+
+	auto camera_buffer_info = vk::DescriptorBufferInfo()
+		.setBuffer(camera_uniform_buffer.buffer)
+		.setOffset(0)
+		.setRange(sizeof(CameraUniformBuffer));
+
+	auto camera_buffer_write = vk::WriteDescriptorSet()
+		.setDstSet(descriptor_set)
+		.setDstBinding(2)
+		.setDstArrayElement(0)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setDescriptorCount(1)
+		.setPBufferInfo(&camera_buffer_info);
+
+	engine->GetVkDevice().updateDescriptorSets({matrix_buffer_write, lighting_buffer_write, camera_buffer_write}, nullptr);
 }
 
 void Renderer::AddMaterial(Material *material)
@@ -564,6 +599,7 @@ void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> w
 
 	UpdateMatrixUniformBuffer();
 	UpdateLightingUniformBuffer();
+	UpdateCameraUniformBuffer();
 
 	RecordRenderCommandBuffer(dst_framebuffers[image_index]);
 

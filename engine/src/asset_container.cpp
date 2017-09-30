@@ -165,6 +165,9 @@ static void LoadMaterialInstances(AssetContainer &container, Material *material,
 		material_instance->SetTexture(Material::texture_slot_base_color,
 									  LoadSubParameterTexture(container, model, gltf_material.values, "baseColorTexture", "index"));
 
+		material_instance->SetTexture(Material::texture_slot_normal,
+									  LoadSubParameterTexture(container, model, gltf_material.additionalValues, "normalTexture", "index"));
+
 		glm::vec4 base_color(1.0f);
 		GetParameter(gltf_material.values, "baseColorFactor", base_color);
 		material_instance->SetParameter(Material::parameter_slot_base_color_factor, base_color);

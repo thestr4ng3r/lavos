@@ -14,14 +14,16 @@ PhongMaterial::PhongMaterial(engine::Engine *engine) : Material(engine)
 	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/phong.vert");
 	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/phong.frag");
 
-	texture_default_image = Texture::CreateColor(engine, vk::Format::eR8G8B8Unorm, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f));
+	texture_default_base_color = Texture::CreateColor(engine, vk::Format::eR8G8B8Unorm, glm::vec4(1.0f, 1.0f, 1.0f, 0.0f));
+	texture_default_normal = Texture::CreateColor(engine, vk::Format::eR8G8B8Unorm, glm::vec4(0.5f, 0.5f, 1.0f, 0.0f));
 }
 
 PhongMaterial::~PhongMaterial()
 {
 	auto &device = engine->GetVkDevice();
 
-	engine->DestroyTexture(texture_default_image);
+	engine->DestroyTexture(texture_default_base_color);
+	engine->DestroyTexture(texture_default_normal);
 
 	device.destroyShaderModule(vert_shader_module);
 	device.destroyShaderModule(frag_shader_module);
@@ -40,7 +42,14 @@ void PhongMaterial::CreateDescriptorSetLayout()
 		vk::DescriptorSetLayoutBinding()
 			.setBinding(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
+			.setDescriptorCount(2)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment),
+
+		vk::DescriptorSetLayoutBinding()
+			.setBinding(2)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(2)
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
 	};
@@ -57,7 +66,7 @@ std::vector<vk::DescriptorPoolSize> PhongMaterial::GetDescriptorPoolSizes() cons
 {
 	return {
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1)
+		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 2)
 	};
 }
 
@@ -95,25 +104,44 @@ void PhongMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, Materia
 
 
 
-	Texture *texture = instance->GetTexture(texture_slot_base_color);
-	if(texture == nullptr)
-		texture = &texture_default_image;
+	Texture *base_color_texture = instance->GetTexture(texture_slot_base_color);
+	if(base_color_texture == nullptr)
+		base_color_texture = &texture_default_base_color;
 
-	auto image_info = vk::DescriptorImageInfo()
+	auto base_color_image_info = vk::DescriptorImageInfo()
 		.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-		.setImageView(texture->image_view)
-		.setSampler(texture->sampler);
+		.setImageView(base_color_texture->image_view)
+		.setSampler(base_color_texture->sampler);
 
-	auto image_write = vk::WriteDescriptorSet()
+	auto base_color_texture_write = vk::WriteDescriptorSet()
 		.setDstSet(descriptor_set)
 		.setDstBinding(1)
 		.setDstArrayElement(0)
 		.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 		.setDescriptorCount(1)
-		.setPImageInfo(&image_info);
+		.setPImageInfo(&base_color_image_info);
 
 
-	engine->GetVkDevice().updateDescriptorSets({image_write, ubo_write}, nullptr);
+
+	Texture *normal_texture = instance->GetTexture(texture_slot_normal);
+	if(normal_texture == nullptr)
+		normal_texture = &texture_default_normal;
+
+	auto normal_image_info = vk::DescriptorImageInfo()
+		.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+		.setImageView(normal_texture->image_view)
+		.setSampler(normal_texture->sampler);
+
+	auto normal_texture_write = vk::WriteDescriptorSet()
+		.setDstSet(descriptor_set)
+		.setDstBinding(2)
+		.setDstArrayElement(0)
+		.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+		.setDescriptorCount(1)
+		.setPImageInfo(&normal_image_info);
+
+
+	engine->GetVkDevice().updateDescriptorSets({base_color_texture_write, normal_texture_write, ubo_write}, nullptr);
 }
 
 
@@ -140,8 +168,8 @@ void PhongMaterial::UpdateInstanceData(void *data_p, MaterialInstance *instance)
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 
 	UniformBuffer ubo;
-
 	ubo.color_factor = instance->GetParameter(parameter_slot_base_color_factor, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	ubo.specular_exponent = instance->GetParameter(parameter_slot_specular_exponent, 16.0f);
 
 	void *buffer_data = engine->MapMemory(data->uniform_buffer.allocation);
 	memcpy(buffer_data, &ubo, sizeof(ubo));

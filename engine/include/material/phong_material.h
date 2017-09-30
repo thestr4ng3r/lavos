@@ -10,9 +10,10 @@ namespace engine
 class PhongMaterial: public Material
 {
 	private:
-		struct UniformBuffer
+		struct alignas(sizeof(float)) UniformBuffer
 		{
 			glm::vec4 color_factor;
+			float specular_exponent;
 		};
 
 		struct InstanceData
@@ -25,9 +26,12 @@ class PhongMaterial: public Material
 		vk::ShaderModule vert_shader_module;
 		vk::ShaderModule frag_shader_module;
 
-		Texture texture_default_image;
+		Texture texture_default_base_color;
+		Texture texture_default_normal;
 
 	public:
+		static const MaterialInstance::ParameterSlot parameter_slot_specular_exponent = 1000;
+
 		PhongMaterial(Engine *engine);
 		~PhongMaterial();
 
