@@ -130,8 +130,8 @@ static bool GetSubParameter(const tinygltf::ParameterMap &params, std::string na
 	return true;
 }
 
-template<class T, glm::precision P>
-static bool GetParameter(const tinygltf::ParameterMap &params, std::string name, glm::tvec4<T, P> &dst)
+template<class T, glm::qualifier Q>
+static bool GetParameter(const tinygltf::ParameterMap &params, std::string name, glm::tvec4<T, Q> &dst)
 {
 	auto it = params.find(name);
 	if(it == params.end())
@@ -257,7 +257,7 @@ static void LoadMeshes(AssetContainer &container, tinygltf::Model &model)
 										 [&vertices, &vertices_base] (size_t index, const unsigned char *data)
 			{
 				auto &vertex = vertices[vertices_base + index];
-				glm::vec4 tang(glm::uninitialize);
+				glm::vec4 tang;
 				memcpy(&tang, data, sizeof(float) * 4);
 				vertex.SetNormalTangComputeBitang(vertex.normal, tang);
 			});
