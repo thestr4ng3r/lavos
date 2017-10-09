@@ -42,14 +42,14 @@ void PhongMaterial::CreateDescriptorSetLayout()
 		vk::DescriptorSetLayoutBinding()
 			.setBinding(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(2)
+			.setDescriptorCount(1)
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment),
 
 		vk::DescriptorSetLayoutBinding()
 			.setBinding(2)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(2)
+			.setDescriptorCount(1)
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
 	};
