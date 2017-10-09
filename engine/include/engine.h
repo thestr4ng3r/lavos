@@ -83,6 +83,7 @@ class Engine
 		~Engine();
 
 		void InitializeForSurface(vk::SurfaceKHR surface);
+		void InitializeWithDevice(vk::PhysicalDevice physical_device, vk::Device device, vk::Queue graphics_queue, vk::Queue present_queue);
 
 		const vk::Instance &GetVkInstance()	const					{ return instance; }
 		const vk::PhysicalDevice &GetVkPhysicalDevice()	const		{ return physical_device; }

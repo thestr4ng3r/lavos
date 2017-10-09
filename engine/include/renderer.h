@@ -112,7 +112,7 @@ class Renderer
 		void CreateRenderCommandBuffer();
 		void CleanupRenderCommandBuffer();
 
-		void RecordRenderCommandBuffer(vk::Framebuffer dst_framebuffer);
+		void RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer);
 
 	public:
 		Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format, std::vector<vk::ImageView> dst_image_views);
@@ -147,6 +147,8 @@ class Renderer
 					   std::vector<vk::Semaphore> wait_semaphores,
 					   std::vector<vk::PipelineStageFlags> wait_stages,
 					   std::vector<vk::Semaphore> signal_semaphores);
+
+		void DrawFrameRecord(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer);
 };
 
 }

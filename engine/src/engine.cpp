@@ -14,7 +14,7 @@ static const std::vector<const char *> validation_layers = {
 		"VK_LAYER_LUNARG_parameter_validation",
 		"VK_LAYER_GOOGLE_unique_objects"
 #else
-	/*"VK_LAYER_LUNARG_standard_validation",*/
+	"VK_LAYER_LUNARG_standard_validation",
 
 	/*"VK_LAYER_RENDERDOC_Capture",*/
 #endif
@@ -200,6 +200,19 @@ void Engine::InitializeForSurface(vk::SurfaceKHR surface)
 	CreateGlobalCommandPools();
 }
 
+void Engine::InitializeWithDevice(vk::PhysicalDevice physical_device, vk::Device device, vk::Queue graphics_queue, vk::Queue present_queue)
+{
+	this->physical_device = physical_device;
+	this->device = device;
+	this->graphics_queue = graphics_queue;
+	this->present_queue = present_queue;
+
+	queue_family_indices = FindQueueFamilies(physical_device, nullptr);
+
+	CreateAllocator();
+	CreateGlobalCommandPools();
+}
+
 bool Engine::IsPhysicalDeviceSuitable(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface)
 {
 	auto props = physical_device.getProperties();
@@ -266,7 +279,7 @@ Engine::QueueFamilyIndices Engine::FindQueueFamilies(vk::PhysicalDevice physical
 		if(queue_family.queueCount > 0 && queue_family.queueFlags & vk::QueueFlagBits::eGraphics)
 			indices.graphics_family = i;
 
-		if(queue_family.queueCount > 0 && physical_device.getSurfaceSupportKHR(static_cast<uint32_t>(i), surface))
+		if(queue_family.queueCount > 0 && (!surface || physical_device.getSurfaceSupportKHR(static_cast<uint32_t>(i), surface)))
 			indices.present_family = i;
 
 		if(indices.IsComplete())
@@ -326,7 +339,6 @@ void Engine::CreateLogicalDevice(vk::SurfaceKHR surface)
 	graphics_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.graphics_family), 0);
 	present_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.present_family), 0);
 }
-
 
 
 void Engine::CreateAllocator()

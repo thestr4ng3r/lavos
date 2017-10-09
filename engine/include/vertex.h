@@ -19,7 +19,7 @@ struct alignas(sizeof(float)) Vertex
 	void SetNormalTangComputeBitang(const glm::vec3 &normal, const glm::vec4 &tang)
 	{
 		this->normal = normal;
-		this->tang = tang.xyz;
+		this->tang = glm::vec3(tang.x, tang.y, tang.z);
 		this->bitang = glm::cross(normal, this->tang) * tang.w;
 	}
 

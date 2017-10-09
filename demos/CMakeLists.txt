@@ -1,4 +1,6 @@
 
+option(BUILD_QT_DEMO "Build Qt Demo" ON)
+
 set(DEMO_MAIN_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
 macro(add_demo DEMO_NAME SOURCE_FILES_VAR)
@@ -27,3 +29,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/common")
 
 add_subdirectory(gltf)
 add_subdirectory(firstperson)
+
+if(BUILD_QT_DEMO)
+	add_subdirectory(qt)
+endif()

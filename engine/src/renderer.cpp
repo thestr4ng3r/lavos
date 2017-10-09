@@ -529,13 +529,9 @@ void Renderer::CleanupRenderCommandBuffer()
 	engine->GetVkDevice().freeCommandBuffers(render_command_pool, render_command_buffer);
 }
 
-void Renderer::RecordRenderCommandBuffer(vk::Framebuffer dst_framebuffer)
+void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer)
 {
 	// TODO: here is a LOT of potential for optimization
-
-	const auto &command_buffer = render_command_buffer;
-
-	command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 
 	std::array<vk::ClearValue, 2> clear_values = {
 		vk::ClearColorValue(std::array<float, 4>{{0.0f, 0.0f, 0.0f, 1.0f }}),
@@ -584,24 +580,14 @@ void Renderer::RecordRenderCommandBuffer(vk::Framebuffer dst_framebuffer)
 
 
 	command_buffer.endRenderPass();
-
-	command_buffer.end();
 }
 
 void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> wait_semaphores,
 						 std::vector<vk::PipelineStageFlags> wait_stages, std::vector<vk::Semaphore> signal_semaphores)
 {
-	if(scene == nullptr)
-		throw std::runtime_error("renderer has no scene.");
-
-	if(camera == nullptr)
-		throw std::runtime_error("renderer has no camera.");
-
-	UpdateMatrixUniformBuffer();
-	UpdateLightingUniformBuffer();
-	UpdateCameraUniformBuffer();
-
-	RecordRenderCommandBuffer(dst_framebuffers[image_index]);
+	render_command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
+	DrawFrameRecord(render_command_buffer, dst_framebuffers[image_index]);
+	render_command_buffer.end();
 
 	engine->GetGraphicsQueue().submit(
 		vk::SubmitInfo()
@@ -613,4 +599,19 @@ void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> w
 			.setSignalSemaphoreCount(static_cast<uint32_t>(signal_semaphores.size()))
 			.setPSignalSemaphores(signal_semaphores.data()),
 		nullptr);
+}
+
+void Renderer::DrawFrameRecord(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer)
+{
+	if(scene == nullptr)
+		throw std::runtime_error("renderer has no scene.");
+
+	if(camera == nullptr)
+		throw std::runtime_error("renderer has no camera.");
+
+	UpdateMatrixUniformBuffer();
+	UpdateLightingUniformBuffer();
+	UpdateCameraUniformBuffer();
+
+	RecordRenderCommandBuffer(command_buffer, dst_framebuffer);
 }
