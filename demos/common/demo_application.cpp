@@ -55,7 +55,7 @@ void DemoApplication::InitVulkan()
 
 void DemoApplication::CreateEngine()
 {
-	engine::Engine::CreateInfo create_info;
+	lavos::Engine::CreateInfo create_info;
 
 #if defined(__ANDROID__)
 	create_info.required_instance_extensions.insert(VK_KHR_SURFACE_EXTENSION_NAME);
@@ -72,7 +72,7 @@ void DemoApplication::CreateEngine()
 
 	create_info.required_device_extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-	engine = new engine::Engine(create_info);
+	engine = new lavos::Engine(create_info);
 
 	CreateSurface();
 

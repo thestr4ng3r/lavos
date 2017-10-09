@@ -22,18 +22,18 @@ class Application: public DemoApplication
     private:
 		std::string gltf_filename;
 
-		engine::Renderer *renderer;
-		engine::Material *material;
+		lavos::Renderer *renderer;
+		lavos::Material *material;
 
-		engine::AssetContainer *asset_container;
+		lavos::AssetContainer *asset_container;
 
-		engine::MaterialInstance *material_instance;
+		lavos::MaterialInstance *material_instance;
 
-		engine::Scene *scene;
+		lavos::Scene *scene;
 
 
 		double last_cursor_x, last_cursor_y;
-		engine::FirstPersonControllerComponent *fp_controller;
+		lavos::FirstPersonControllerComponent *fp_controller;
 
 
 		void InitWindow() override;

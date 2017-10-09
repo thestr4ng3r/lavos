@@ -13,4 +13,4 @@ set(SOURCE_FILES
 add_executable(qt_demo ${SOURCE_FILES})
 target_link_libraries(qt_demo
 		Qt5::Core Qt5::Gui Qt5::Widgets
-		engine)
+		lavos)

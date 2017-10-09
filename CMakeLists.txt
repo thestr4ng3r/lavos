@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(vulkan)
+project(lavos)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -28,7 +28,7 @@ else()
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glfw")
 endif()
 
-add_subdirectory(engine)
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/engine/include")
+add_subdirectory(lavos)
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/lavos/include")
 
 add_subdirectory(demos)

@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 {
 	QApplication app(argc, argv);
 
-	engine::Engine::CreateInfo engine_create_info;
+	lavos::Engine::CreateInfo engine_create_info;
 	engine_create_info.app_info = "Qt Demo";
 
 	engine_create_info.enable_validation_layers = true;
@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 		"VK_KHR_xcb_surface"
 	}; // TODO: do not hardcode these, make dynamic based on environment
 
-	engine::Engine *engine = new engine::Engine(engine_create_info);
+	lavos::Engine *engine = new lavos::Engine(engine_create_info);
 
 	QVulkanInstance inst;
 	inst.setVkInstance(engine->GetVkInstance());

@@ -17,7 +17,7 @@ class DemoApplication
 		static void OnWindowResized(GLFWwindow *window, int width, int height);
 #endif
 
-		engine::Engine *engine;
+		lavos::Engine *engine;
 
 
 		vk::SurfaceKHR surface;

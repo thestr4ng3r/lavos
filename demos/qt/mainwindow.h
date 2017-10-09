@@ -13,16 +13,16 @@
 class MainWindowRenderer: public QVulkanWindowRenderer
 {
 	private:
-		engine::Engine *engine;
+		lavos::Engine *engine;
 		QVulkanWindow *window;
 
-		engine::PhongMaterial *material;
-		engine::Renderer *renderer;
+		lavos::PhongMaterial *material;
+		lavos::Renderer *renderer;
 
-		engine::AssetContainer *asset_container;
+		lavos::AssetContainer *asset_container;
 
 	public:
-		MainWindowRenderer(engine::Engine *engine, QVulkanWindow *window)
+		MainWindowRenderer(lavos::Engine *engine, QVulkanWindow *window)
 			: engine(engine), window(window) {}
 
 		void initResources() override;
@@ -38,10 +38,10 @@ class MainWindow: public QVulkanWindow
 	Q_OBJECT
 
 	private:
-		engine::Engine *engine;
+		lavos::Engine *engine;
 
 	public:
-		MainWindow(engine::Engine *engine, QWindow *parent = nullptr)
+		MainWindow(lavos::Engine *engine, QWindow *parent = nullptr)
 			: QVulkanWindow(parent), engine(engine) {}
 
 		QVulkanWindowRenderer *createRenderer() override
