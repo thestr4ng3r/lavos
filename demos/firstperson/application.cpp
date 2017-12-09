@@ -21,7 +21,6 @@
 #include <material/unlit_material.h>
 #include <component/directional_light_component.h>
 
-
 Application::Application(std::string gltf_filename)
 {
 	this->gltf_filename = gltf_filename;

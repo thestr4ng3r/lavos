@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 14)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glm")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/lavos/include")
+
 if(ANDROID)
     #include_directories("${CMAKE_CURRENT_SOURCE_DIR}/android/vulkan_wrapper")
     include_directories("${CMAKE_SOURCE_DIR}/android/vulkan-hpp"
@@ -26,9 +28,11 @@ else()
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glfw")
+
+    add_subdirectory(frame)
+    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/frame/include")
 endif()
 
 add_subdirectory(lavos)
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/lavos/include")
 
 add_subdirectory(demos)
