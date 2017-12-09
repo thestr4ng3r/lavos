@@ -37,6 +37,8 @@ void WindowApplication::InitVulkan(bool enable_layers)
 	CreateSwapchain();
 	CreateImageViews();
 	CreateSemaphores();
+
+	swapchain_recreated = false;
 }
 
 
@@ -196,6 +198,8 @@ void WindowApplication::RecreateSwapchain()
 	CleanupSwapchain();
 	CreateSwapchain();
 	CreateImageViews();
+
+	swapchain_recreated = true;
 }
 
 
@@ -205,31 +209,19 @@ void WindowApplication::CreateSemaphores()
 	render_finished_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
 }
 
-void WindowApplication::RunMainLoop()
+
+void WindowApplication::BeginFrame()
 {
-	float delta_time = 0.0f;
-
-	auto last_frame_time = std::chrono::high_resolution_clock::now();
-	while(true)
-	{
-		if(glfwWindowShouldClose(window))
-			break;
-
-		glfwPollEvents();
-
-		Update(delta_time);
-
-		DrawAndPresentFrame();
-
-		auto time = std::chrono::high_resolution_clock::now();
-		delta_time = std::chrono::duration<float, std::ratio<1>>(time - last_frame_time).count();
-		last_frame_time = time;
-	}
-
-	engine->GetVkDevice().waitIdle();
+	if(last_frame_time == std::chrono::high_resolution_clock::time_point())
+		std::chrono::high_resolution_clock::now();
 }
 
-void WindowApplication::DrawAndPresentFrame()
+void WindowApplication::Update()
+{
+	glfwPollEvents();
+}
+
+void WindowApplication::Render(lavos::Renderer *renderer)
 {
 	auto image_index_result = engine->GetVkDevice().acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphore, vk::Fence() /*nullptr*/);
 
@@ -245,7 +237,10 @@ void WindowApplication::DrawAndPresentFrame()
 
 	uint32_t image_index = image_index_result.value;
 
-	DrawFrame(image_index);
+	renderer->DrawFrame(image_index,
+						{ image_available_semaphore },
+						{ vk::PipelineStageFlagBits::eColorAttachmentOutput },
+						{ render_finished_semaphore });
 
 	vk::Semaphore signal_semaphores[] = { render_finished_semaphore };
 
@@ -268,6 +263,16 @@ void WindowApplication::DrawAndPresentFrame()
 	engine->GetPresentQueue().waitIdle();
 }
 
+
+void WindowApplication::EndFrame()
+{
+	auto time = std::chrono::high_resolution_clock::now();
+	delta_time = std::chrono::duration<float, std::ratio<1>>(time - last_frame_time).count();
+	last_frame_time = time;
+
+	engine->GetVkDevice().waitIdle();
+}
+
 void WindowApplication::CleanupSwapchain()
 {
 	auto device = engine->GetVkDevice();
@@ -284,8 +289,6 @@ void WindowApplication::Cleanup()
 	auto device = engine->GetVkDevice();
 
 	CleanupSwapchain();
-
-	CleanupApplication();
 
 	device.destroySemaphore(image_available_semaphore);
 	device.destroySemaphore(render_finished_semaphore);

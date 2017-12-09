@@ -11,14 +11,18 @@
 #include <mesh.h>
 #include <renderer.h>
 
+#include <window_application.h>
+
 #include <glm/glm.hpp>
 #include <asset_container.h>
 
 #include "demo_application.h"
 
-class Application: public DemoApplication
+class Application
 {
     private:
+		lavosframe::WindowApplication app;
+
 		std::string gltf_filename;
 
 		lavos::Renderer *renderer;
@@ -28,19 +32,11 @@ class Application: public DemoApplication
 
 		lavos::MaterialInstance *material_instance;
 
-		lavos::Node *camera_node;
-
-
-		void InitVulkan() override;
-
-		void RecreateSwapchain() override;
-
-		void CleanupApplication() override;
-
-		void DrawFrame(uint32_t image_index) override;
-
 	public:
 		Application(std::string gltf_filename);
+		~Application();
+
+		void Run();
 };
 
 #endif

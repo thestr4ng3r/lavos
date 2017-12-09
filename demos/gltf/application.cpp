@@ -12,30 +12,21 @@
 
 #include "application.h"
 
-#include <vulkan/vulkan.h>
-#include <engine.h>
-#include <asset_container.h>
 #include <component/mesh_component.h>
-#include <component/camera_component.h>
 #include <material/phong_material.h>
 #include <material/unlit_material.h>
 #include <component/directional_light_component.h>
 
 
-Application::Application(std::string gltf_filename)
+Application::Application(std::string gltf_filename) : app(800, 600, "GLTF", true)
 {
 	this->gltf_filename = gltf_filename;
-}
 
-void Application::InitVulkan()
-{
-	DemoApplication::InitVulkan();
-
-	material = new lavos::PhongMaterial(engine);
-	renderer = new lavos::Renderer(engine, swapchain_extent, swapchain_image_format, swapchain_image_views);
+	material = new lavos::PhongMaterial(app.GetEngine());
+	renderer = new lavos::Renderer(app.GetEngine(), app.GetSwapchainExtent(), app.GetSwapchainImageFormat(), app.GetSwapchainImageViews());
 	renderer->AddMaterial(material);
 
-	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, material, gltf_filename);
+	asset_container = lavos::AssetContainer::LoadFromGLTF(app.GetEngine(), material, gltf_filename);
 
 	lavos::Scene *scene = asset_container->scenes[0];
 	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
@@ -73,28 +64,33 @@ void Application::InitVulkan()
 	material_instance = asset_container->material_instances.front();
 }
 
-void Application::DrawFrame(uint32_t image_index)
-{
-	renderer->DrawFrame(image_index,
-						{ image_available_semaphore },
-						{ vk::PipelineStageFlagBits::eColorAttachmentOutput },
-						{ render_finished_semaphore });
-}
-
-void Application::RecreateSwapchain()
-{
-	DemoApplication::RecreateSwapchain();
-	renderer->ResizeScreen(swapchain_extent, swapchain_image_views);
-}
-
-void Application::CleanupApplication()
+Application::~Application()
 {
 	delete asset_container;
 	delete renderer;
 }
 
+void Application::Run()
+{
+	while(true)
+	{
+		app.BeginFrame();
 
-#ifndef __ANDROID__
+		app.Update();
+
+		if(glfwWindowShouldClose(app.GetWindow()))
+			break;
+
+		if(app.GetSwapchainRecreated())
+			renderer->ResizeScreen(app.GetSwapchainExtent(), app.GetSwapchainImageViews());
+
+		app.Render(renderer);
+
+		app.EndFrame();
+	}
+}
+
+
 int main(int argc, const char **argv)
 {
 	std::string gltf_filename = "data/gltftest.gltf";
@@ -115,18 +111,3 @@ int main(int argc, const char **argv)
 
 	return EXIT_SUCCESS;
 }
-#else
-void sample_main()
-{
-	Application demo_app("/storage/emulated/0/vulkan/flux/gltftest.gltf");
-
-	try
-	{
-		demo_app.Run();
-	}
-	catch(const std::runtime_error &e)
-	{
-		LOGE("%s\n", e.what());
-	}
-}
-#endif

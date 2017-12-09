@@ -2,13 +2,13 @@
 #ifndef LAVOS_FRAME_APPLICATION_H
 #define LAVOS_FRAME_APPLICATION_H
 
-#ifndef __ANDROID__
+#include <chrono>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#endif
 
 #include <engine.h>
-
+#include <renderer.h>
 
 namespace lavosframe
 {
@@ -32,13 +32,13 @@ class WindowApplication
 		vk::Semaphore image_available_semaphore;
 		vk::Semaphore render_finished_semaphore;
 
+		bool swapchain_recreated;
+
+		std::chrono::high_resolution_clock::time_point last_frame_time;
+		float delta_time = 0.0f;
 
 		virtual void InitWindow(int width, int height, std::string title);
 		virtual void InitVulkan(bool enable_layers);
-
-		virtual void Update(float delta_time) {};
-		virtual void DrawFrame(uint32_t image_index) {};
-		virtual void CleanupApplication() {};
 
 		virtual void RecreateSwapchain();
 		virtual void CleanupSwapchain();
@@ -56,13 +56,23 @@ class WindowApplication
 
 		void CreateSemaphores();
 
-		void DrawAndPresentFrame();
-
 	public:
 		WindowApplication(int width, int height, std::string title, bool enable_layers);
 		~WindowApplication();
 
-		void RunMainLoop();
+		void BeginFrame();
+		void Update();
+		void Render(lavos::Renderer *renderer);
+		void EndFrame();
+
+		bool GetSwapchainRecreated() const							{ return swapchain_recreated; }
+		vk::Extent2D GetSwapchainExtent() const 					{ return swapchain_extent; };
+		vk::Format GetSwapchainImageFormat() const					{ return swapchain_image_format; }
+		std::vector<vk::ImageView> GetSwapchainImageViews() const	{ return swapchain_image_views; }
+
+		GLFWwindow *GetWindow() const			{ return window; }
+
+		lavos::Engine *GetEngine() const		{ return engine; }
 };
 
 }
