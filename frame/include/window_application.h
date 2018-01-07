@@ -71,6 +71,7 @@ class WindowApplication
 		std::vector<vk::ImageView> GetSwapchainImageViews() const	{ return swapchain_image_views; }
 
 		GLFWwindow *GetWindow() const			{ return window; }
+		float GetDeltaTime() const 				{ return delta_time; }
 
 		lavos::Engine *GetEngine() const		{ return engine; }
 };

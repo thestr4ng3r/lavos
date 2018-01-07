@@ -12,7 +12,8 @@ macro(add_demo DEMO_NAME SOURCE_FILES_VAR)
 				${ANDROID_NDK}/sources/android/native_app_glue
 				${ANDROID_NDK}/sources/third_party/shaderc/include)
 
-		target_link_libraries(${DEMO_NAME} lavos)
+		target_link_libraries(${DEMO_NAME}
+		lavos)
 	else()
 		add_executable(${DEMO_NAME} ${SOURCE_FILES})
 
@@ -23,9 +24,6 @@ macro(add_demo DEMO_NAME SOURCE_FILES_VAR)
 				${Vulkan_LIBRARIES})
 	endif()
 endmacro()
-
-add_subdirectory(common)
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/common")
 
 add_subdirectory(gltf)
 add_subdirectory(firstperson)

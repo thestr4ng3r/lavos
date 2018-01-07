@@ -3,4 +3,9 @@ set(SOURCE_FILES
 		application.cpp
 		application.h)
 
-add_demo(firstperson SOURCE_FILES)
+add_executable(firstperson ${SOURCE_FILES})
+target_link_libraries(firstperson
+		lavos
+		lavosframe
+		glfw
+		${Vulkan_LIBRARIES})

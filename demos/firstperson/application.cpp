@@ -21,28 +21,16 @@
 #include <material/unlit_material.h>
 #include <component/directional_light_component.h>
 
-Application::Application(std::string gltf_filename)
+Application::Application(std::string gltf_filename) : app(800, 600, "GLTF", true)
 {
 	this->gltf_filename = gltf_filename;
-}
 
-void Application::InitWindow()
-{
-	DemoApplication::InitWindow();
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwGetCursorPos(window, &last_cursor_x, &last_cursor_y);
-}
-
-void Application::InitVulkan()
-{
-	DemoApplication::InitVulkan();
-
-	material = new lavos::PhongMaterial(engine);
-	renderer = new lavos::Renderer(engine, swapchain_extent, swapchain_image_format, swapchain_image_views);
+	material = new lavos::PhongMaterial(app.GetEngine());
+	renderer = new lavos::Renderer(app.GetEngine(), app.GetSwapchainExtent(), app.GetSwapchainImageFormat(), app.GetSwapchainImageViews());
 	renderer->AddMaterial(material);
 
-	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, material, gltf_filename);
+	asset_container = lavos::AssetContainer::LoadFromGLTF(app.GetEngine(), material, gltf_filename);
 
 	scene = asset_container->scenes[0];
 	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
@@ -85,10 +73,50 @@ void Application::InitVulkan()
 	renderer->SetCamera(camera);
 
 	material_instance = asset_container->material_instances.front();
+
+
+
+
+
+
+	GLFWwindow *window = app.GetWindow();
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwGetCursorPos(window, &last_cursor_x, &last_cursor_y);
+}
+
+
+Application::~Application()
+{
+	delete asset_container;
+	delete renderer;
+}
+
+void Application::Run()
+{
+	while(true)
+	{
+		app.BeginFrame();
+
+		app.Update();
+
+		Update(app.GetDeltaTime());
+
+		if(glfwWindowShouldClose(app.GetWindow()))
+			break;
+
+		if(app.GetSwapchainRecreated())
+			renderer->ResizeScreen(app.GetSwapchainExtent(), app.GetSwapchainImageViews());
+
+		app.Render(renderer);
+
+		app.EndFrame();
+	}
 }
 
 void Application::Update(float delta_time)
 {
+	GLFWwindow *window = app.GetWindow();
+
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 
@@ -117,25 +145,6 @@ void Application::Update(float delta_time)
 	scene->Update(delta_time);
 }
 
-void Application::DrawFrame(uint32_t image_index)
-{
-	renderer->DrawFrame(image_index,
-						{ image_available_semaphore },
-						{ vk::PipelineStageFlagBits::eColorAttachmentOutput },
-						{ render_finished_semaphore });
-}
-
-void Application::RecreateSwapchain()
-{
-	DemoApplication::RecreateSwapchain();
-	renderer->ResizeScreen(swapchain_extent, swapchain_image_views);
-}
-
-void Application::CleanupApplication()
-{
-	delete asset_container;
-	delete renderer;
-}
 
 
 #ifndef __ANDROID__

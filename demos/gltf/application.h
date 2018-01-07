@@ -2,7 +2,6 @@
 #ifndef VULKAN_MESH_APPLICATION_H
 #define VULKAN_MESH_APPLICATION_H
 
-#include <demo_application.h>
 #include <vulkan/vulkan.hpp>
 #include <engine.h>
 #include <vertex.h>
@@ -15,8 +14,6 @@
 
 #include <glm/glm.hpp>
 #include <asset_container.h>
-
-#include "demo_application.h"
 
 class Application
 {
