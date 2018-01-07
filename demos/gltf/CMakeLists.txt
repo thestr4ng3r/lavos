@@ -1,7 +1,6 @@
 
 set(SOURCE_FILES
-		application.cpp
-		application.h)
+		gltf.cpp)
 
 add_executable(gltf ${SOURCE_FILES})
 target_link_libraries(gltf

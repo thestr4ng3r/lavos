@@ -10,23 +10,38 @@
 
 #include <glm_config.h>
 
-#include "application.h"
-
 #include <component/mesh_component.h>
 #include <material/phong_material.h>
 #include <material/unlit_material.h>
 #include <component/directional_light_component.h>
+#include <component/fp_controller_component.h>
+#include <asset_container.h>
+
+#include <window_application.h>
 
 
-Application::Application(std::string gltf_filename) : app(800, 600, "GLTF", true)
+lavosframe::WindowApplication *app = nullptr;
+
+lavos::Renderer *renderer = nullptr;
+lavos::Material *material;
+
+lavos::AssetContainer *asset_container = nullptr;
+
+lavos::MaterialInstance *material_instance;
+
+lavos::Scene *scene;
+
+double last_cursor_x, last_cursor_y;
+lavos::FirstPersonControllerComponent *fp_controller;
+
+
+void Init(std::string gltf_filename)
 {
-	this->gltf_filename = gltf_filename;
-
-	material = new lavos::PhongMaterial(app.GetEngine());
-	renderer = new lavos::Renderer(app.GetEngine(), app.GetSwapchainExtent(), app.GetSwapchainImageFormat(), app.GetSwapchainImageViews());
+	material = new lavos::PhongMaterial(app->GetEngine());
+	renderer = new lavos::Renderer(app->GetEngine(), app->GetSwapchainExtent(), app->GetSwapchainImageFormat(), app->GetSwapchainImageViews());
 	renderer->AddMaterial(material);
 
-	asset_container = lavos::AssetContainer::LoadFromGLTF(app.GetEngine(), material, gltf_filename);
+	asset_container = lavos::AssetContainer::LoadFromGLTF(app->GetEngine(), material, gltf_filename);
 
 	lavos::Scene *scene = asset_container->scenes[0];
 	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
@@ -64,32 +79,12 @@ Application::Application(std::string gltf_filename) : app(800, 600, "GLTF", true
 	material_instance = asset_container->material_instances.front();
 }
 
-Application::~Application()
+void Cleanup()
 {
 	delete asset_container;
 	delete renderer;
+	delete app;
 }
-
-void Application::Run()
-{
-	while(true)
-	{
-		app.BeginFrame();
-
-		app.Update();
-
-		if(glfwWindowShouldClose(app.GetWindow()))
-			break;
-
-		if(app.GetSwapchainRecreated())
-			renderer->ResizeScreen(app.GetSwapchainExtent(), app.GetSwapchainImageViews());
-
-		app.Render(renderer);
-
-		app.EndFrame();
-	}
-}
-
 
 int main(int argc, const char **argv)
 {
@@ -97,17 +92,26 @@ int main(int argc, const char **argv)
 	if(argc > 1)
 		gltf_filename = argv[1];
 
-	Application app(gltf_filename);
+	app = new lavosframe::WindowApplication(800, 600, "GLTF", true);
 
-	try
+	Init(gltf_filename);
+
+	while(true)
 	{
-		app.Run();
+		app->BeginFrame();
+		app->Update();
+
+		if(glfwWindowShouldClose(app->GetWindow()))
+			break;
+
+		if(app->GetSwapchainRecreated())
+			renderer->ResizeScreen(app->GetSwapchainExtent(), app->GetSwapchainImageViews());
+
+		app->Render(renderer);
+		app->EndFrame();
 	}
-	catch(const std::runtime_error &e)
-	{
-		std::cerr << e.what() << std::endl;
-		return EXIT_FAILURE;
-	}
+
+	Cleanup();
 
 	return EXIT_SUCCESS;
 }

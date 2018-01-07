@@ -1,7 +1,4 @@
 
-#if defined(__ANDROID__)
-#include <android_common.h>
-#endif
 
 #include <iostream>
 #include <set>
@@ -9,8 +6,6 @@
 #include <chrono>
 
 #include <glm_config.h>
-
-#include "application.h"
 
 #include <vulkan/vulkan.h>
 #include <engine.h>
@@ -20,17 +15,35 @@
 #include <material/phong_material.h>
 #include <material/unlit_material.h>
 #include <component/directional_light_component.h>
+#include <component/fp_controller_component.h>
 
-Application::Application(std::string gltf_filename) : app(800, 600, "GLTF", true)
+#include <window_application.h>
+
+
+
+lavosframe::WindowApplication *app = nullptr;
+
+lavos::Renderer *renderer = nullptr;
+lavos::Material *material;
+
+lavos::AssetContainer *asset_container = nullptr;
+
+lavos::MaterialInstance *material_instance;
+
+lavos::Scene *scene;
+
+double last_cursor_x, last_cursor_y;
+lavos::FirstPersonControllerComponent *fp_controller;
+
+
+
+void Init(std::string gltf_filename)
 {
-	this->gltf_filename = gltf_filename;
-
-
-	material = new lavos::PhongMaterial(app.GetEngine());
-	renderer = new lavos::Renderer(app.GetEngine(), app.GetSwapchainExtent(), app.GetSwapchainImageFormat(), app.GetSwapchainImageViews());
+	material = new lavos::PhongMaterial(app->GetEngine());
+	renderer = new lavos::Renderer(app->GetEngine(), app->GetSwapchainExtent(), app->GetSwapchainImageFormat(), app->GetSwapchainImageViews());
 	renderer->AddMaterial(material);
 
-	asset_container = lavos::AssetContainer::LoadFromGLTF(app.GetEngine(), material, gltf_filename);
+	asset_container = lavos::AssetContainer::LoadFromGLTF(app->GetEngine(), material, gltf_filename);
 
 	scene = asset_container->scenes[0];
 	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
@@ -75,47 +88,17 @@ Application::Application(std::string gltf_filename) : app(800, 600, "GLTF", true
 	material_instance = asset_container->material_instances.front();
 
 
-
-
-
-
-	GLFWwindow *window = app.GetWindow();
+	GLFWwindow *window = app->GetWindow();
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwGetCursorPos(window, &last_cursor_x, &last_cursor_y);
 }
 
 
-Application::~Application()
+
+
+void Update()
 {
-	delete asset_container;
-	delete renderer;
-}
-
-void Application::Run()
-{
-	while(true)
-	{
-		app.BeginFrame();
-
-		app.Update();
-
-		Update(app.GetDeltaTime());
-
-		if(glfwWindowShouldClose(app.GetWindow()))
-			break;
-
-		if(app.GetSwapchainRecreated())
-			renderer->ResizeScreen(app.GetSwapchainExtent(), app.GetSwapchainImageViews());
-
-		app.Render(renderer);
-
-		app.EndFrame();
-	}
-}
-
-void Application::Update(float delta_time)
-{
-	GLFWwindow *window = app.GetWindow();
+	GLFWwindow *window = app->GetWindow();
 
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -142,44 +125,44 @@ void Application::Update(float delta_time)
 	last_cursor_x = cursor_x;
 	last_cursor_y = cursor_y;
 
-	scene->Update(delta_time);
+	scene->Update(app->GetDeltaTime());
 }
 
 
+void Cleanup()
+{
+	delete asset_container;
+	delete renderer;
+}
 
-#ifndef __ANDROID__
 int main(int argc, const char **argv)
 {
 	std::string gltf_filename = "data/gltftest_nocamera.gltf";
 	if(argc > 1)
 		gltf_filename = argv[1];
 
-	Application app(gltf_filename);
+	app = new lavosframe::WindowApplication(800, 600, "First Person", true);
 
-	try
+	Init(gltf_filename);
+
+	while(true)
 	{
-		app.Run();
+		app->BeginFrame();
+		app->Update();
+
+		Update();
+
+		if(glfwWindowShouldClose(app->GetWindow()))
+			break;
+
+		if(app->GetSwapchainRecreated())
+			renderer->ResizeScreen(app->GetSwapchainExtent(), app->GetSwapchainImageViews());
+
+		app->Render(renderer);
+		app->EndFrame();
 	}
-	catch(const std::runtime_error &e)
-	{
-		std::cerr << e.what() << std::endl;
-		return EXIT_FAILURE;
-	}
+
+	Cleanup();
 
 	return EXIT_SUCCESS;
 }
-#else
-void sample_main()
-{
-	Application demo_app("/storage/emulated/0/vulkan/flux/gltftest.gltf");
-
-	try
-	{
-		demo_app.Run();
-	}
-	catch(const std::runtime_error &e)
-	{
-		LOGE("%s\n", e.what());
-	}
-}
-#endif
