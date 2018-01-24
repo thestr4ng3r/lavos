@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include "engine.h"
+#include "lavos/engine.h"
 
 using namespace lavos;
 

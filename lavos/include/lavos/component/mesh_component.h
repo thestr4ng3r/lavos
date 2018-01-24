@@ -3,7 +3,7 @@
 #define VULKAN_MESH_COMPONENT_H
 
 #include "component.h"
-#include "mesh.h"
+#include "../mesh.h"
 
 namespace lavos
 {

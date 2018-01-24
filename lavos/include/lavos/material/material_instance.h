@@ -4,8 +4,8 @@
 
 #include <map>
 
-#include "texture.h"
-#include "buffer.h"
+#include "../texture.h"
+#include "../buffer.h"
 
 namespace lavos
 {

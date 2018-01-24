@@ -7,8 +7,8 @@
 
 #include <set>
 
-#include "buffer.h"
-#include "texture.h"
+#include "lavos/buffer.h"
+#include "lavos/texture.h"
 
 namespace lavos
 {

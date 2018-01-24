@@ -1,9 +1,9 @@
 
-#include "engine.h"
-#include "material/phong_material.h"
-#include "material/material_instance.h"
+#include "lavos/engine.h"
+#include "lavos/material/phong_material.h"
+#include "lavos/material/material_instance.h"
 
-#include "shader_load.h"
+#include "lavos/shader_load.h"
 
 using namespace lavos;
 

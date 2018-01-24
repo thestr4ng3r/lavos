@@ -1,5 +1,5 @@
 
-#include "component/fp_controller_component.h"
+#include "lavos/component/fp_controller_component.h"
 
 using namespace lavos;
 

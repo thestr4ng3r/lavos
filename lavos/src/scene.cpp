@@ -1,5 +1,5 @@
 
-#include "scene.h"
+#include "lavos/scene.h"
 
 lavos::Scene::Scene()
 {

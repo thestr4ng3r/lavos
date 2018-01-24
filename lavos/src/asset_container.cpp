@@ -1,15 +1,15 @@
 
-#include "engine.h"
-#include "material/material.h"
-#include "asset_container.h"
-#include "component/mesh_component.h"
-#include "component/camera_component.h"
+#include "lavos/engine.h"
+#include "lavos/material/material.h"
+#include "lavos/asset_container.h"
+#include "lavos/component/mesh_component.h"
+#include "lavos/component/camera_component.h"
 
 #include <tiny_gltf.h>
 #include <iostream>
 #include <algorithm>
 
-#include "glm_config.h"
+#include "lavos/glm_config.h"
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/matrix_decompose.hpp>

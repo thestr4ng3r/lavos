@@ -1,13 +1,13 @@
 
 #include <chrono>
-#include "glm_config.h"
 #include <iostream>
-#include <component/directional_light_component.h>
 
-#include "renderer.h"
-#include "shader_load.h"
-#include "vertex.h"
-#include "component/mesh_component.h"
+#include "lavos/glm_config.h"
+#include "lavos/component/directional_light_component.h"
+#include "lavos/renderer.h"
+#include "lavos/shader_load.h"
+#include "lavos/vertex.h"
+#include "lavos/component/mesh_component.h"
 
 using namespace lavos;
 

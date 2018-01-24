@@ -1,5 +1,5 @@
 
-#include "component/directional_light_component.h"
+#include "lavos/component/directional_light_component.h"
 
 using namespace lavos;
 

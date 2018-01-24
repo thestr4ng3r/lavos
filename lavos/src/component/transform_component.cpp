@@ -1,5 +1,5 @@
 
-#include "component/transform_component.h"
+#include "lavos/component/transform_component.h"
 
 using namespace lavos;
 

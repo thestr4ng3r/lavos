@@ -1,7 +1,7 @@
 
-#include "material/material.h"
-#include "material/material_instance.h"
-#include "engine.h"
+#include "lavos/material/material.h"
+#include "lavos/material/material_instance.h"
+#include "lavos/engine.h"
 
 using namespace lavos;
 

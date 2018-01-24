@@ -3,8 +3,8 @@
 #include <functional>
 #include <iostream>
 
-#include "node.h"
-#include "component/transform_component.h"
+#include "lavos/node.h"
+#include "lavos/component/transform_component.h"
 
 
 using namespace lavos;

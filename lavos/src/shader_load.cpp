@@ -1,5 +1,5 @@
 
-#include "shader_load.h"
+#include "lavos/shader_load.h"
 
 #include <fstream>
 #include <stdexcept>

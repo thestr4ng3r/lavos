@@ -1,8 +1,8 @@
 
-#include "material/material.h"
-#include "engine.h"
+#include "lavos/material/material.h"
+#include "lavos/engine.h"
 
-#include "shader_load.h"
+#include "lavos/shader_load.h"
 
 using namespace lavos;
 

@@ -4,9 +4,9 @@
 
 #include "component.h"
 #include "transform_component.h"
-#include "node.h"
+#include "../node.h"
 
-#include "glm_config.h"
+#include "../glm_config.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 

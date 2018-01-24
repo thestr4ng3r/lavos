@@ -4,7 +4,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "texture.h"
+#include "../texture.h"
 #include "material_instance.h"
 
 namespace lavos

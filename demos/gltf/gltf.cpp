@@ -8,14 +8,14 @@
 #include <fstream>
 #include <chrono>
 
-#include <glm_config.h>
+#include <lavos/glm_config.h>
 
-#include <component/mesh_component.h>
-#include <material/phong_material.h>
-#include <material/unlit_material.h>
-#include <component/directional_light_component.h>
-#include <component/fp_controller_component.h>
-#include <asset_container.h>
+#include <lavos/component/mesh_component.h>
+#include <lavos/material/phong_material.h>
+#include <lavos/material/unlit_material.h>
+#include <lavos/component/directional_light_component.h>
+#include <lavos/component/fp_controller_component.h>
+#include <lavos/asset_container.h>
 
 #include <window_application.h>
 

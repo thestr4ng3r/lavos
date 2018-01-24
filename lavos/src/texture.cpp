@@ -1,6 +1,6 @@
 
-#include "texture.h"
-#include "engine.h"
+#include "lavos/texture.h"
+#include "lavos/engine.h"
 
 using namespace lavos;
 

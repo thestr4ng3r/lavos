@@ -3,9 +3,9 @@
 #define VULKAN_TRANSFORM_COMPONENT_H
 
 #include "component.h"
-#include "node.h"
+#include "../node.h"
 
-#include "glm_config.h"
+#include "../glm_config.h"
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>

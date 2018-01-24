@@ -1,6 +1,6 @@
 
-#include "mesh.h"
-#include "engine.h"
+#include "lavos/mesh.h"
+#include "lavos/engine.h"
 
 #include <iostream>
 

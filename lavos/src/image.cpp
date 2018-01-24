@@ -1,7 +1,7 @@
 
-#include <engine.h>
+#include <lavos/engine.h>
 #include <glm/vec4.hpp>
-#include "image.h"
+#include "lavos/image.h"
 
 #include "stb_image.h"
 
