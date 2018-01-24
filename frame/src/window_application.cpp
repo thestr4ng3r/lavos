@@ -84,7 +84,13 @@ vk::SurfaceFormatKHR WindowApplication::ChooseSurfaceFormat(const std::vector<vk
 	const auto preferred_color_space = vk::ColorSpaceKHR::eSrgbNonlinear;
 
 	if(available_formats.size() == 1 && available_formats[0].format == vk::Format::eUndefined)
-		return { preferred_format, preferred_color_space };
+	{
+		vk::SurfaceFormatKHR r;
+		r.format = preferred_format;
+		r.colorSpace = preferred_color_space;
+		return r;
+	}
+
 
 	for(const auto &format : available_formats)
 	{

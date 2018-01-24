@@ -6,7 +6,7 @@ option(LAVOS_IMPLEMENT_VMA "Compile implementation of Vulkan Memory Allocator in
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-set(GLSLC_EXECUTABLE glslc) # TODO: Write a find module or something
+find_package(Shaderc REQUIRED)
 
 macro(add_spirv_shaders SPIRV_FILES_VAR GLSL_FILES_VAR)
 	set(${SPIRV_FILES_VAR} "")
@@ -17,7 +17,7 @@ macro(add_spirv_shaders SPIRV_FILES_VAR GLSL_FILES_VAR)
 		set(glsl_file "${CMAKE_CURRENT_SOURCE_DIR}/glsl/${glsl_file}")
 		list(APPEND ${SPIRV_FILES_VAR} "${spirv_file}")
 		add_custom_command(OUTPUT "${spirv_file}"
-				COMMAND ${GLSLC_EXECUTABLE} "${glsl_file}" -o "${spirv_file}"
+				COMMAND ${Shaderc_GLSLC} "${glsl_file}" -o "${spirv_file}"
 				MAIN_DEPENDENCY "${glsl_file}")
 	endforeach()
 endmacro()
