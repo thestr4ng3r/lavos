@@ -25,45 +25,45 @@ endmacro()
 set(SOURCE_FILES
 		src/thirdparty_impl.cpp
 		src/engine.cpp
-		include/engine.h
-		include/vertex.h
+		include/lavos/engine.h
+		include/lavos/vertex.h
 		src/mesh.cpp
-		include/mesh.h
+		include/lavos/mesh.h
 		src/material/material.cpp
-		include/material/material.h
+		include/lavos/material/material.h
 		src/material/unlit_material.cpp
-		include/material/unlit_material.h
+		include/lavos/material/unlit_material.h
 		src/material/phong_material.cpp
-		include/material/phong_material.h
+		include/lavos/material/phong_material.h
 		src/material/material_instance.cpp
-		include/material/material_instance.h
-		include/buffer.h
+		include/lavos/material/material_instance.h
+		include/lavos/buffer.h
 		src/image.cpp
-		include/image.h
+		include/lavos/image.h
 		src/texture.cpp
-		include/texture.h
-		include/glm_config.h
+		include/lavos/texture.h
+		include/lavos/glm_config.h
 		src/asset_container.cpp
-		include/asset_container.h
+		include/lavos/asset_container.h
 		src/renderer.cpp
-		include/renderer.h
+		include/lavos/renderer.h
 		src/shader_load.cpp
-		include/shader_load.h
+		include/lavos/shader_load.h
 		src/scene.cpp
-		include/scene.h
+		include/lavos/scene.h
 		src/node.cpp
-		include/node.h
-		include/component/component.h
+		include/lavos/node.h
+		include/lavos/component/component.h
 		src/component/mesh_component.cpp
-		include/component/mesh_component.h
-		include/component/transform_component.h
+		include/lavos/component/mesh_component.h
+		include/lavos/component/transform_component.h
 		src/component/transform_component.cpp
-		include/component/camera_component.h
+		include/lavos/component/camera_component.h
 		src/glm_stream.h
 		src/component/directional_light_component.cpp
-		include/component/directional_light_component.h
+		include/lavos/component/directional_light_component.h
 		src/component/fp_controller_component.cpp
-		include/component/fp_controller_component.h)
+		include/lavos/component/fp_controller_component.h)
 
 set(GLSL_FILES
 		material/unlit.vert

@@ -3,6 +3,8 @@ project(lavos)
 
 set(CMAKE_CXX_STANDARD 14)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glm")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glfw/include")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
@@ -33,6 +35,9 @@ else()
     add_subdirectory(frame)
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}/frame/include")
 endif()
+
+find_package(VulkanHPP REQUIRED)
+include_directories(${VulkanHPP_INCLUDE_DIRS})
 
 add_subdirectory(lavos)
 
