@@ -13,6 +13,7 @@
 #include <lavos/component/mesh_component.h>
 #include <lavos/component/camera_component.h>
 #include <lavos/material/phong_material.h>
+#include <lavos/material/gouraud_material.h>
 #include <lavos/material/unlit_material.h>
 #include <lavos/component/directional_light_component.h>
 #include <lavos/component/fp_controller_component.h>
@@ -39,7 +40,7 @@ lavos::FirstPersonControllerComponent *fp_controller;
 
 void Init(std::string gltf_filename)
 {
-	material = new lavos::PhongMaterial(app->GetEngine());
+	material = new lavos::GouraudMaterial(app->GetEngine());
 	renderer = new lavos::Renderer(app->GetEngine(), app->GetSwapchainExtent(), app->GetSwapchainImageFormat(), app->GetSwapchainImageViews());
 	renderer->AddMaterial(material);
 
@@ -137,7 +138,7 @@ void Cleanup()
 
 int main(int argc, const char **argv)
 {
-	std::string gltf_filename = "data/gltftest_nocamera.gltf";
+	std::string gltf_filename = "data/gltftest.gltf";
 	if(argc > 1)
 		gltf_filename = argv[1];
 

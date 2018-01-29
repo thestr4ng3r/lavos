@@ -35,6 +35,8 @@ set(SOURCE_FILES
 		include/lavos/material/unlit_material.h
 		src/material/phong_material.cpp
 		include/lavos/material/phong_material.h
+		src/material/gouraud_material.cpp
+		include/lavos/material/gouraud_material.h
 		src/material/material_instance.cpp
 		include/lavos/material/material_instance.h
 		include/lavos/buffer.h
@@ -69,7 +71,9 @@ set(GLSL_FILES
 		material/unlit.vert
 		material/unlit.frag
 		material/phong.vert
-		material/phong.frag)
+		material/phong.frag
+		material/gouraud.vert
+		material/gouraud.frag)
 
 
 

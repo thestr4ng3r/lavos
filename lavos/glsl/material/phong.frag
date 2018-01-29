@@ -4,12 +4,11 @@
 #include "common_frag.glsl"
 #include "common_lighting.glsl"
 #include "common_camera.glsl"
-
+#include "lighting_phong.glsl"
 
 layout(set = DESCRIPTOR_SET_INDEX_MATERIAL, binding = 0, std140) uniform MaterialBuffer
 {
-	vec4 base_color_factor;
-	float specular_exponent;
+	PhongMaterialParameters phong_params;
 } material_uni;
 
 layout(set = DESCRIPTOR_SET_INDEX_MATERIAL, binding = 1) uniform sampler2D base_color_tex_uni;
@@ -24,20 +23,11 @@ layout(location = 3) in vec3 tang_in;
 layout(location = 4) in vec3 bitang_in;
 
 
-float LightingPhong(vec3 normal, vec3 light_dir, vec3 cam_dir)
-{
-	float lambert = max(0.0, dot(light_dir, normal));
-
-	float specular = max(0.0, dot(reflect(-light_dir, normal), cam_dir));
-	specular = pow(specular, material_uni.specular_exponent);
-
-	return lambert + specular;
-}
 
 void main()
 {
 	vec4 base_color = texture(base_color_tex_uni, uv_in).rgba;
-	base_color *= material_uni.base_color_factor;
+	base_color *= material_uni.phong_params.base_color;
 
 	vec3 normal = normalize(normal_in);
 	vec3 tang = normalize(tang_in);
@@ -53,7 +43,7 @@ void main()
 
 	if(lighting_uni.directional_light_enabled)
 	{
-		color += base_color.rgb * LightingPhong(normal, -lighting_uni.directional_light_dir, cam_dir);
+		color += base_color.rgb * LightingPhong(normal, -lighting_uni.directional_light_dir, cam_dir, material_uni.phong_params.specular_exponent);
 	}
 
 	out_color = vec4(color, base_color.a);
