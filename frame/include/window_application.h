@@ -9,6 +9,7 @@
 
 #include <lavos/engine.h>
 #include <lavos/renderer.h>
+#include <lavos/swapchain.h>
 
 namespace lavosframe
 {
@@ -23,16 +24,10 @@ class WindowApplication
 
 		vk::SurfaceKHR surface;
 
-		vk::SwapchainKHR swapchain;
-		vk::Format swapchain_image_format;
-		vk::Extent2D swapchain_extent;
-		std::vector<vk::Image> swapchain_images;
-		std::vector<vk::ImageView> swapchain_image_views;
+		lavos::Swapchain *swapchain;
 
 		vk::Semaphore image_available_semaphore;
 		vk::Semaphore render_finished_semaphore;
-
-		bool swapchain_recreated;
 
 		std::chrono::high_resolution_clock::time_point last_frame_time;
 		float delta_time = 0.0f;
@@ -40,19 +35,16 @@ class WindowApplication
 		virtual void InitWindow(int width, int height, std::string title);
 		virtual void InitVulkan(bool enable_layers);
 
-		virtual void RecreateSwapchain();
-		virtual void CleanupSwapchain();
+		virtual void OnWindowResized(int width, int height);
 
 
 		void CreateEngine(bool enable_layers);
 
 		void CreateSurface();
-		vk::SurfaceFormatKHR ChooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &available_formats);
-		vk::PresentModeKHR ChoosePresentMode(const std::vector<vk::PresentModeKHR> &available_present_modes);
-		vk::Extent2D ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities);
-		void CreateSwapchain();
+
+		void RecreateSwapchain();
+
 		void Cleanup();
-		void CreateImageViews();
 
 		void CreateSemaphores();
 
@@ -65,15 +57,11 @@ class WindowApplication
 		void Render(lavos::Renderer *renderer);
 		void EndFrame();
 
-		bool GetSwapchainRecreated() const							{ return swapchain_recreated; }
-		vk::Extent2D GetSwapchainExtent() const 					{ return swapchain_extent; };
-		vk::Format GetSwapchainImageFormat() const					{ return swapchain_image_format; }
-		std::vector<vk::ImageView> GetSwapchainImageViews() const	{ return swapchain_image_views; }
-
 		GLFWwindow *GetWindow() const			{ return window; }
 		float GetDeltaTime() const 				{ return delta_time; }
 
 		lavos::Engine *GetEngine() const		{ return engine; }
+		lavos::Swapchain *GetSwapchain() const 	{ return swapchain; }
 };
 
 }

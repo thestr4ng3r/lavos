@@ -11,11 +11,10 @@
 
 using namespace lavos;
 
-Renderer::Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format, std::vector<vk::ImageView> dst_image_views)
-	: engine(engine), dst_image_views(dst_image_views)
+Renderer::Renderer(Engine *engine, RenderTarget *render_target)
+	: engine(engine)
 {
-	this->screen_extent = screen_extent;
-	this->format = format;
+	this->render_target = render_target;
 
 	CreateDescriptorPool();
 	CreateDescriptorSetLayout();
@@ -69,6 +68,9 @@ void Renderer::CleanupRenderCommandPool()
 
 void Renderer::CreateFramebuffers()
 {
+	auto dst_image_views = render_target->GetImageViews();
+	auto extent = render_target->GetExtent();
+
 	dst_framebuffers.resize(dst_image_views.size());
 
 	for(size_t i=0; i<dst_image_views.size(); i++)
@@ -82,8 +84,8 @@ void Renderer::CreateFramebuffers()
 			.setRenderPass(render_pass)
 			.setAttachmentCount(attachments.size())
 			.setPAttachments(attachments.data())
-			.setWidth(screen_extent.width)
-			.setHeight(screen_extent.height)
+			.setWidth(extent.width)
+			.setHeight(extent.height)
 			.setLayers(1);
 
 		dst_framebuffers[i] = engine->GetVkDevice().createFramebuffer(framebuffer_info);
@@ -160,8 +162,10 @@ void Renderer::CreateUniformBuffers()
 
 void Renderer::UpdateMatrixUniformBuffer()
 {
+	auto extent = render_target->GetExtent();
+
 	if(auto_set_camera_aspect && camera->GetType() == CameraComponent::Type::PERSPECTIVE)
-		camera->SetPerspectiveAspect((float)screen_extent.width / (float)screen_extent.height);
+		camera->SetPerspectiveAspect((float)extent.width / (float)extent.height);
 
 	MatrixUniformBuffer matrix_ubo;
 	matrix_ubo.modelview = camera->GetModelViewMatrix();
@@ -309,8 +313,9 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 	auto input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo()
 		.setTopology(vk::PrimitiveTopology::eTriangleList);
 
-	vk::Viewport viewport(0.0f, 0.0f, screen_extent.width, screen_extent.height, 0.0f, 1.0f);
-	vk::Rect2D scissor({0, 0}, screen_extent);
+	auto extent = render_target->GetExtent();
+	vk::Viewport viewport(0.0f, 0.0f, extent.width, extent.height, 0.0f, 1.0f);
+	vk::Rect2D scissor({0, 0}, extent);
 
 	auto viewport_state_info = vk::PipelineViewportStateCreateInfo()
 		.setViewportCount(1)
@@ -417,9 +422,11 @@ void Renderer::RecreateAllMaterialPipelines()
 
 void Renderer::CreateDepthResources()
 {
+	auto extent = render_target->GetExtent();
+
 	depth_format = engine->FindDepthFormat();
 
-	depth_image = engine->Create2DImage(screen_extent.width, screen_extent.height, depth_format,
+	depth_image = engine->Create2DImage(extent.width, extent.height, depth_format,
 										vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment,
 										VMA_MEMORY_USAGE_GPU_ONLY);
 
@@ -440,6 +447,8 @@ void Renderer::CleanupDepthResources()
 
 void Renderer::CreateRenderPasses()
 {
+	auto format = render_target->GetFormat();
+
 	auto color_attachment = vk::AttachmentDescription()
 		.setFormat(format)
 		.setSamples(vk::SampleCountFlagBits::e1)
@@ -498,19 +507,7 @@ void Renderer::CleanupRenderPasses()
 
 void Renderer::ResizeScreen(vk::Extent2D screen_extent, std::vector<vk::ImageView> dst_image_views)
 {
-	this->screen_extent = screen_extent;
-	this->dst_image_views = dst_image_views;
-
-	//CleanupRenderPasses();
-	//CreateRenderPasses();
-
-	RecreateAllMaterialPipelines();
-
-	CleanupDepthResources();
-	CreateDepthResources();
-
-	CleanupFramebuffers();
-	CreateFramebuffers();
+	printf("RESIZE SCREEN KILLED\n");
 }
 
 void Renderer::CreateRenderCommandBuffer()
@@ -538,11 +535,13 @@ void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::F
 		vk::ClearDepthStencilValue(1.0f, 0)
 	};
 
+	auto extent = render_target->GetExtent();
+
 	command_buffer.beginRenderPass(
 		vk::RenderPassBeginInfo()
 			.setRenderPass(render_pass)
 			.setFramebuffer(dst_framebuffer)
-			.setRenderArea(vk::Rect2D({0, 0 }, screen_extent))
+			.setRenderArea(vk::Rect2D({0, 0 }, extent))
 			.setClearValueCount(clear_values.size())
 			.setPClearValues(clear_values.data()),
 		vk::SubpassContents::eInline);
@@ -614,4 +613,27 @@ void Renderer::DrawFrameRecord(vk::CommandBuffer command_buffer, vk::Framebuffer
 	UpdateCameraUniformBuffer();
 
 	RecordRenderCommandBuffer(command_buffer, dst_framebuffer);
+}
+
+void Renderer::RenderTargetChanged(RenderTarget *render_target)
+{
+	printf("RenderTargetChanged!\n");
+
+
+	/*
+	TODO
+
+	this->screen_extent = screen_extent;
+	this->dst_image_views = dst_image_views;
+
+	//CleanupRenderPasses();
+	//CreateRenderPasses();
+
+	RecreateAllMaterialPipelines();
+
+	CleanupDepthResources();
+	CreateDepthResources();
+
+	CleanupFramebuffers();
+	CreateFramebuffers();*/
 }

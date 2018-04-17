@@ -7,6 +7,7 @@
 #include "material/material.h"
 #include "mesh.h"
 #include "scene.h"
+#include "render_target.h"
 
 namespace lavos
 {
@@ -37,7 +38,7 @@ struct TransformPushConstant
 	glm::mat4 transform;
 };
 
-class Renderer
+class Renderer: public RenderTarget::ChangedCallback
 {
 	public:
 		struct MaterialPipeline
@@ -62,8 +63,12 @@ class Renderer
 		vk::CommandPool render_command_pool;
 		vk::CommandBuffer render_command_buffer;
 
-		vk::Format format;
-		std::vector<vk::ImageView> dst_image_views;
+		RenderTarget *render_target;
+
+		//vk::Extent2D screen_extent;
+
+		//vk::Format format;
+		//std::vector<vk::ImageView> dst_image_views;
 
 		vk::Format depth_format;
 		lavos::Image depth_image;
@@ -74,7 +79,6 @@ class Renderer
 
 		vk::RenderPass render_pass;
 
-		vk::Extent2D screen_extent;
 
 		std::vector<MaterialPipeline> material_pipelines;
 
@@ -114,8 +118,11 @@ class Renderer
 
 		void RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer);
 
+	protected:
+		void RenderTargetChanged(RenderTarget *render_target) override;
+
 	public:
-		Renderer(Engine *engine, vk::Extent2D screen_extent, vk::Format format, std::vector<vk::ImageView> dst_image_views);
+		Renderer(Engine *engine, RenderTarget *render_target);
 		~Renderer();
 
 		Engine *GetEngine() const 							{ return engine; }

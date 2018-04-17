@@ -65,7 +65,11 @@ set(SOURCE_FILES
 		src/component/directional_light_component.cpp
 		include/lavos/component/directional_light_component.h
 		src/component/fp_controller_component.cpp
-		include/lavos/component/fp_controller_component.h)
+		include/lavos/component/fp_controller_component.h
+		include/lavos/render_target.h
+		src/render_target.cpp
+		include/lavos/swapchain.h
+		src/swapchain.cpp)
 
 set(GLSL_FILES
 		material/unlit.vert
@@ -100,7 +104,7 @@ set(RESOURCES_RELATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/shader")
 
 
 
-add_library(lavos STATIC ${SOURCE_FILES} ${RESOURCES_HEADERS} ${RESOURCES_SRC})
+add_library(lavos SHARED ${SOURCE_FILES} ${RESOURCES_HEADERS} ${RESOURCES_SRC})
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 

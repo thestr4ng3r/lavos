@@ -34,11 +34,12 @@ void WindowApplication::InitVulkan(bool enable_layers)
 {
 	CreateEngine(enable_layers);
 
-	CreateSwapchain();
-	CreateImageViews();
-	CreateSemaphores();
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+	vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+	swapchain = new lavos::Swapchain(engine, surface, extent);
 
-	swapchain_recreated = false;
+	CreateSemaphores();
 }
 
 
@@ -78,134 +79,9 @@ void WindowApplication::CreateSurface()
 
 }
 
-vk::SurfaceFormatKHR WindowApplication::ChooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &available_formats)
-{
-	const auto preferred_format = vk::Format::eB8G8R8A8Unorm;
-	const auto preferred_color_space = vk::ColorSpaceKHR::eSrgbNonlinear;
-
-	if(available_formats.size() == 1 && available_formats[0].format == vk::Format::eUndefined)
-	{
-		vk::SurfaceFormatKHR r;
-		r.format = preferred_format;
-		r.colorSpace = preferred_color_space;
-		return r;
-	}
-
-
-	for(const auto &format : available_formats)
-	{
-		if(format.format == preferred_format && format.colorSpace == preferred_color_space)
-			return format;
-	}
-
-	return available_formats[0];
-}
-
-vk::PresentModeKHR WindowApplication::ChoosePresentMode(const std::vector<vk::PresentModeKHR> &available_present_modes)
-{
-	vk::PresentModeKHR best_mode = vk::PresentModeKHR::eFifo;
-
-	for(const auto &present_mode : available_present_modes)
-	{
-		if(present_mode == vk::PresentModeKHR::eMailbox)
-			return present_mode;
-
-		if(present_mode == vk::PresentModeKHR::eImmediate)
-			best_mode = present_mode;
-	}
-
-	return best_mode;
-}
-
-vk::Extent2D WindowApplication::ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities)
-{
-	if(capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-		return capabilities.currentExtent;
-
-	int width, height;
-	glfwGetWindowSize(window, &width, &height);
-
-	vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-	extent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, extent.width));
-	extent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, extent.height));
-	return extent;
-}
-
-void WindowApplication::CreateSwapchain()
-{
-	auto surface_capabilities = engine->GetVkPhysicalDevice().getSurfaceCapabilitiesKHR(surface);
-	auto surface_formats = engine->GetVkPhysicalDevice().getSurfaceFormatsKHR(surface);
-	auto surface_present_modes = engine->GetVkPhysicalDevice().getSurfacePresentModesKHR(surface);
-
-	auto surface_format = ChooseSurfaceFormat(surface_formats);
-	auto present_mode = ChoosePresentMode(surface_present_modes);
-	auto extent = ChooseSwapExtent(surface_capabilities);
-
-	uint32_t image_count = surface_capabilities.minImageCount + 1;
-	if(surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount)
-		image_count = surface_capabilities.maxImageCount;
-
-	auto create_info = vk::SwapchainCreateInfoKHR()
-		.setSurface(surface)
-		.setMinImageCount(image_count)
-		.setImageFormat(surface_format.format)
-		.setImageColorSpace(surface_format.colorSpace)
-		.setImageExtent(extent)
-		.setImageArrayLayers(1)
-		.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
-
-	auto queue_family_indices = engine->GetQueueFamilyIndices();
-	uint32_t queue_family_indices_array[] = {static_cast<uint32_t>(queue_family_indices.graphics_family),
-											 static_cast<uint32_t>(queue_family_indices.present_family)};
-
-	if(queue_family_indices.graphics_family != queue_family_indices.present_family)
-	{
-		create_info.setImageSharingMode(vk::SharingMode::eConcurrent)
-			.setQueueFamilyIndexCount(2)
-			.setPQueueFamilyIndices(queue_family_indices_array);
-	}
-	else
-	{
-		create_info.setImageSharingMode(vk::SharingMode::eExclusive);
-	}
-
-	create_info.setPreTransform(surface_capabilities.currentTransform)
-		.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-		.setPresentMode(present_mode)
-		.setClipped(VK_TRUE);
-	//.setOldSwapchain(vk::SwapchainKHR(nullptr));
-
-	swapchain = engine->GetVkDevice().createSwapchainKHR(create_info);
-	swapchain_images = engine->GetVkDevice().getSwapchainImagesKHR(swapchain);
-
-	swapchain_image_format = surface_format.format;
-	swapchain_extent = extent;
-}
-
-void WindowApplication::CreateImageViews()
-{
-	swapchain_image_views.resize(swapchain_images.size());
-
-	for(size_t i=0; i<swapchain_images.size(); i++)
-	{
-		swapchain_image_views[i] = engine->GetVkDevice().createImageView(
-			vk::ImageViewCreateInfo()
-				.setImage(swapchain_images[i])
-				.setViewType(vk::ImageViewType::e2D)
-				.setFormat(swapchain_image_format)
-				.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)));
-	}
-}
-
 void WindowApplication::RecreateSwapchain()
 {
-	engine->GetVkDevice().waitIdle();
-
-	CleanupSwapchain();
-	CreateSwapchain();
-	CreateImageViews();
-
-	swapchain_recreated = true;
+	swapchain->Recreate();
 }
 
 
@@ -229,7 +105,10 @@ void WindowApplication::Update()
 
 void WindowApplication::Render(lavos::Renderer *renderer)
 {
-	auto image_index_result = engine->GetVkDevice().acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), image_available_semaphore, vk::Fence() /*nullptr*/);
+	auto image_index_result = engine->GetVkDevice().acquireNextImageKHR(swapchain->GetSwapchain(),
+																		std::numeric_limits<uint64_t>::max(),
+																		image_available_semaphore,
+																		vk::Fence() /*nullptr*/);
 
 	if(image_index_result.result == vk::Result::eErrorOutOfDateKHR)
 	{
@@ -250,11 +129,12 @@ void WindowApplication::Render(lavos::Renderer *renderer)
 
 	vk::Semaphore signal_semaphores[] = { render_finished_semaphore };
 
+	vk::SwapchainKHR vk_swapchain = swapchain->GetSwapchain();
 	auto present_result = engine->GetPresentQueue().presentKHR(vk::PresentInfoKHR()
 																   .setWaitSemaphoreCount(1)
 																   .setPWaitSemaphores(signal_semaphores)
 																   .setSwapchainCount(1)
-																   .setPSwapchains(&swapchain)
+																   .setPSwapchains(&vk_swapchain)
 																   .setPImageIndices(&image_index));
 
 	if(present_result == vk::Result::eErrorOutOfDateKHR || present_result == vk::Result::eSuboptimalKHR)
@@ -279,22 +159,12 @@ void WindowApplication::EndFrame()
 	engine->GetVkDevice().waitIdle();
 }
 
-void WindowApplication::CleanupSwapchain()
-{
-	auto device = engine->GetVkDevice();
-
-	for(const auto &image_view : swapchain_image_views)
-		device.destroyImageView(image_view);
-
-	device.destroySwapchainKHR(swapchain);
-}
-
 
 void WindowApplication::Cleanup()
 {
 	auto device = engine->GetVkDevice();
 
-	CleanupSwapchain();
+	delete swapchain;
 
 	device.destroySemaphore(image_available_semaphore);
 	device.destroySemaphore(render_finished_semaphore);
@@ -313,5 +183,10 @@ void WindowApplication::OnWindowResized(GLFWwindow *window, int width, int heigh
 		return;
 
 	auto *app = reinterpret_cast<WindowApplication *>(glfwGetWindowUserPointer(window));
-	app->RecreateSwapchain();
+	app->OnWindowResized(width, height);
+}
+
+void WindowApplication::OnWindowResized(int width, int height)
+{
+	swapchain->Resize(vk::Extent2D(static_cast<uint32_t>(width), static_cast<uint32_t>(height)));
 }

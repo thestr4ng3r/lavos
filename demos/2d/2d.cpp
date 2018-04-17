@@ -57,7 +57,7 @@ CameraControllerComponent *camera_controller;
 void Init(std::string gltf_filename)
 {
 	material = new lavos::GouraudMaterial(app->GetEngine());
-	renderer = new lavos::Renderer(app->GetEngine(), app->GetSwapchainExtent(), app->GetSwapchainImageFormat(), app->GetSwapchainImageViews());
+	renderer = new lavos::Renderer(app->GetEngine(), app->GetSwapchain());
 	renderer->AddMaterial(material);
 
 	asset_container = lavos::AssetContainer::LoadFromGLTF(app->GetEngine(), material, gltf_filename);
@@ -163,9 +163,6 @@ int main(int argc, const char **argv)
 
 		if(glfwWindowShouldClose(app->GetWindow()))
 			break;
-
-		if(app->GetSwapchainRecreated())
-			renderer->ResizeScreen(app->GetSwapchainExtent(), app->GetSwapchainImageViews());
 
 		app->Render(renderer);
 		app->EndFrame();
