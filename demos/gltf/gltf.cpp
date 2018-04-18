@@ -83,6 +83,7 @@ void Cleanup()
 {
 	delete asset_container;
 	delete renderer;
+	delete material;
 	delete app;
 }
 

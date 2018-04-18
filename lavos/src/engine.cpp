@@ -60,7 +60,11 @@ Engine::Engine(const CreateInfo &info)
 
 Engine::~Engine()
 {
+	device.destroy(transient_command_pool);
+
 	vmaDestroyAllocator(allocator);
+
+	device.destroy();
 
 	if(debug_report_callback)
 		instance.destroyDebugReportCallbackEXT(debug_report_callback);
@@ -171,7 +175,8 @@ void Engine::SetupDebugCallback()
 	if(!info.enable_validation_layers)
 		return;
 
-	vk::DebugReportCallbackCreateInfoEXT create_info(vk::DebugReportFlagBitsEXT::eError | vk::DebugReportFlagBitsEXT::eWarning,
+	vk::DebugReportCallbackCreateInfoEXT create_info(vk::DebugReportFlagBitsEXT::eError
+													 | vk::DebugReportFlagBitsEXT::eWarning,
 													 DebugCallback, this);
 	debug_report_callback = instance.createDebugReportCallbackEXT(create_info);
 }

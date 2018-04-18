@@ -23,6 +23,9 @@ AssetContainer::AssetContainer(Engine *engine)
 
 AssetContainer::~AssetContainer()
 {
+	for(auto scene : scenes)
+		delete scene;
+
 	for(auto mesh : meshes)
 		delete mesh;
 

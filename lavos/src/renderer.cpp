@@ -45,6 +45,8 @@ Renderer::~Renderer()
 	device.destroyDescriptorPool(descriptor_pool);
 
 	engine->DestroyBuffer(matrix_uniform_buffer);
+	engine->DestroyBuffer(lighting_uniform_buffer);
+	engine->DestroyBuffer(camera_uniform_buffer);
 
 	CleanupFramebuffers();
 	CleanupRenderCommandPool();
