@@ -12,27 +12,6 @@ Swapchain::Swapchain(Engine *engine, vk::SurfaceKHR surface, vk::Extent2D desire
 	this->surface = surface;
 	this->desired_extent = desired_extent;
 
-	surface_capabilities = engine->GetVkPhysicalDevice().getSurfaceCapabilitiesKHR(surface);
-	auto surface_formats = engine->GetVkPhysicalDevice().getSurfaceFormatsKHR(surface);
-	auto surface_present_modes = engine->GetVkPhysicalDevice().getSurfacePresentModesKHR(surface);
-
-	surface_format = /*force_surface_format.has_value()
-					 ? force_surface_format.value()
-					 :*/ ChooseSurfaceFormat(surface_formats);
-
-	present_mode = /*force_present_mode.has_value()
-				   ? force_present_mode.value()
-				   :*/ ChoosePresentMode(surface_present_modes);
-
-	/*if(force_image_count)
-		image_count = force_image_count.value();
-	else
-	{*/
-		image_count = surface_capabilities.minImageCount + 1;
-		if(surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount)
-			image_count = surface_capabilities.maxImageCount;
-	//}
-
 	CreateSwapchain();
 	CreateImageViews();
 }
@@ -93,6 +72,27 @@ vk::Extent2D Swapchain::ChooseExtent(const vk::SurfaceCapabilitiesKHR &capabilit
 
 void Swapchain::CreateSwapchain()
 {
+	auto surface_capabilities = engine->GetVkPhysicalDevice().getSurfaceCapabilitiesKHR(surface);
+	auto surface_formats = engine->GetVkPhysicalDevice().getSurfaceFormatsKHR(surface);
+	auto surface_present_modes = engine->GetVkPhysicalDevice().getSurfacePresentModesKHR(surface);
+
+	surface_format = /*force_surface_format.has_value()
+					 ? force_surface_format.value()
+					 :*/ ChooseSurfaceFormat(surface_formats);
+
+	present_mode = /*force_present_mode.has_value()
+				   ? force_present_mode.value()
+				   :*/ ChoosePresentMode(surface_present_modes);
+
+	/*if(force_image_count)
+		image_count = force_image_count.value();
+	else
+	{*/
+	image_count = surface_capabilities.minImageCount + 1;
+	if(surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount)
+		image_count = surface_capabilities.maxImageCount;
+	//}
+
 	extent = ChooseExtent(surface_capabilities, desired_extent);
 
 	auto create_info = vk::SwapchainCreateInfoKHR()

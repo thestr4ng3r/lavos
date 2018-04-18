@@ -130,14 +130,23 @@ void WindowApplication::Render(lavos::Renderer *renderer)
 	vk::Semaphore signal_semaphores[] = { render_finished_semaphore };
 
 	vk::SwapchainKHR vk_swapchain = swapchain->GetSwapchain();
-	auto present_result = engine->GetPresentQueue().presentKHR(vk::PresentInfoKHR()
-																   .setWaitSemaphoreCount(1)
-																   .setPWaitSemaphores(signal_semaphores)
-																   .setSwapchainCount(1)
-																   .setPSwapchains(&vk_swapchain)
-																   .setPImageIndices(&image_index));
+	vk::Result present_result;
+	try
+	{
+		present_result = engine->GetPresentQueue().presentKHR(vk::PresentInfoKHR()
+																	  .setWaitSemaphoreCount(1)
+																	  .setPWaitSemaphores(signal_semaphores)
+																	  .setSwapchainCount(1)
+																	  .setPSwapchains(&vk_swapchain)
+																	  .setPImageIndices(&image_index));
+	}
+	catch(vk::OutOfDateKHRError)
+	{
+        RecreateSwapchain();
+        present_result = vk::Result::eSuccess;
+	}
 
-	if(present_result == vk::Result::eErrorOutOfDateKHR || present_result == vk::Result::eSuboptimalKHR)
+	if(present_result == vk::Result::eSuboptimalKHR)
 	{
 		RecreateSwapchain();
 	}

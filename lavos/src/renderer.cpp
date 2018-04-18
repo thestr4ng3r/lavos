@@ -15,6 +15,7 @@ Renderer::Renderer(Engine *engine, RenderTarget *render_target)
 	: engine(engine)
 {
 	this->render_target = render_target;
+	render_target->AddChangedCallback(this);
 
 	CreateDescriptorPool();
 	CreateDescriptorSetLayout();
@@ -32,6 +33,8 @@ Renderer::Renderer(Engine *engine, RenderTarget *render_target)
 
 Renderer::~Renderer()
 {
+	render_target->RemoveChangedCallback(this);
+
 	auto &device = engine->GetVkDevice();
 
 	device.destroyDescriptorSetLayout(descriptor_set_layout);
@@ -505,11 +508,6 @@ void Renderer::CleanupRenderPasses()
 	engine->GetVkDevice().destroyRenderPass(render_pass);
 }
 
-void Renderer::ResizeScreen(vk::Extent2D screen_extent, std::vector<vk::ImageView> dst_image_views)
-{
-	printf("RESIZE SCREEN KILLED\n");
-}
-
 void Renderer::CreateRenderCommandBuffer()
 {
 	render_command_buffer = engine->GetVkDevice().allocateCommandBuffers(
@@ -617,23 +615,14 @@ void Renderer::DrawFrameRecord(vk::CommandBuffer command_buffer, vk::Framebuffer
 
 void Renderer::RenderTargetChanged(RenderTarget *render_target)
 {
-	printf("RenderTargetChanged!\n");
-
-
-	/*
-	TODO
-
-	this->screen_extent = screen_extent;
-	this->dst_image_views = dst_image_views;
-
 	//CleanupRenderPasses();
 	//CreateRenderPasses();
 
-	RecreateAllMaterialPipelines();
+	RecreateAllMaterialPipelines(); // TODO: really necessary?
 
 	CleanupDepthResources();
 	CreateDepthResources();
 
 	CleanupFramebuffers();
-	CreateFramebuffers();*/
+	CreateFramebuffers();
 }

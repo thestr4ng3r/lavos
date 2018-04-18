@@ -139,8 +139,6 @@ class Renderer: public RenderTarget::ChangedCallback
 		void UpdateCameraUniformBuffer();
 		void UpdateLightingUniformBuffer();
 
-		void ResizeScreen(vk::Extent2D screen_extent, std::vector<vk::ImageView> dst_image_views);
-
 		MaterialPipeline GetMaterialPipeline(int index)		{ return material_pipelines[index]; }
 		vk::DescriptorSet GetDescriptorSet()				{ return descriptor_set; }
 

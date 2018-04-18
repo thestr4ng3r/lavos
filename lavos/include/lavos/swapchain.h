@@ -14,7 +14,6 @@ class Swapchain : public RenderTarget
 
 		vk::SurfaceKHR surface;
 
-		vk::SurfaceCapabilitiesKHR surface_capabilities;
 		vk::SurfaceFormatKHR surface_format;
 		vk::PresentModeKHR present_mode;
 		uint32_t image_count;
