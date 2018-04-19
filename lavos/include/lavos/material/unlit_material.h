@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_UNLIT_MATERIAL_H
-#define VULKAN_UNLIT_MATERIAL_H
+#ifndef LAVOS_UNLIT_MATERIAL_H
+#define LAVOS_UNLIT_MATERIAL_H
 
 #include "material.h"
 

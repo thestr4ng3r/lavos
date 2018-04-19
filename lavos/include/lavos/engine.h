@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_ENGINE_H
-#define VULKAN_ENGINE_H
+#ifndef LAVOS_ENGINE_H
+#define LAVOS_ENGINE_H
 
 #include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.h>

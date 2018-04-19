@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_CAMERA_COMPONENT_H
-#define VULKAN_CAMERA_COMPONENT_H
+#ifndef LAVOS_CAMERA_COMPONENT_H
+#define LAVOS_CAMERA_COMPONENT_H
 
 #include "component.h"
 #include "transform_component.h"

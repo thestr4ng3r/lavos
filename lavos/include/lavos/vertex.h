@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_VERTEX_H
-#define VULKAN_VERTEX_H
+#ifndef LAVOS_VERTEX_H
+#define LAVOS_VERTEX_H
 
 #include "glm_config.h"
 

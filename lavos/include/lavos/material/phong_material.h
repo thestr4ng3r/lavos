@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_PHONG_MATERIAL_H
-#define VULKAN_PHONG_MATERIAL_H
+#ifndef LAVOS_PHONG_MATERIAL_H
+#define LAVOS_PHONG_MATERIAL_H
 
 #include "material.h"
 

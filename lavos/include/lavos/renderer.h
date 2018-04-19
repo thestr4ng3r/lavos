@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_RENDERER_H
-#define VULKAN_RENDERER_H
+#ifndef LAVOS_RENDERER_H
+#define LAVOS_RENDERER_H
 
 #include "component/camera_component.h"
 #include "engine.h"

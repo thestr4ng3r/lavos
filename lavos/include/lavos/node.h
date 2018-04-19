@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_NODE_H
-#define VULKAN_NODE_H
+#ifndef LAVOS_NODE_H
+#define LAVOS_NODE_H
 
 #include <vector>
 #include <functional>

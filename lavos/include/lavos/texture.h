@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_TEXTURE_H
-#define VULKAN_TEXTURE_H
+#ifndef LAVOS_TEXTURE_H
+#define LAVOS_TEXTURE_H
 
 #include "image.h"
 

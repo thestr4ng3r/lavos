@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_COMPONENT_H
-#define VULKAN_COMPONENT_H
+#ifndef LAVOS_COMPONENT_H
+#define LAVOS_COMPONENT_H
 
 namespace lavos
 {

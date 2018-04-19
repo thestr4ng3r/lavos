@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_GOURAUD_MATERIAL_H
-#define VULKAN_GOURAUD_MATERIAL_H
+#ifndef LAVOS_GOURAUD_MATERIAL_H
+#define LAVOS_GOURAUD_MATERIAL_H
 
 #include "material.h"
 

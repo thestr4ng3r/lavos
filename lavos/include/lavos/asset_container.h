@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_ASSET_CONTAINER_H
-#define VULKAN_ASSET_CONTAINER_H
+#ifndef LAVOS_ASSET_CONTAINER_H
+#define LAVOS_ASSET_CONTAINER_H
 
 #include <string>
 #include <map>

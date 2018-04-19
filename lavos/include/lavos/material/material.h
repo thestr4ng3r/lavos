@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_MATERIAL_H
-#define VULKAN_MATERIAL_H
+#ifndef LAVOS_MATERIAL_H
+#define LAVOS_MATERIAL_H
 
 #include <vulkan/vulkan.hpp>
 

@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_IMAGE_H
-#define VULKAN_IMAGE_H
+#ifndef LAVOS_IMAGE_H
+#define LAVOS_IMAGE_H
 
 #include <vulkan/vulkan.hpp>
 #include "vk_mem_alloc.h"

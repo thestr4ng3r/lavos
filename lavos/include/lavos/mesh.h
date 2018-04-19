@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_MESH_H
-#define VULKAN_MESH_H
+#ifndef LAVOS_MESH_H
+#define LAVOS_MESH_H
 
 #include <string>
 #include <vector>

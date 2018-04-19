@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_BUFFER_H
-#define VULKAN_BUFFER_H
+#ifndef LAVOS_BUFFER_H
+#define LAVOS_BUFFER_H
 
 #include <vulkan/vulkan.hpp>
 #include "vk_mem_alloc.h"

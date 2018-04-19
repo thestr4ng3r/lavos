@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_TRANSFORM_COMPONENT_H
-#define VULKAN_TRANSFORM_COMPONENT_H
+#ifndef LAVOS_TRANSFORM_COMPONENT_H
+#define LAVOS_TRANSFORM_COMPONENT_H
 
 #include "component.h"
 #include "../node.h"

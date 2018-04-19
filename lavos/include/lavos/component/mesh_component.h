@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_MESH_COMPONENT_H
-#define VULKAN_MESH_COMPONENT_H
+#ifndef LAVOS_MESH_COMPONENT_H
+#define LAVOS_MESH_COMPONENT_H
 
 #include "component.h"
 #include "../mesh.h"

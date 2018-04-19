@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_SCENE_H
-#define VULKAN_SCENE_H
+#ifndef LAVOS_SCENE_H
+#define LAVOS_SCENE_H
 
 #include "glm_config.h"
 
