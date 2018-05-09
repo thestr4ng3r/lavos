@@ -19,10 +19,10 @@ void main()
 {
 	uv_out = uv_in;
 
-	position_out = position_in;
-	normal_out = normal_in;
-	tang_out = tang_in;
-	bitang_out = bitang_in;
+	position_out = (transform_push_constant.transform * vec4(position_in, 1.0)).xyz;
+	normal_out = mat3(transform_push_constant.transform) * normal_in;
+	tang_out = mat3(transform_push_constant.transform) * tang_in;
+	bitang_out = mat3(transform_push_constant.transform) * bitang_in;
 
 	gl_Position = CalculateVertexPosition();
 }
