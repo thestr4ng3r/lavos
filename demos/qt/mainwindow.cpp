@@ -13,13 +13,16 @@ void MainWindowRenderer::initResources()
 								 window->device(),
 								 window->graphicsQueue(),
 								 window->graphicsQueue()); // TODO: different queue for present?
-
-
-
 }
 
 void MainWindowRenderer::initSwapChainResources()
 {
+	if(render_target != nullptr)
+	{
+		render_target->SwapchainChanged();
+		return;
+	}
+
 	material = new lavos::PhongMaterial(engine);
 
 	render_target = new QVulkanWindowRenderTarget(window);

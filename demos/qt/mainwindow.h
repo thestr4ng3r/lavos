@@ -40,6 +40,11 @@ class QVulkanWindowRenderTarget : public lavos::RenderTarget
 				ret[i] = vulkan_window->swapChainImageView(i);
 			}
 		}
+
+		void SwapchainChanged()
+		{
+			SignalChangedCallbacks();
+		}
 };
 
 class MainWindowRenderer: public QVulkanWindowRenderer
@@ -49,7 +54,7 @@ class MainWindowRenderer: public QVulkanWindowRenderer
 		QVulkanWindow *window;
 
 		lavos::PhongMaterial *material;
-		QVulkanWindowRenderTarget *render_target;
+		QVulkanWindowRenderTarget *render_target = nullptr;
 		lavos::Renderer *renderer;
 
 		lavos::AssetContainer *asset_container;
