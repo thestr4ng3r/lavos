@@ -1,5 +1,5 @@
 
-#include "engine.h"
+#include <lavos/engine.h>
 
 #include <QApplication>
 #include <QVulkanInstance>

@@ -1,5 +1,9 @@
 
-#include <component/directional_light_component.h>
+#include <lavos/engine.h>
+#include <lavos/component/directional_light_component.h>
+#include <lavos/material/phong_material.h>
+#include <lavos/renderer.h>
+#include <lavos/asset_container.h>
 
 #include "mainwindow.h"
 
@@ -18,14 +22,9 @@ void MainWindowRenderer::initSwapChainResources()
 {
 	material = new lavos::PhongMaterial(engine);
 
-	vk::Extent2D swapchain_extent(static_cast<uint32_t>(window->swapChainImageSize().width()),
-								  static_cast<uint32_t>(window->swapChainImageSize().height()));
+	render_target = new QVulkanWindowRenderTarget(window);
 
-	std::vector<vk::ImageView> swapchain_image_views(static_cast<unsigned long>(window->swapChainImageCount()));
-	for(int i=0; i<window->swapChainImageCount(); i++)
-		swapchain_image_views[i] = window->swapChainImageView(i);
-
-	renderer = new lavos::Renderer(engine, swapchain_extent, vk::Format(window->colorFormat()), swapchain_image_views);
+	renderer = new lavos::Renderer(engine, render_target);
 	renderer->AddMaterial(material);
 
 	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");

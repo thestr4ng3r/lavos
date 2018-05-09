@@ -2,13 +2,45 @@
 #ifndef VULKAN_MAINWINDOW_H
 #define VULKAN_MAINWINDOW_H
 
-#include <engine.h>
-#include <material/phong_material.h>
-#include <renderer.h>
-#include <asset_container.h>
+#include <lavos/engine.h>
+#include <lavos/material/phong_material.h>
+#include <lavos/renderer.h>
+#include <lavos/asset_container.h>
 
 #include <QWindow>
 #include <QtGui/QVulkanWindow>
+
+class QVulkanWindowRenderTarget : public lavos::RenderTarget
+{
+	private:
+		QVulkanWindow * const vulkan_window;
+
+	public:
+		QVulkanWindowRenderTarget(QVulkanWindow * const vulkan_window)
+				: vulkan_window(vulkan_window) {}
+
+		virtual vk::Extent2D GetExtent() const
+		{
+			auto size = vulkan_window->swapChainImageSize();
+			return vk::Extent2D(static_cast<uint32_t>(size.width()),
+								static_cast<uint32_t>(size.height()));
+		}
+
+		virtual vk::Format GetFormat() const
+		{
+			return vk::Format(vulkan_window->colorFormat());
+		}
+
+		virtual std::vector<vk::ImageView> GetImageViews() const
+		{
+			int count = vulkan_window->swapChainImageCount();
+			std::vector<vk::ImageView> ret(static_cast<unsigned long>(count));
+			for (int i=0; i<count; i++)
+			{
+				ret[i] = vulkan_window->swapChainImageView(i);
+			}
+		}
+};
 
 class MainWindowRenderer: public QVulkanWindowRenderer
 {
@@ -17,6 +49,7 @@ class MainWindowRenderer: public QVulkanWindowRenderer
 		QVulkanWindow *window;
 
 		lavos::PhongMaterial *material;
+		QVulkanWindowRenderTarget *render_target;
 		lavos::Renderer *renderer;
 
 		lavos::AssetContainer *asset_container;
