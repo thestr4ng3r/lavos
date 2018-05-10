@@ -9,6 +9,9 @@
 namespace lavos
 {
 
+/**
+ * A RenderTarget is something that can be rendered into.
+ */
 class RenderTarget
 {
 	public:
@@ -20,9 +23,16 @@ class RenderTarget
 				virtual ~ChangedCallback() = default;
 
 			protected:
+				/**
+				 * Called e.g. when the {@link RenderTarget}'s extent changes.
+				 * @param render_target
+				 */
 				virtual void RenderTargetChanged(RenderTarget *render_target) =0;
 		};
 
+		/**
+		 * Defines in which order {@link RenderTarget::ChangedCallback}s are invoked.
+		 */
 		enum class ChangedCallbackOrder {
 			AssociatedRenderTarget = 0,
 			Renderer
@@ -44,6 +54,9 @@ class RenderTarget
 };
 
 
+/**
+ * A {@link RenderTarget} to render color into, e.g. a {@link Swapchain}.
+ */
 class ColorRenderTarget : public RenderTarget
 {
 	public:
@@ -53,6 +66,9 @@ class ColorRenderTarget : public RenderTarget
 };
 
 
+/**
+ * A {@link RenderTarget} to render depth into.
+ */
 class DepthRenderTarget : public RenderTarget
 {
 	public:
@@ -62,6 +78,10 @@ class DepthRenderTarget : public RenderTarget
 };
 
 
+/**
+ * A {@link DepthRenderTarget} that is associated with a {@link ColorRenderTarget}
+ * and manages the creation of its resources automatically.
+ */
 class ManagedDepthRenderTarget : public DepthRenderTarget, RenderTarget::ChangedCallback
 {
 	private:
