@@ -7,5 +7,5 @@ add_subdirectory(2d)
 add_subdirectory(room)
 
 if(BUILD_QT_DEMO)
-	add_subdirectory(qt)
+	add_subdirectory(qt_qvulkanwindow)
 endif()

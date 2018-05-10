@@ -10,7 +10,7 @@ set(SOURCE_FILES
 		mainwindow.cpp
 		mainwindow.h)
 
-add_executable(qt_demo ${SOURCE_FILES})
-target_link_libraries(qt_demo
+add_executable(qt_qvulkanwindow ${SOURCE_FILES})
+target_link_libraries(qt_qvulkanwindow
 		Qt5::Core Qt5::Gui Qt5::Widgets
 		lavos)
