@@ -10,7 +10,7 @@
 #include <QWindow>
 #include <QtGui/QVulkanWindow>
 
-class QVulkanWindowRenderTarget : public lavos::RenderTarget
+class QVulkanWindowRenderTarget : public lavos::ColorRenderTarget
 {
 	private:
 		QVulkanWindow * const vulkan_window;

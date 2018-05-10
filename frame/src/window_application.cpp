@@ -38,6 +38,7 @@ void WindowApplication::InitVulkan(bool enable_layers)
 	glfwGetWindowSize(window, &width, &height);
 	vk::Extent2D extent(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 	swapchain = new lavos::Swapchain(engine, surface, extent);
+	depth_render_target = new lavos::ManagedDepthRenderTarget(engine, swapchain);
 
 	CreateSemaphores();
 }

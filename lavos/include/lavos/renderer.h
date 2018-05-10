@@ -38,7 +38,7 @@ struct TransformPushConstant
 	glm::mat4 transform;
 };
 
-class Renderer: public RenderTarget::ChangedCallback
+class Renderer: public ColorRenderTarget::ChangedCallback
 {
 	public:
 		struct MaterialPipeline
@@ -63,16 +63,8 @@ class Renderer: public RenderTarget::ChangedCallback
 		vk::CommandPool render_command_pool;
 		vk::CommandBuffer render_command_buffer;
 
-		RenderTarget *render_target;
-
-		//vk::Extent2D screen_extent;
-
-		//vk::Format format;
-		//std::vector<vk::ImageView> dst_image_views;
-
-		vk::Format depth_format;
-		lavos::Image depth_image;
-		vk::ImageView depth_image_view;
+		ColorRenderTarget *color_render_target;
+		DepthRenderTarget *depth_render_target;
 
 		std::vector<vk::Framebuffer> dst_framebuffers;
 
@@ -107,9 +99,6 @@ class Renderer: public RenderTarget::ChangedCallback
 		void DestroyMaterialPipeline(const MaterialPipeline &material_pipeline);
 		void RecreateAllMaterialPipelines();
 
-		void CreateDepthResources();
-		void CleanupDepthResources();
-
 		void CreateRenderPasses();
 		void CleanupRenderPasses();
 
@@ -122,7 +111,7 @@ class Renderer: public RenderTarget::ChangedCallback
 		void RenderTargetChanged(RenderTarget *render_target) override;
 
 	public:
-		Renderer(Engine *engine, RenderTarget *render_target);
+		Renderer(Engine *engine, ColorRenderTarget *color_render_target, DepthRenderTarget *depth_render_target);
 		~Renderer();
 
 		Engine *GetEngine() const 							{ return engine; }
@@ -143,7 +132,6 @@ class Renderer: public RenderTarget::ChangedCallback
 		vk::DescriptorSet GetDescriptorSet()				{ return descriptor_set; }
 
 		vk::RenderPass GetRenderPass() const				{ return render_pass; }
-		vk::ImageView GetDepthImageView()					{ return depth_image_view; }
 
 		bool GetAutoSetCameraAspect() const 				{ return auto_set_camera_aspect; }
 		void SetAutoSetCameraAspect(bool enabled)			{ auto_set_camera_aspect = enabled; }

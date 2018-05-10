@@ -7,7 +7,7 @@
 namespace lavos
 {
 
-class Swapchain : public RenderTarget
+class Swapchain : public ColorRenderTarget
 {
 	private:
 		Engine * const engine;

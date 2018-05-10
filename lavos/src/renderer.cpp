@@ -11,18 +11,18 @@
 
 using namespace lavos;
 
-Renderer::Renderer(Engine *engine, RenderTarget *render_target)
+Renderer::Renderer(Engine *engine, ColorRenderTarget *color_render_target, DepthRenderTarget *depth_render_target)
 	: engine(engine)
 {
-	this->render_target = render_target;
-	render_target->AddChangedCallback(this);
+	this->color_render_target = color_render_target;
+	this->depth_render_target = depth_render_target;
+	color_render_target->AddChangedCallback(RenderTarget::ChangedCallbackOrder::Renderer, this);
 
 	CreateDescriptorPool();
 	CreateDescriptorSetLayout();
 	CreateUniformBuffers();
 	CreateDescriptorSet();
 
-	CreateDepthResources();
 	CreateRenderPasses();
 
 	CreateFramebuffers();
@@ -33,7 +33,7 @@ Renderer::Renderer(Engine *engine, RenderTarget *render_target)
 
 Renderer::~Renderer()
 {
-	render_target->RemoveChangedCallback(this);
+	color_render_target->RemoveChangedCallback(this);
 
 	auto &device = engine->GetVkDevice();
 
@@ -51,7 +51,6 @@ Renderer::~Renderer()
 	CleanupFramebuffers();
 	CleanupRenderCommandPool();
 
-	CleanupDepthResources();
 	CleanupRenderPasses();
 }
 
@@ -73,8 +72,8 @@ void Renderer::CleanupRenderCommandPool()
 
 void Renderer::CreateFramebuffers()
 {
-	auto dst_image_views = render_target->GetImageViews();
-	auto extent = render_target->GetExtent();
+	auto dst_image_views = color_render_target->GetImageViews();
+	auto extent = color_render_target->GetExtent();
 
 	dst_framebuffers.resize(dst_image_views.size());
 
@@ -82,7 +81,7 @@ void Renderer::CreateFramebuffers()
 	{
 		std::array<vk::ImageView, 2> attachments = {
 			dst_image_views[i],
-			depth_image_view
+			depth_render_target->GetImageView()
 		};
 
 		auto framebuffer_info = vk::FramebufferCreateInfo()
@@ -167,7 +166,7 @@ void Renderer::CreateUniformBuffers()
 
 void Renderer::UpdateMatrixUniformBuffer()
 {
-	auto extent = render_target->GetExtent();
+	auto extent = color_render_target->GetExtent();
 
 	if(auto_set_camera_aspect && camera->GetType() == CameraComponent::Type::PERSPECTIVE)
 		camera->SetPerspectiveAspect((float)extent.width / (float)extent.height);
@@ -318,7 +317,7 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 	auto input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo()
 		.setTopology(vk::PrimitiveTopology::eTriangleList);
 
-	auto extent = render_target->GetExtent();
+	auto extent = color_render_target->GetExtent();
 	vk::Viewport viewport(0.0f, 0.0f, extent.width, extent.height, 0.0f, 1.0f);
 	vk::Rect2D scissor({0, 0}, extent);
 
@@ -425,37 +424,10 @@ void Renderer::RecreateAllMaterialPipelines()
 	}
 }
 
-void Renderer::CreateDepthResources()
-{
-	auto extent = render_target->GetExtent();
-
-	depth_format = engine->FindDepthFormat();
-
-	depth_image = engine->Create2DImage(extent.width, extent.height, depth_format,
-										vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment,
-										VMA_MEMORY_USAGE_GPU_ONLY);
-
-	depth_image_view = engine->GetVkDevice().createImageView(vk::ImageViewCreateInfo()
-																 .setImage(depth_image.image)
-																 .setViewType(vk::ImageViewType::e2D)
-																 .setFormat(depth_format)
-																 .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1)));
-
-	engine->TransitionImageLayout(depth_image.image, depth_format, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal);
-}
-
-void Renderer::CleanupDepthResources()
-{
-	engine->GetVkDevice().destroyImageView(depth_image_view);
-	engine->DestroyImage(depth_image);
-}
-
 void Renderer::CreateRenderPasses()
 {
-	auto format = render_target->GetFormat();
-
 	auto color_attachment = vk::AttachmentDescription()
-		.setFormat(format)
+		.setFormat(color_render_target->GetFormat())
 		.setSamples(vk::SampleCountFlagBits::e1)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
@@ -466,7 +438,7 @@ void Renderer::CreateRenderPasses()
 	vk::AttachmentReference color_attachment_ref(0, vk::ImageLayout::eColorAttachmentOptimal);
 
 	auto depth_attachment = vk::AttachmentDescription()
-		.setFormat(depth_format)
+		.setFormat(depth_render_target->GetFormat())
 		.setSamples(vk::SampleCountFlagBits::e1)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
 		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
@@ -535,7 +507,7 @@ void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::F
 		vk::ClearDepthStencilValue(1.0f, 0)
 	};
 
-	auto extent = render_target->GetExtent();
+	auto extent = color_render_target->GetExtent();
 
 	command_buffer.beginRenderPass(
 		vk::RenderPassBeginInfo()
@@ -621,9 +593,6 @@ void Renderer::RenderTargetChanged(RenderTarget *render_target)
 	//CreateRenderPasses();
 
 	RecreateAllMaterialPipelines(); // TODO: really necessary?
-
-	CleanupDepthResources();
-	CreateDepthResources();
 
 	CleanupFramebuffers();
 	CreateFramebuffers();

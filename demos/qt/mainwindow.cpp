@@ -27,7 +27,7 @@ void MainWindowRenderer::initSwapChainResources()
 
 	render_target = new QVulkanWindowRenderTarget(window);
 
-	renderer = new lavos::Renderer(engine, render_target);
+	renderer = new lavos::Renderer(engine, render_target, nullptr); // TODO
 	renderer->AddMaterial(material);
 
 	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");

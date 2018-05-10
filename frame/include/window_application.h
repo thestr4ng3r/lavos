@@ -25,6 +25,7 @@ class WindowApplication
 		vk::SurfaceKHR surface;
 
 		lavos::Swapchain *swapchain;
+		lavos::ManagedDepthRenderTarget *depth_render_target;
 
 		vk::Semaphore image_available_semaphore;
 		vk::Semaphore render_finished_semaphore;
@@ -57,11 +58,12 @@ class WindowApplication
 		void Render(lavos::Renderer *renderer);
 		void EndFrame();
 
-		GLFWwindow *GetWindow() const			{ return window; }
-		float GetDeltaTime() const 				{ return delta_time; }
+		GLFWwindow *GetWindow() const							{ return window; }
+		float GetDeltaTime() const 								{ return delta_time; }
 
-		lavos::Engine *GetEngine() const		{ return engine; }
-		lavos::Swapchain *GetSwapchain() const 	{ return swapchain; }
+		lavos::Engine *GetEngine() const						{ return engine; }
+		lavos::Swapchain *GetSwapchain() const 					{ return swapchain; }
+		lavos::DepthRenderTarget *GetDepthRenderTarget() const 	{ return depth_render_target; }
 };
 
 }
