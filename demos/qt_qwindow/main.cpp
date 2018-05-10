@@ -42,14 +42,15 @@ int main(int argc, char **argv)
 	window.setVulkanInstance(&inst);
 	window.setSurfaceType(QWindow::VulkanSurface);
 
-	// TODO: react to QPlatformSurfaceEvent::SurfaceCreated
-	window.show();
-	vk::SurfaceKHR surface = QVulkanInstance::surfaceForWindow(&window);
-	window.Initialize();
-
 	MainWindowRenderer renderer(engine, &window);
-	renderer.initResources();
-	renderer.startNextFrame();
+	renderer.InitResources();
+
+	QObject::connect(&window, &MainWindow::initializeSwapchain, [&renderer] () {
+		renderer.InitSwapchainResources();
+		renderer.Render();
+	});
+
+	window.show();
 
 	return app.exec();
 }

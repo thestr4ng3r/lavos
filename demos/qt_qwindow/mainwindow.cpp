@@ -7,7 +7,9 @@
 
 #include "mainwindow.h"
 
-void MainWindowRenderer::initResources()
+#include <QPlatformSurfaceEvent>
+
+void MainWindowRenderer::InitResources()
 {
 	material = new lavos::PhongMaterial(engine);
 
@@ -41,7 +43,10 @@ void MainWindowRenderer::initResources()
 
 	lavos::DirectionalLightComponent *light = new lavos::DirectionalLightComponent();
 	light_node->AddComponent(light);
+}
 
+void MainWindowRenderer::InitSwapchainResources()
+{
 	renderer = new lavos::Renderer(engine, window->GetSwapchain(), window->GetDepthRenderTarget());
 	renderer->AddMaterial(material);
 
@@ -49,7 +54,7 @@ void MainWindowRenderer::initResources()
 	renderer->SetCamera(camera);
 }
 
-void MainWindowRenderer::releaseResources()
+void MainWindowRenderer::ReleaseResources()
 {
 	delete renderer;
 	delete asset_container;
@@ -57,7 +62,7 @@ void MainWindowRenderer::releaseResources()
 	delete engine;
 }
 
-void MainWindowRenderer::startNextFrame()
+void MainWindowRenderer::Render()
 {
 	window->Render(renderer);
 }
@@ -67,12 +72,12 @@ void MainWindowRenderer::startNextFrame()
 MainWindow::MainWindow(lavos::Engine *engine, QWindow *parent)
 		: QWindow(parent), engine(engine)
 {
-
+	vulkan_initialized = false;
 }
 
 void MainWindow::Initialize()
 {
-	surface = vulkanInstance()->surfaceForWindow(this);
+	surface = QVulkanInstance::surfaceForWindow(this);
 	present_queue_family_index = static_cast<uint32_t>(engine->FindPresentQueueFamily(surface));
 	present_queue = engine->GetVkDevice().getQueue(present_queue_family_index, 0);
 	vk::Extent2D extent(static_cast<uint32_t>(width()), static_cast<uint32_t>(height()));
@@ -90,6 +95,11 @@ void MainWindow::RecreateSwapchain()
 
 void MainWindow::Render(lavos::Renderer *renderer)
 {
+	if (!isExposed())
+	{
+		return;
+	}
+
 	auto image_index_result = engine->GetVkDevice().acquireNextImageKHR(swapchain->GetSwapchain(),
 																		std::numeric_limits<uint64_t>::max(),
 																		image_available_semaphore,
@@ -143,3 +153,28 @@ void MainWindow::Render(lavos::Renderer *renderer)
 	vulkanInstance()->presentQueued(this);
 	present_queue.waitIdle();
 }
+
+bool MainWindow::event(QEvent *event)
+{
+	if(event->type() == QEvent::PlatformSurface)
+	{
+		QPlatformSurfaceEvent *surface_event = static_cast<QPlatformSurfaceEvent *>(event);
+		if(surface_event->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed)
+		{
+			emit surfaceAboutToBeDestroyed();
+		}
+	}
+	QWindow::event(event);
+}
+
+void MainWindow::exposeEvent(QExposeEvent *ev)
+{
+	if(!vulkan_initialized && isExposed())
+	{
+		Initialize();
+		emit initializeSwapchain();
+	}
+
+	QWindow::exposeEvent(ev);
+}
+

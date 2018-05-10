@@ -31,12 +31,11 @@ class MainWindowRenderer
 		MainWindowRenderer(lavos::Engine *engine, MainWindow *window)
 			: engine(engine), window(window) {}
 
-		void initResources();
-		void initSwapChainResources();
-		void releaseSwapChainResources();
-		void releaseResources();
+		void InitResources();
+		void InitSwapchainResources();
+		void ReleaseResources();
 
-		void startNextFrame();
+		void Render();
 };
 
 class MainWindow: public QWindow
@@ -45,6 +44,8 @@ class MainWindow: public QWindow
 
 	private:
 		lavos::Engine *engine;
+
+		bool vulkan_initialized;
 
 		vk::SurfaceKHR surface;
 		uint32_t present_queue_family_index;
@@ -57,6 +58,10 @@ class MainWindow: public QWindow
 
 		void RecreateSwapchain();
 
+	protected:
+		bool event(QEvent *event);
+		void exposeEvent(QExposeEvent *ev) override;
+
 	public:
 		MainWindow(lavos::Engine *engine, QWindow *parent = nullptr);
 
@@ -65,6 +70,10 @@ class MainWindow: public QWindow
 
 		lavos::Swapchain *GetSwapchain() const							{ return swapchain; }
 		lavos::ManagedDepthRenderTarget *GetDepthRenderTarget() const	{ return depth_render_target; }
+
+	signals:
+		void initializeSwapchain();
+		void surfaceAboutToBeDestroyed();
 };
 
 #endif //VULKAN_MAINWINDOW_H
