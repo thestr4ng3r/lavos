@@ -82,6 +82,6 @@ void MainWindowRenderer::releaseResources()
 
 void MainWindowRenderer::startNextFrame()
 {
-	renderer->DrawFrameRecord(window->currentCommandBuffer(), window->currentFramebuffer());
+	renderer->DrawFrame(static_cast<uint32_t>(window->currentSwapChainImageIndex()), {}, {}, {});
 	window->frameReady();
 }
