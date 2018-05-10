@@ -14,6 +14,7 @@ int main(int argc, char **argv)
 	engine_create_info.app_info = "Qt Demo";
 
 	engine_create_info.enable_validation_layers = true;
+	engine_create_info.enable_anisotropy = false;
 
 	engine_create_info.required_instance_extensions = {
 		"VK_KHR_surface",

@@ -101,7 +101,7 @@ static Texture LoadTexture(AssetContainer &container, tinygltf::Model &model, in
 		.setAddressModeU(vk::SamplerAddressMode::eRepeat)
 		.setAddressModeV(vk::SamplerAddressMode::eRepeat)
 		.setAddressModeW(vk::SamplerAddressMode::eRepeat)
-		.setAnisotropyEnable(VK_TRUE)
+		.setAnisotropyEnable(container.engine->GetAnisotropyEnabled() ? VK_TRUE : VK_FALSE) // TODO: make this adjustable somehow
 		.setMaxAnisotropy(16)
 		.setBorderColor(vk::BorderColor::eIntOpaqueBlack)
 		.setUnnormalizedCoordinates(VK_FALSE)

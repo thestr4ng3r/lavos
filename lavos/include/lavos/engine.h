@@ -94,6 +94,8 @@ class Engine
 		const vk::Queue &GetGraphicsQueue()	const 					{ return graphics_queue; }
 		const vk::Queue &GetPresentQueue() const					{ return present_queue; }
 
+		bool GetAnisotropyEnabled()									{ return info.enable_anisotropy; }
+
 		uint32_t FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties);
 
 		vk::Format FindSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
