@@ -78,15 +78,18 @@ class QVulkanWindowDepthRenderTarget : public lavos::DepthRenderTarget
 class MainWindowRenderer: public QVulkanWindowRenderer
 {
 	private:
-		lavos::Engine *engine;
+		lavos::Engine *engine = nullptr;
 		QVulkanWindow *window;
 
-		lavos::PhongMaterial *material;
-		QVulkanWindowColorRenderTarget *color_render_target = nullptr;
-		QVulkanWindowDepthRenderTarget *depth_render_target;
-		lavos::Renderer *renderer;
+		lavos::PhongMaterial *material = nullptr;
+		lavos::Scene *scene = nullptr;
+		lavos::CameraComponent *camera = nullptr;
 
-		lavos::AssetContainer *asset_container;
+		QVulkanWindowColorRenderTarget *color_render_target = nullptr;
+		QVulkanWindowDepthRenderTarget *depth_render_target = nullptr;
+		lavos::Renderer *renderer = nullptr;
+
+		lavos::AssetContainer *asset_container = nullptr;
 
 	public:
 		MainWindowRenderer(lavos::Engine *engine, QVulkanWindow *window)

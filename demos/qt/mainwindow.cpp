@@ -13,32 +13,15 @@ void MainWindowRenderer::initResources()
 								 window->device(),
 								 window->graphicsQueue(),
 								 window->graphicsQueue()); // TODO: different queue for present?
-}
-
-void MainWindowRenderer::initSwapChainResources()
-{
-	if(color_render_target != nullptr)
-	{
-		color_render_target->SwapchainChanged();
-		return;
-	}
 
 	material = new lavos::PhongMaterial(engine);
 
-	color_render_target = new QVulkanWindowColorRenderTarget(window);
-	depth_render_target = new QVulkanWindowDepthRenderTarget(window);
-
-	renderer = new lavos::Renderer(engine, color_render_target, depth_render_target);
-	renderer->AddMaterial(material);
-
 	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
 
-	lavos::Scene *scene = asset_container->scenes[0];
+	scene = asset_container->scenes[0];
 	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
 
-	renderer->SetScene(scene);
-
-	lavos::CameraComponent *camera = scene->GetRootNode()->GetComponentInChildren<lavos::CameraComponent>();
+	camera = scene->GetRootNode()->GetComponentInChildren<lavos::CameraComponent>();
 
 	if(camera == nullptr)
 	{
@@ -63,10 +46,24 @@ void MainWindowRenderer::initSwapChainResources()
 
 	lavos::DirectionalLightComponent *light = new lavos::DirectionalLightComponent();
 	light_node->AddComponent(light);
+}
 
+void MainWindowRenderer::initSwapChainResources()
+{
+	if(color_render_target != nullptr)
+	{
+		color_render_target->SwapchainChanged();
+		return;
+	}
+
+	color_render_target = new QVulkanWindowColorRenderTarget(window);
+	depth_render_target = new QVulkanWindowDepthRenderTarget(window);
+
+	renderer = new lavos::Renderer(engine, color_render_target, depth_render_target);
+	renderer->AddMaterial(material);
+
+	renderer->SetScene(scene);
 	renderer->SetCamera(camera);
-
-	//material_instance = asset_container->material_instances.front();
 }
 
 void MainWindowRenderer::releaseSwapChainResources()
@@ -75,7 +72,12 @@ void MainWindowRenderer::releaseSwapChainResources()
 
 void MainWindowRenderer::releaseResources()
 {
-	// TODO: delete engine?
+	delete renderer;
+	delete depth_render_target;
+	delete color_render_target;
+	delete asset_container;
+	delete material;
+	delete engine;
 }
 
 void MainWindowRenderer::startNextFrame()
