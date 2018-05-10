@@ -73,8 +73,10 @@ MainWindow::MainWindow(lavos::Engine *engine, QWindow *parent)
 void MainWindow::Initialize()
 {
 	surface = vulkanInstance()->surfaceForWindow(this);
+	present_queue_family_index = static_cast<uint32_t>(engine->FindPresentQueueFamily(surface));
+	present_queue = engine->GetVkDevice().getQueue(present_queue_family_index, 0);
 	vk::Extent2D extent(static_cast<uint32_t>(width()), static_cast<uint32_t>(height()));
-	swapchain = new lavos::Swapchain(engine, surface, extent);
+	swapchain = new lavos::Swapchain(engine, surface, present_queue_family_index, extent);
 	depth_render_target = new lavos::ManagedDepthRenderTarget(engine, swapchain);
 
 	image_available_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
@@ -116,12 +118,12 @@ void MainWindow::Render(lavos::Renderer *renderer)
 	vk::Result present_result;
 	try
 	{
-		present_result = engine->GetPresentQueue().presentKHR(vk::PresentInfoKHR()
-																	  .setWaitSemaphoreCount(1)
-																	  .setPWaitSemaphores(signal_semaphores)
-																	  .setSwapchainCount(1)
-																	  .setPSwapchains(&vk_swapchain)
-																	  .setPImageIndices(&image_index));
+		present_result = present_queue.presentKHR(vk::PresentInfoKHR()
+														  .setWaitSemaphoreCount(1)
+														  .setPWaitSemaphores(signal_semaphores)
+														  .setSwapchainCount(1)
+														  .setPSwapchains(&vk_swapchain)
+														  .setPImageIndices(&image_index));
 	}
 	catch(vk::OutOfDateKHRError)
 	{
@@ -139,5 +141,5 @@ void MainWindow::Render(lavos::Renderer *renderer)
 	}
 
 	vulkanInstance()->presentQueued(this);
-	engine->GetPresentQueue().waitIdle();
+	present_queue.waitIdle();
 }

@@ -26,6 +26,7 @@ int main(int argc, char **argv)
 	};
 
 	lavos::Engine *engine = new lavos::Engine(engine_create_info);
+	engine->InitializeWithPhysicalDeviceIndex(0);
 
 	QVulkanInstance inst;
 	inst.setVkInstance(engine->GetVkInstance());
@@ -44,7 +45,6 @@ int main(int argc, char **argv)
 	// TODO: react to QPlatformSurfaceEvent::SurfaceCreated
 	window.show();
 	vk::SurfaceKHR surface = QVulkanInstance::surfaceForWindow(&window);
-	engine->InitializeForSurface(surface);
 	window.Initialize();
 
 	MainWindowRenderer renderer(engine, &window);

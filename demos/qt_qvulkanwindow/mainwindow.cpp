@@ -11,8 +11,7 @@ void MainWindowRenderer::initResources()
 {
 	engine->InitializeWithDevice(window->physicalDevice(),
 								 window->device(),
-								 window->graphicsQueue(),
-								 window->graphicsQueue()); // TODO: different queue for present?
+								 window->graphicsQueue());
 
 	material = new lavos::PhongMaterial(engine);
 

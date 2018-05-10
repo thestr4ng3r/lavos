@@ -200,19 +200,32 @@ bool Engine::CheckDeviceExtensionSupport(vk::PhysicalDevice physical_device)
 void Engine::InitializeForSurface(vk::SurfaceKHR surface)
 {
 	PickPhysicalDevice(surface);
-	CreateLogicalDevice(surface);
+	CreateLogicalDevice();
 	CreateAllocator();
 	CreateGlobalCommandPools();
 }
 
-void Engine::InitializeWithDevice(vk::PhysicalDevice physical_device, vk::Device device, vk::Queue graphics_queue, vk::Queue present_queue)
+void Engine::InitializeWithPhysicalDevice(vk::PhysicalDevice physical_device)
+{
+	this->physical_device = physical_device;
+	CreateLogicalDevice();
+	CreateAllocator();
+	CreateGlobalCommandPools();
+}
+
+void Engine::InitializeWithPhysicalDeviceIndex(unsigned int index)
+{
+	auto physical_devices = instance.enumeratePhysicalDevices();
+	InitializeWithPhysicalDevice(physical_devices[index]);
+}
+
+void Engine::InitializeWithDevice(vk::PhysicalDevice physical_device, vk::Device device, vk::Queue graphics_queue)
 {
 	this->physical_device = physical_device;
 	this->device = device;
 	this->graphics_queue = graphics_queue;
-	this->present_queue = present_queue;
 
-	queue_family_indices = FindQueueFamilies(physical_device, nullptr);
+	queue_family_indices = FindQueueFamilies(physical_device);
 
 	CreateAllocator();
 	CreateGlobalCommandPools();
@@ -273,7 +286,7 @@ void Engine::PickPhysicalDevice(vk::SurfaceKHR surface)
 	}
 }
 
-Engine::QueueFamilyIndices Engine::FindQueueFamilies(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface)
+Engine::QueueFamilyIndices Engine::FindQueueFamilies(vk::PhysicalDevice physical_device)
 {
 	QueueFamilyIndices indices;
 
@@ -284,9 +297,6 @@ Engine::QueueFamilyIndices Engine::FindQueueFamilies(vk::PhysicalDevice physical
 		if(queue_family.queueCount > 0 && queue_family.queueFlags & vk::QueueFlagBits::eGraphics)
 			indices.graphics_family = i;
 
-		if(queue_family.queueCount > 0 && (!surface || physical_device.getSurfaceSupportKHR(static_cast<uint32_t>(i), surface)))
-			indices.present_family = i;
-
 		if(indices.IsComplete())
 			break;
 
@@ -296,12 +306,28 @@ Engine::QueueFamilyIndices Engine::FindQueueFamilies(vk::PhysicalDevice physical
 	return indices;
 }
 
-void Engine::CreateLogicalDevice(vk::SurfaceKHR surface)
+int Engine::FindPresentQueueFamily(vk::SurfaceKHR surface)
 {
-	queue_family_indices = FindQueueFamilies(physical_device, surface);
+	auto queue_families = physical_device.getQueueFamilyProperties();
+	int i = 0;
+	for(const auto &queue_family : queue_families)
+	{
+		if(queue_family.queueCount > 0 && physical_device.getSurfaceSupportKHR(static_cast<uint32_t>(i), surface))
+			return i;
+
+		i++;
+	}
+
+	return -1;
+}
+
+
+void Engine::CreateLogicalDevice()
+{
+	queue_family_indices = FindQueueFamilies(physical_device);
 
 	std::vector<vk::DeviceQueueCreateInfo> queue_create_infos;
-	std::set<int> unique_queue_families = { queue_family_indices.graphics_family, queue_family_indices.present_family };
+	std::set<int> unique_queue_families = { queue_family_indices.graphics_family };
 
 	for(int queue_family : unique_queue_families)
 	{
@@ -342,7 +368,6 @@ void Engine::CreateLogicalDevice(vk::SurfaceKHR surface)
 	device = physical_device.createDevice(create_info);
 
 	graphics_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.graphics_family), 0);
-	present_queue = device.getQueue(static_cast<uint32_t>(queue_family_indices.present_family), 0);
 }
 
 

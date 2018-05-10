@@ -24,6 +24,9 @@ class WindowApplication
 
 		vk::SurfaceKHR surface;
 
+		uint32_t present_queue_family_index;
+		vk::Queue present_queue;
+
 		lavos::Swapchain *swapchain;
 		lavos::ManagedDepthRenderTarget *depth_render_target;
 

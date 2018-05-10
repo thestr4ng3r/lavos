@@ -3,13 +3,14 @@
 
 using namespace lavos;
 
-Swapchain::Swapchain(Engine *engine, vk::SurfaceKHR surface, vk::Extent2D desired_extent /*,
+Swapchain::Swapchain(Engine *engine, vk::SurfaceKHR surface, uint32_t present_queue_family_index, vk::Extent2D desired_extent /*,
 					 std::optional<vk::SurfaceFormatKHR> force_surface_format,
 					 std::optional<vk::PresentModeKHR> force_present_mode,
 					 std::optional<uint32_t> force_image_count*/)
 	: engine(engine)
 {
 	this->surface = surface;
+	this->present_queue_family_index = present_queue_family_index;
 	this->desired_extent = desired_extent;
 
 	CreateSwapchain();
@@ -106,9 +107,9 @@ void Swapchain::CreateSwapchain()
 
 	auto queue_family_indices = engine->GetQueueFamilyIndices();
 	uint32_t queue_family_indices_array[] = {static_cast<uint32_t>(queue_family_indices.graphics_family),
-											 static_cast<uint32_t>(queue_family_indices.present_family)};
+											 present_queue_family_index};
 
-	if(queue_family_indices.graphics_family != queue_family_indices.present_family)
+	if(queue_family_indices.graphics_family != present_queue_family_index)
 	{
 		create_info.setImageSharingMode(vk::SharingMode::eConcurrent)
 				.setQueueFamilyIndexCount(2)

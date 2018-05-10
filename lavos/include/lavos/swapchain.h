@@ -11,6 +11,7 @@ class Swapchain : public ColorRenderTarget
 {
 	private:
 		Engine * const engine;
+		uint32_t present_queue_family_index;
 
 		vk::SurfaceKHR surface;
 
@@ -35,7 +36,7 @@ class Swapchain : public ColorRenderTarget
 		void Cleanup();
 
 	public:
-		Swapchain(Engine *engine, vk::SurfaceKHR surface, vk::Extent2D desired_extent/*,
+		Swapchain(Engine *engine, vk::SurfaceKHR surface, uint32_t present_queue_family_index, vk::Extent2D desired_extent/*,
 				  std::optional<vk::SurfaceFormatKHR> force_surface_format = std::nullopt,
 				  std::optional<vk::PresentModeKHR> force_present_mode = std::nullopt,
 				  std::optional<uint32_t> force_image_count = std::nullopt*/);

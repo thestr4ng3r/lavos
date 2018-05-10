@@ -31,12 +31,10 @@ class Engine
 		struct QueueFamilyIndices
 		{
 			int graphics_family = -1;
-			int present_family = -1;
 
 			bool IsComplete()
 			{
-				return graphics_family >= 0
-					   && present_family >= 0;
+				return graphics_family >= 0;
 			}
 		};
 
@@ -54,7 +52,6 @@ class Engine
 		VmaAllocator allocator;
 
 		vk::Queue graphics_queue;
-		vk::Queue present_queue;
 
 
 		vk::CommandPool transient_command_pool;
@@ -71,8 +68,8 @@ class Engine
 		bool CheckDeviceExtensionSupport(vk::PhysicalDevice physical_device);
 		bool IsPhysicalDeviceSuitable(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface);
 		void PickPhysicalDevice(vk::SurfaceKHR surface);
-		QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface);
-		void CreateLogicalDevice(vk::SurfaceKHR surface);
+		QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice physical_device);
+		void CreateLogicalDevice();
 
 		void CreateAllocator();
 
@@ -83,7 +80,9 @@ class Engine
 		~Engine();
 
 		void InitializeForSurface(vk::SurfaceKHR surface);
-		void InitializeWithDevice(vk::PhysicalDevice physical_device, vk::Device device, vk::Queue graphics_queue, vk::Queue present_queue);
+		void InitializeWithPhysicalDevice(vk::PhysicalDevice physical_device);
+		void InitializeWithPhysicalDeviceIndex(unsigned int index);
+		void InitializeWithDevice(vk::PhysicalDevice physical_device, vk::Device device, vk::Queue graphics_queue);
 
 		const vk::Instance &GetVkInstance()	const					{ return instance; }
 		const vk::PhysicalDevice &GetVkPhysicalDevice()	const		{ return physical_device; }
@@ -92,11 +91,11 @@ class Engine
 
 		const QueueFamilyIndices &GetQueueFamilyIndices() const		{ return queue_family_indices; }
 		const vk::Queue &GetGraphicsQueue()	const 					{ return graphics_queue; }
-		const vk::Queue &GetPresentQueue() const					{ return present_queue; }
 
 		bool GetAnisotropyEnabled()									{ return info.enable_anisotropy; }
 
 		uint32_t FindMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags properties);
+		int FindPresentQueueFamily(vk::SurfaceKHR surface);
 
 		vk::Format FindSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 		vk::Format FindDepthFormat();
