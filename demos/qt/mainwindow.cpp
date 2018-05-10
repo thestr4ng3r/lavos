@@ -17,17 +17,18 @@ void MainWindowRenderer::initResources()
 
 void MainWindowRenderer::initSwapChainResources()
 {
-	if(render_target != nullptr)
+	if(color_render_target != nullptr)
 	{
-		render_target->SwapchainChanged();
+		color_render_target->SwapchainChanged();
 		return;
 	}
 
 	material = new lavos::PhongMaterial(engine);
 
-	render_target = new QVulkanWindowRenderTarget(window);
+	color_render_target = new QVulkanWindowColorRenderTarget(window);
+	depth_render_target = new QVulkanWindowDepthRenderTarget(window);
 
-	renderer = new lavos::Renderer(engine, render_target, nullptr); // TODO
+	renderer = new lavos::Renderer(engine, color_render_target, depth_render_target);
 	renderer->AddMaterial(material);
 
 	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
@@ -82,4 +83,3 @@ void MainWindowRenderer::startNextFrame()
 	renderer->DrawFrameRecord(window->currentCommandBuffer(), window->currentFramebuffer());
 	window->frameReady();
 }
-

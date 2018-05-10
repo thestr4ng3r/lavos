@@ -10,28 +10,28 @@
 #include <QWindow>
 #include <QtGui/QVulkanWindow>
 
-class QVulkanWindowRenderTarget : public lavos::ColorRenderTarget
+class QVulkanWindowColorRenderTarget : public lavos::ColorRenderTarget
 {
 	private:
 		QVulkanWindow * const vulkan_window;
 
 	public:
-		QVulkanWindowRenderTarget(QVulkanWindow * const vulkan_window)
+		explicit QVulkanWindowColorRenderTarget(QVulkanWindow * const vulkan_window)
 				: vulkan_window(vulkan_window) {}
 
-		virtual vk::Extent2D GetExtent() const
+		vk::Extent2D GetExtent() const override
 		{
 			auto size = vulkan_window->swapChainImageSize();
 			return vk::Extent2D(static_cast<uint32_t>(size.width()),
 								static_cast<uint32_t>(size.height()));
 		}
 
-		virtual vk::Format GetFormat() const
+		vk::Format GetFormat() const override
 		{
 			return vk::Format(vulkan_window->colorFormat());
 		}
 
-		virtual std::vector<vk::ImageView> GetImageViews() const
+		std::vector<vk::ImageView> GetImageViews() const override
 		{
 			int count = vulkan_window->swapChainImageCount();
 			std::vector<vk::ImageView> ret(static_cast<unsigned long>(count));
@@ -39,11 +39,39 @@ class QVulkanWindowRenderTarget : public lavos::ColorRenderTarget
 			{
 				ret[i] = vulkan_window->swapChainImageView(i);
 			}
+			return ret;
 		}
 
 		void SwapchainChanged()
 		{
 			SignalChangedCallbacks();
+		}
+};
+
+class QVulkanWindowDepthRenderTarget : public lavos::DepthRenderTarget
+{
+	private:
+		QVulkanWindow * const vulkan_window;
+
+	public:
+		explicit QVulkanWindowDepthRenderTarget(QVulkanWindow * const vulkan_window)
+				: vulkan_window(vulkan_window) {}
+
+		vk::Extent2D GetExtent() const override
+		{
+			auto size = vulkan_window->swapChainImageSize();
+			return vk::Extent2D(static_cast<uint32_t>(size.width()),
+								static_cast<uint32_t>(size.height()));
+		}
+
+		vk::Format GetFormat() const override
+		{
+			return vk::Format(vulkan_window->depthStencilFormat());
+		}
+
+		vk::ImageView GetImageView() const override
+		{
+			return vulkan_window->depthStencilImageView();
 		}
 };
 
@@ -54,7 +82,8 @@ class MainWindowRenderer: public QVulkanWindowRenderer
 		QVulkanWindow *window;
 
 		lavos::PhongMaterial *material;
-		QVulkanWindowRenderTarget *render_target = nullptr;
+		QVulkanWindowColorRenderTarget *color_render_target = nullptr;
+		QVulkanWindowDepthRenderTarget *depth_render_target;
 		lavos::Renderer *renderer;
 
 		lavos::AssetContainer *asset_container;
