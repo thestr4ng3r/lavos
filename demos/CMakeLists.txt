@@ -8,4 +8,5 @@ add_subdirectory(room)
 
 if(BUILD_QT_DEMO)
 	add_subdirectory(qt_qvulkanwindow)
+	add_subdirectory(qt_qwindow)
 endif()
