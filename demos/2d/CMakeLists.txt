@@ -5,6 +5,6 @@ set(SOURCE_FILES
 add_executable(2d ${SOURCE_FILES})
 target_link_libraries(2d
 		lavos
-		lavosframe
+		lavos_shell_glfw
 		glfw
 		${Vulkan_LIBRARIES})

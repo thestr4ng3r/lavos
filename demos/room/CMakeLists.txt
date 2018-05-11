@@ -5,6 +5,6 @@ set(SOURCE_FILES
 add_executable(room ${SOURCE_FILES})
 target_link_libraries(room
 		lavos
-		lavosframe
+		lavos_shell_glfw
 		glfw
 		${Vulkan_LIBRARIES})

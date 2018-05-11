@@ -3,14 +3,14 @@ project(lavos)
 
 set(CMAKE_CXX_STANDARD 14)
 
+option(LAVOS_BUILD_SHELL_GLFW "Build GLFW Lavos Shell library" ON)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glm")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glfw/include")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vma/src")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
-
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/lavos/include")
 
 if(ANDROID)
     #include_directories("${CMAKE_CURRENT_SOURCE_DIR}/android/vulkan_wrapper")
@@ -32,14 +32,11 @@ else()
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glfw")
-
-    add_subdirectory(frame)
-    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/frame/include")
 endif()
 
 find_package(VulkanHPP REQUIRED)
 include_directories(${VulkanHPP_INCLUDE_DIRS})
 
 add_subdirectory(lavos)
-
+add_subdirectory(shell)
 add_subdirectory(demos)

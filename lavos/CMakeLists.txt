@@ -105,10 +105,8 @@ set(RESOURCES_RELATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/shader")
 
 
 add_library(lavos SHARED ${SOURCE_FILES} ${RESOURCES_HEADERS} ${RESOURCES_SRC})
-
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
-
 target_link_libraries(lavos ${Vulkan_LIBRARIES})
+target_include_directories(lavos PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 
 
