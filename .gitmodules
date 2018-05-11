@@ -7,3 +7,6 @@
 [submodule "demos/data"]
 	path = demos/data
 	url = https://github.com/thestr4ng3r/lavos-demo-assets.git
+[submodule "thirdparty/vma"]
+	path = thirdparty/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

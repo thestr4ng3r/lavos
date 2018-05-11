@@ -7,6 +7,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glm")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glfw/include")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vma/src")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/lavos/include")

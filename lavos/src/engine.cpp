@@ -373,14 +373,9 @@ void Engine::CreateLogicalDevice()
 
 void Engine::CreateAllocator()
 {
-	VmaAllocatorCreateInfo create_info;
-	create_info.flags = 0;
+	VmaAllocatorCreateInfo create_info = {};
 	create_info.physicalDevice = physical_device;
 	create_info.device = device;
-	create_info.preferredLargeHeapBlockSize = 0;
-	create_info.preferredSmallHeapBlockSize = 0;
-	create_info.pAllocationCallbacks = 0;
-	create_info.pDeviceMemoryCallbacks = 0;
 
 	VkResult result = vmaCreateAllocator(&create_info, &allocator);
 
@@ -475,16 +470,12 @@ Buffer Engine::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, Vma
 			.setUsage(usage)
 			.setSharingMode(sharing_mode);
 
-	VmaMemoryRequirements memory_requirements;
-	memory_requirements.flags = 0;
-	memory_requirements.usage = vma_usage;
-	memory_requirements.requiredFlags = 0;
-	memory_requirements.preferredFlags = 0;
-	memory_requirements.pUserData = 0;
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = vma_usage;
 
 	VkBuffer buffer;
 	VmaAllocation allocation;
-	VkResult result = vmaCreateBuffer(allocator, reinterpret_cast<const VkBufferCreateInfo *>(&create_info), &memory_requirements, &buffer, &allocation, nullptr);
+	VkResult result = vmaCreateBuffer(allocator, reinterpret_cast<const VkBufferCreateInfo *>(&create_info), &alloc_info, &buffer, &allocation, nullptr);
 
 	if(result != VK_SUCCESS)
 		throw std::runtime_error("Failed to create buffer.");
@@ -499,16 +490,12 @@ void Engine::DestroyBuffer(const Buffer &buffer)
 
 Image Engine::CreateImage(vk::ImageCreateInfo create_info, VmaMemoryUsage vma_usage)
 {
-	VmaMemoryRequirements memory_requirements;
-	memory_requirements.flags = 0;
-	memory_requirements.usage = vma_usage;
-	memory_requirements.requiredFlags = 0;
-	memory_requirements.preferredFlags = 0;
-	memory_requirements.pUserData = 0;
+	VmaAllocationCreateInfo alloc_info = {};
+	alloc_info.usage = vma_usage;
 
 	VkImage image;
 	VmaAllocation allocation;
-	VkResult result = vmaCreateImage(allocator, reinterpret_cast<const VkImageCreateInfo *>(&create_info), &memory_requirements, &image, &allocation, nullptr);
+	VkResult result = vmaCreateImage(allocator, reinterpret_cast<const VkImageCreateInfo *>(&create_info), &alloc_info, &image, &allocation, nullptr);
 
 	if(result != VK_SUCCESS)
 		throw std::runtime_error("Failed to create image.");
