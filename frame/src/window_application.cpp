@@ -178,6 +178,7 @@ void WindowApplication::Cleanup()
 	auto device = engine->GetVkDevice();
 
 	delete swapchain;
+	delete depth_render_target;
 
 	device.destroySemaphore(image_available_semaphore);
 	device.destroySemaphore(render_finished_semaphore);

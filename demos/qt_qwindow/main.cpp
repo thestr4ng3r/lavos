@@ -4,7 +4,8 @@
 #include <QApplication>
 #include <QVulkanInstance>
 
-#include "mainwindow.h"
+#include "lavos_renderer.h"
+#include "lavos_window.h"
 
 int main(int argc, char **argv)
 {
@@ -36,20 +37,12 @@ int main(int argc, char **argv)
 		qFatal("Failed to create vulkan instance: %d", inst.errorCode());
 	}
 
-	MainWindow window(engine);
+	LavosWindowRenderer renderer(engine);
+
+	LavosWindow window(engine, &renderer);
+	window.setVulkanInstance(&inst);
 	window.setWidth(640);
 	window.setHeight(480);
-	window.setVulkanInstance(&inst);
-	window.setSurfaceType(QWindow::VulkanSurface);
-
-	MainWindowRenderer renderer(engine, &window);
-	renderer.InitResources();
-
-	QObject::connect(&window, &MainWindow::initializeSwapchain, [&renderer] () {
-		renderer.InitSwapchainResources();
-		renderer.Render();
-	});
-
 	window.show();
 
 	return app.exec();

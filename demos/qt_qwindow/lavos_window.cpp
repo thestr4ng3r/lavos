@@ -5,77 +5,19 @@
 #include <lavos/renderer.h>
 #include <lavos/asset_container.h>
 
-#include "mainwindow.h"
+#include "lavos_window.h"
 
 #include <QPlatformSurfaceEvent>
 
-void MainWindowRenderer::InitResources()
-{
-	material = new lavos::PhongMaterial(engine);
 
-	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
-
-	scene = asset_container->scenes[0];
-	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
-
-	camera = scene->GetRootNode()->GetComponentInChildren<lavos::CameraComponent>();
-
-	if(camera == nullptr)
-	{
-		lavos::Node *camera_node = new lavos::Node();
-		scene->GetRootNode()->AddChild(camera_node);
-
-		camera_node->AddComponent(new lavos::TransformComponent());
-
-		camera_node->GetTransformComponent()->translation = glm::vec3(5.0f, 5.0f, 5.0f);
-		camera_node->GetTransformComponent()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
-
-		camera = new lavos::CameraComponent();
-		camera->SetNearClip(0.01f);
-		camera_node->AddComponent(camera);
-	}
-
-	lavos::Node *light_node = new lavos::Node();
-	scene->GetRootNode()->AddChild(light_node);
-
-	light_node->AddComponent(new lavos::TransformComponent());
-	light_node->GetTransformComponent()->SetLookAt(glm::vec3(-1.0f, -1.0f, -1.0f));
-
-	lavos::DirectionalLightComponent *light = new lavos::DirectionalLightComponent();
-	light_node->AddComponent(light);
-}
-
-void MainWindowRenderer::InitSwapchainResources()
-{
-	renderer = new lavos::Renderer(engine, window->GetSwapchain(), window->GetDepthRenderTarget());
-	renderer->AddMaterial(material);
-
-	renderer->SetScene(scene);
-	renderer->SetCamera(camera);
-}
-
-void MainWindowRenderer::ReleaseResources()
-{
-	delete renderer;
-	delete asset_container;
-	delete material;
-	delete engine;
-}
-
-void MainWindowRenderer::Render()
-{
-	window->Render(renderer);
-}
-
-
-
-MainWindow::MainWindow(lavos::Engine *engine, QWindow *parent)
-		: QWindow(parent), engine(engine)
+LavosWindow::LavosWindow(lavos::Engine *engine, Renderer *renderer, QWindow *parent)
+		: QWindow(parent), engine(engine), renderer(renderer)
 {
 	vulkan_initialized = false;
+	setSurfaceType(VulkanSurface);
 }
 
-void MainWindow::Initialize()
+void LavosWindow::InitializeVulkan()
 {
 	surface = QVulkanInstance::surfaceForWindow(this);
 	present_queue_family_index = static_cast<uint32_t>(engine->FindPresentQueueFamily(surface));
@@ -88,12 +30,24 @@ void MainWindow::Initialize()
 	render_finished_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
 }
 
-void MainWindow::RecreateSwapchain()
+void LavosWindow::CleanupVulkan()
 {
-	swapchain->Recreate();
+	auto device = engine->GetVkDevice();
+
+	delete swapchain;
+	delete depth_render_target;
+
+	device.destroySemaphore(image_available_semaphore);
+	device.destroySemaphore(render_finished_semaphore);
 }
 
-void MainWindow::Render(lavos::Renderer *renderer)
+void LavosWindow::RecreateSwapchain()
+{
+	swapchain->Recreate();
+	requestUpdate();
+}
+
+void LavosWindow::Render(lavos::Renderer *renderer)
 {
 	if (!isExposed())
 	{
@@ -154,27 +108,48 @@ void MainWindow::Render(lavos::Renderer *renderer)
 	present_queue.waitIdle();
 }
 
-bool MainWindow::event(QEvent *event)
+bool LavosWindow::event(QEvent *event)
 {
-	if(event->type() == QEvent::PlatformSurface)
+	switch(event->type())
 	{
-		QPlatformSurfaceEvent *surface_event = static_cast<QPlatformSurfaceEvent *>(event);
-		if(surface_event->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed)
+		case QEvent::PlatformSurface:
 		{
-			emit surfaceAboutToBeDestroyed();
+			QPlatformSurfaceEvent *surface_event = static_cast<QPlatformSurfaceEvent *>(event);
+			if(surface_event->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed)
+			{
+				renderer->ReleaseSwapchainResources();
+				CleanupVulkan();
+			}
+			break;
 		}
+
+		case QEvent::UpdateRequest:
+			renderer->Render(this);
+			break;
+
+		default:
+			break;
 	}
-	QWindow::event(event);
+
+	return QWindow::event(event);
 }
 
-void MainWindow::exposeEvent(QExposeEvent *ev)
+void LavosWindow::exposeEvent(QExposeEvent *ev)
 {
-	if(!vulkan_initialized && isExposed())
+	if(isExposed())
 	{
-		Initialize();
-		emit initializeSwapchain();
+		if(!vulkan_initialized)
+		{
+			InitializeVulkan();
+			renderer->InitializeSwapchainResources(this);
+			vulkan_initialized = true;
+		}
+		requestUpdate();
 	}
 
 	QWindow::exposeEvent(ev);
 }
 
+void LavosWindow::resizeEvent(QResizeEvent *)
+{
+}

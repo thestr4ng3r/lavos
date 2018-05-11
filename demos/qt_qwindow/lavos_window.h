@@ -1,6 +1,6 @@
 
-#ifndef VULKAN_MAINWINDOW_H
-#define VULKAN_MAINWINDOW_H
+#ifndef LAVOS_LAVOS_WINDOW_H
+#define LAVOS_LAVOS_WINDOW_H
 
 #include <lavos/engine.h>
 #include <lavos/material/phong_material.h>
@@ -11,39 +11,22 @@
 #include <QWindow>
 #include <QtGui/QVulkanWindow>
 
-class MainWindow;
-
-class MainWindowRenderer
-{
-	private:
-		lavos::Engine *engine = nullptr;
-		MainWindow *window;
-
-		lavos::PhongMaterial *material = nullptr;
-		lavos::Scene *scene = nullptr;
-		lavos::CameraComponent *camera = nullptr;
-
-		lavos::Renderer *renderer = nullptr;
-
-		lavos::AssetContainer *asset_container = nullptr;
-
-	public:
-		MainWindowRenderer(lavos::Engine *engine, MainWindow *window)
-			: engine(engine), window(window) {}
-
-		void InitResources();
-		void InitSwapchainResources();
-		void ReleaseResources();
-
-		void Render();
-};
-
-class MainWindow: public QWindow
+class LavosWindow: public QWindow
 {
 	Q_OBJECT
 
+	public:
+		class Renderer
+		{
+			public:
+				virtual void InitializeSwapchainResources(LavosWindow *window) =0;
+				virtual void ReleaseSwapchainResources() =0;
+				virtual void Render(LavosWindow *window) =0;
+		};
+
 	private:
 		lavos::Engine *engine;
+		Renderer *renderer;
 
 		bool vulkan_initialized;
 
@@ -57,23 +40,23 @@ class MainWindow: public QWindow
 		vk::Semaphore render_finished_semaphore;
 
 		void RecreateSwapchain();
+		void InitializeVulkan();
+		void CleanupVulkan();
 
 	protected:
-		bool event(QEvent *event);
+		bool event(QEvent *event) override;
 		void exposeEvent(QExposeEvent *ev) override;
+		void resizeEvent(QResizeEvent *ev) override;
 
 	public:
-		MainWindow(lavos::Engine *engine, QWindow *parent = nullptr);
+		LavosWindow(lavos::Engine *engine, Renderer *renderer, QWindow *parent = nullptr);
 
-		void Initialize();
 		void Render(lavos::Renderer *renderer);
+
+		lavos::Engine *GetEngine() const 								{ return engine; }
 
 		lavos::Swapchain *GetSwapchain() const							{ return swapchain; }
 		lavos::ManagedDepthRenderTarget *GetDepthRenderTarget() const	{ return depth_render_target; }
-
-	signals:
-		void initializeSwapchain();
-		void surfaceAboutToBeDestroyed();
 };
 
 #endif //VULKAN_MAINWINDOW_H
