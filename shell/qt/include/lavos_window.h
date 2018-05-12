@@ -33,14 +33,14 @@ class LavosWindow: public QWindow
 
 		bool vulkan_initialized;
 
-		vk::SurfaceKHR surface;
+		vk::SurfaceKHR surface = nullptr;
 		uint32_t present_queue_family_index;
 		vk::Queue present_queue;
-		lavos::Swapchain *swapchain;
-		lavos::ManagedDepthRenderTarget *depth_render_target;
+		lavos::Swapchain *swapchain = nullptr;
+		lavos::ManagedDepthRenderTarget *depth_render_target = nullptr;
 
-		vk::Semaphore image_available_semaphore;
-		vk::Semaphore render_finished_semaphore;
+		vk::Semaphore image_available_semaphore = nullptr;
+		vk::Semaphore render_finished_semaphore = nullptr;
 
 		void RecreateSwapchain();
 		void InitializeVulkan();
@@ -53,6 +53,7 @@ class LavosWindow: public QWindow
 
 	public:
 		LavosWindow(lavos::Engine *engine, Renderer *renderer, QWindow *parent = nullptr);
+		virtual ~LavosWindow();
 
 		void Render(lavos::Renderer *renderer);
 

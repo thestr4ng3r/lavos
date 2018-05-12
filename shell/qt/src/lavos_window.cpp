@@ -20,6 +20,11 @@ LavosWindow::LavosWindow(lavos::Engine *engine, Renderer *renderer, QWindow *par
 	setSurfaceType(VulkanSurface);
 }
 
+LavosWindow::~LavosWindow()
+{
+	CleanupVulkan();
+}
+
 void LavosWindow::InitializeVulkan()
 {
 	surface = QVulkanInstance::surfaceForWindow(this);
@@ -31,6 +36,8 @@ void LavosWindow::InitializeVulkan()
 
 	image_available_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
 	render_finished_semaphore = engine->GetVkDevice().createSemaphore(vk::SemaphoreCreateInfo());
+
+	vulkan_initialized = true;
 }
 
 void LavosWindow::CleanupVulkan()
@@ -38,10 +45,23 @@ void LavosWindow::CleanupVulkan()
 	auto device = engine->GetVkDevice();
 
 	delete swapchain;
+	swapchain = nullptr;
 	delete depth_render_target;
+	depth_render_target = nullptr;
 
-	device.destroySemaphore(image_available_semaphore);
-	device.destroySemaphore(render_finished_semaphore);
+	if(image_available_semaphore)
+	{
+		device.destroySemaphore(image_available_semaphore);
+		image_available_semaphore = nullptr;
+	}
+
+	if(render_finished_semaphore)
+	{
+		device.destroySemaphore(render_finished_semaphore);
+		render_finished_semaphore = nullptr;
+	}
+
+	vulkan_initialized = false;
 }
 
 void LavosWindow::RecreateSwapchain()
@@ -145,7 +165,6 @@ void LavosWindow::exposeEvent(QExposeEvent *ev)
 		{
 			InitializeVulkan();
 			renderer->InitializeSwapchainResources(this);
-			vulkan_initialized = true;
 		}
 		requestUpdate();
 	}

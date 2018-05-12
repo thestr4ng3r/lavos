@@ -26,20 +26,20 @@ int main(int argc, char **argv)
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
-	lavos::Engine *engine = new lavos::Engine(engine_create_info);
-	engine->InitializeWithPhysicalDeviceIndex(0);
+	lavos::Engine engine(engine_create_info);
+	engine.InitializeWithPhysicalDeviceIndex(0);
 
 	QVulkanInstance inst;
-	inst.setVkInstance(engine->GetVkInstance());
+	inst.setVkInstance(engine.GetVkInstance());
 
 	if(!inst.create())
 	{
 		qFatal("Failed to create vulkan instance: %d", inst.errorCode());
 	}
 
-	LavosWindowRenderer renderer(engine);
+	LavosWindowRenderer renderer(&engine);
 
-	lavos::shell::qt::LavosWindow window(engine, &renderer);
+	lavos::shell::qt::LavosWindow window(&engine, &renderer);
 	window.setVulkanInstance(&inst);
 	window.setWidth(640);
 	window.setHeight(480);

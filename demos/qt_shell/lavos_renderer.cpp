@@ -66,7 +66,6 @@ void LavosWindowRenderer::ReleaseSwapchainResources()
 	delete renderer;
 	delete asset_container;
 	delete material;
-	delete engine;
 }
 
 void LavosWindowRenderer::Render(lavos::shell::qt::LavosWindow *window)
