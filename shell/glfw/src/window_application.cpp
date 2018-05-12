@@ -2,7 +2,7 @@
 #include <chrono>
 #include "window_application.h"
 
-using namespace lavosframe;
+using namespace lavos::shell::glfw;
 
 WindowApplication::WindowApplication(int width, int height, std::string title, bool enable_layers)
 {

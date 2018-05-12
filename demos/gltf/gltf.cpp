@@ -20,7 +20,7 @@
 #include <window_application.h>
 
 
-lavosframe::WindowApplication *app = nullptr;
+lavos::shell::glfw::WindowApplication *app = nullptr;
 
 lavos::Renderer *renderer = nullptr;
 lavos::Material *material;
@@ -93,7 +93,7 @@ int main(int argc, const char **argv)
 	if(argc > 1)
 		gltf_filename = argv[1];
 
-	app = new lavosframe::WindowApplication(800, 600, "GLTF", true);
+	app = new lavos::shell::glfw::WindowApplication(800, 600, "GLTF", true);
 
 	Init(gltf_filename);
 

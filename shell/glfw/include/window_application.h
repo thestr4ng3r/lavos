@@ -1,6 +1,6 @@
 
-#ifndef LAVOS_FRAME_APPLICATION_H
-#define LAVOS_FRAME_APPLICATION_H
+#ifndef LAVOS_SHELL_GLFW_WINDOW_APPLICATION_H
+#define LAVOS_SHELL_GLFW_WINDOW_APPLICATION_H
 
 #include <chrono>
 
@@ -11,8 +11,9 @@
 #include <lavos/renderer.h>
 #include <lavos/swapchain.h>
 
-namespace lavosframe
+namespace lavos { namespace shell { namespace glfw
 {
+
 
 class WindowApplication
 {
@@ -69,6 +70,6 @@ class WindowApplication
 		lavos::DepthRenderTarget *GetDepthRenderTarget() const 	{ return depth_render_target; }
 };
 
-}
+}}}
 
-#endif //LAVOS_FRAME_APPLICATION_H
+#endif //LAVOS_SHELL_GLFW_WINDOW_APPLICATION_H
