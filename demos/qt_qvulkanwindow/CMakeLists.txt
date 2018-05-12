@@ -13,4 +13,5 @@ set(SOURCE_FILES
 add_executable(qt_qvulkanwindow ${SOURCE_FILES})
 target_link_libraries(qt_qvulkanwindow
 		Qt5::Core Qt5::Gui Qt5::Widgets
+		lavos_shell_qt
 		lavos)

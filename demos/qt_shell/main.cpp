@@ -1,6 +1,7 @@
 
 #include <lavos/engine.h>
 #include <lavos_window.h>
+#include <platform.h>
 
 #include <QApplication>
 #include <QVulkanInstance>
@@ -17,17 +18,13 @@ int main(int argc, char **argv)
 	engine_create_info.enable_validation_layers = true;
 	engine_create_info.enable_anisotropy = true;
 
-	engine_create_info.required_instance_extensions = {
-		"VK_KHR_surface",
-		"VK_KHR_xcb_surface"
-	}; // TODO: do not hardcode these, make dynamic based on environment
-
-	engine_create_info.required_device_extensions = {
-		VK_KHR_SWAPCHAIN_EXTENSION_NAME
-	};
+	engine_create_info.required_instance_extensions = lavos::shell::qt::GetSurfaceExtensionsForPlatform();
+	engine_create_info.required_device_extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 	lavos::Engine engine(engine_create_info);
 	engine.InitializeWithPhysicalDeviceIndex(0);
+
+	printf("Platform Name: %s\n", QGuiApplication::platformName().toLocal8Bit().constData());
 
 	QVulkanInstance inst;
 	inst.setVkInstance(engine.GetVkInstance());

@@ -1,5 +1,6 @@
 
 #include <lavos/engine.h>
+#include <platform.h>
 
 #include <QApplication>
 #include <QVulkanInstance>
@@ -16,10 +17,7 @@ int main(int argc, char **argv)
 	engine_create_info.enable_validation_layers = true;
 	engine_create_info.enable_anisotropy = false;
 
-	engine_create_info.required_instance_extensions = {
-		"VK_KHR_surface",
-		"VK_KHR_xcb_surface"
-	}; // TODO: do not hardcode these, make dynamic based on environment
+	engine_create_info.required_instance_extensions = lavos::shell::qt::GetSurfaceExtensionsForPlatform();
 
 	lavos::Engine *engine = new lavos::Engine(engine_create_info);
 

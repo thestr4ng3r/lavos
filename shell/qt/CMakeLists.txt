@@ -7,7 +7,9 @@ find_package(Qt5 5.10 COMPONENTS Core Gui REQUIRED)
 
 set(SOURCE_FILES
         include/lavos_window.h
-        src/lavos_window.cpp)
+        src/lavos_window.cpp
+		include/platform.h
+		src/platform.cpp)
 
 add_library(lavos_shell_qt ${SOURCE_FILES})
 target_include_directories(lavos_shell_qt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
