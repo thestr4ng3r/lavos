@@ -33,7 +33,7 @@ class Swapchain : public ColorRenderTarget
 		void CreateSwapchain();
 		void CreateImageViews();
 
-		void Cleanup();
+		void Cleanup(bool destroy_swapchain);
 
 	public:
 		Swapchain(Engine *engine, vk::SurfaceKHR surface, uint32_t present_queue_family_index, vk::Extent2D desired_extent/*,

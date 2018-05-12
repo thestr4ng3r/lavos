@@ -13,13 +13,15 @@ Swapchain::Swapchain(Engine *engine, vk::SurfaceKHR surface, uint32_t present_qu
 	this->present_queue_family_index = present_queue_family_index;
 	this->desired_extent = desired_extent;
 
+	this->swapchain = nullptr;
+
 	CreateSwapchain();
 	CreateImageViews();
 }
 
 Swapchain::~Swapchain()
 {
-	Cleanup();
+	Cleanup(true);
 }
 
 vk::SurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &available_formats)
@@ -120,13 +122,19 @@ void Swapchain::CreateSwapchain()
 		create_info.setImageSharingMode(vk::SharingMode::eExclusive);
 	}
 
+	vk::SwapchainKHR old_swapchain = swapchain;
+
 	create_info.setPreTransform(surface_capabilities.currentTransform)
 			.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
 			.setPresentMode(present_mode)
-			.setClipped(VK_TRUE);
-	// TODO .setOldSwapchain(vk::SwapchainKHR(nullptr));
+			.setClipped(VK_TRUE)
+			.setOldSwapchain(old_swapchain);
 
 	swapchain = engine->GetVkDevice().createSwapchainKHR(create_info);
+
+	if(old_swapchain)
+		engine->GetVkDevice().destroySwapchainKHR(old_swapchain);
+
 	images = engine->GetVkDevice().getSwapchainImagesKHR(swapchain);
 
 	format = surface_format.format;
@@ -147,14 +155,18 @@ void Swapchain::CreateImageViews()
 	}
 }
 
-void Swapchain::Cleanup()
+void Swapchain::Cleanup(bool destroy_swapchain)
 {
 	auto device = engine->GetVkDevice();
 
 	for(const auto &image_view : image_views)
 		device.destroyImageView(image_view);
 
-	device.destroySwapchainKHR(swapchain);
+	if(destroy_swapchain)
+	{
+		device.destroySwapchainKHR(swapchain);
+		swapchain = nullptr;
+	}
 }
 
 void Swapchain::Resize(vk::Extent2D extent)
@@ -167,7 +179,7 @@ void Swapchain::Recreate()
 {
 	engine->GetVkDevice().waitIdle(); // TODO: should we really do this?
 
-	Cleanup();
+	Cleanup(false);
 	CreateSwapchain();
 	CreateImageViews();
 
