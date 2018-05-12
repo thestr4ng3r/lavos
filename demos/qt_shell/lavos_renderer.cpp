@@ -19,7 +19,7 @@ LavosWindowRenderer::~LavosWindowRenderer()
 {
 }
 
-void LavosWindowRenderer::InitializeSwapchainResources(LavosWindow *window)
+void LavosWindowRenderer::InitializeSwapchainResources(lavos::shell::qt::LavosWindow *window)
 {
 	material = new lavos::PhongMaterial(engine);
 
@@ -69,7 +69,7 @@ void LavosWindowRenderer::ReleaseSwapchainResources()
 	delete engine;
 }
 
-void LavosWindowRenderer::Render(LavosWindow *window)
+void LavosWindowRenderer::Render(lavos::shell::qt::LavosWindow *window)
 {
 	window->Render(renderer);
 }

@@ -10,6 +10,9 @@
 #include <QPlatformSurfaceEvent>
 
 
+using namespace lavos::shell::qt;
+
+
 LavosWindow::LavosWindow(lavos::Engine *engine, Renderer *renderer, QWindow *parent)
 		: QWindow(parent), engine(engine), renderer(renderer)
 {

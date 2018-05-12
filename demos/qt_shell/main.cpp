@@ -1,11 +1,11 @@
 
 #include <lavos/engine.h>
+#include <lavos_window.h>
 
 #include <QApplication>
 #include <QVulkanInstance>
 
 #include "lavos_renderer.h"
-#include "lavos_window.h"
 
 int main(int argc, char **argv)
 {
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
 	LavosWindowRenderer renderer(engine);
 
-	LavosWindow window(engine, &renderer);
+	lavos::shell::qt::LavosWindow window(engine, &renderer);
 	window.setVulkanInstance(&inst);
 	window.setWidth(640);
 	window.setHeight(480);

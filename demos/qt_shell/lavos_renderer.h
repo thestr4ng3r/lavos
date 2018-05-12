@@ -2,9 +2,9 @@
 #ifndef LAVOS_LAVOS_RENDERER_H
 #define LAVOS_LAVOS_RENDERER_H
 
-#include "lavos_window.h"
+#include <lavos_window.h>
 
-class LavosWindowRenderer : public LavosWindow::Renderer
+class LavosWindowRenderer : public lavos::shell::qt::LavosWindow::Renderer
 {
 	private:
 		lavos::Engine *engine = nullptr;
@@ -21,10 +21,10 @@ class LavosWindowRenderer : public LavosWindow::Renderer
 		LavosWindowRenderer(lavos::Engine *engine);
 		~LavosWindowRenderer();
 
-		void InitializeSwapchainResources(LavosWindow *window) override;
+		void InitializeSwapchainResources(lavos::shell::qt::LavosWindow *window) override;
 		void ReleaseSwapchainResources() override;
 
-		void Render(LavosWindow *window);
+		void Render(lavos::shell::qt::LavosWindow *window);
 };
 
 #endif //LAVOS_LAVOS_RENDERER_H

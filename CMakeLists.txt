@@ -4,6 +4,7 @@ project(lavos)
 set(CMAKE_CXX_STANDARD 14)
 
 option(LAVOS_BUILD_SHELL_GLFW "Build GLFW Lavos Shell library" ON)
+option(LAVOS_BUILD_SHELL_QT "Build Qt Lavos Shell library" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 

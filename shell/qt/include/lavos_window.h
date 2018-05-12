@@ -1,6 +1,6 @@
 
-#ifndef LAVOS_LAVOS_WINDOW_H
-#define LAVOS_LAVOS_WINDOW_H
+#ifndef LAVOS_SHELL_QT_LAVOS_WINDOW_H
+#define LAVOS_SHELL_QT_LAVOS_WINDOW_H
 
 #include <lavos/engine.h>
 #include <lavos/material/phong_material.h>
@@ -10,6 +10,9 @@
 
 #include <QWindow>
 #include <QtGui/QVulkanWindow>
+
+namespace lavos { namespace shell { namespace qt
+{
 
 class LavosWindow: public QWindow
 {
@@ -59,4 +62,6 @@ class LavosWindow: public QWindow
 		lavos::ManagedDepthRenderTarget *GetDepthRenderTarget() const	{ return depth_render_target; }
 };
 
-#endif //VULKAN_MAINWINDOW_H
+}}}
+
+#endif //LAVOS_SHELL_QT_LAVOS_WINDOW_H
