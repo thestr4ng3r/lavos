@@ -56,3 +56,8 @@ void Mesh::CreateBuffers()
 	CreateVertexBuffer();
 	CreateIndexBuffer();
 }
+
+void Mesh::Primitive::Draw(vk::CommandBuffer command_buffer)
+{
+	command_buffer.drawIndexed(indices_count, 1, indices_offset, 0, 0);
+}

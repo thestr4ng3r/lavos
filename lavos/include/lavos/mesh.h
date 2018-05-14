@@ -7,6 +7,7 @@
 
 #include "vertex.h"
 #include "buffer.h"
+#include "renderable.h"
 #include "material/material_instance.h"
 
 namespace lavos
@@ -18,11 +19,14 @@ class Mesh
 		Engine * const engine;
 
 	public:
-		struct Primitive
+		struct Primitive: public Renderable::Primitive
 		{
 			MaterialInstance *material_instance;
 			uint32_t indices_count;
 			uint32_t indices_offset;
+
+			MaterialInstance *GetMaterialInstance()	override	{ return material_instance; }
+			void Draw(vk::CommandBuffer command_buffer) override;
 		};
 
 		std::vector<Vertex> vertices;

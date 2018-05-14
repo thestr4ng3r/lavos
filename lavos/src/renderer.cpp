@@ -539,16 +539,9 @@ void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::F
 									  nullptr);
 
 	scene->GetRootNode()->TraversePreOrder([command_buffer, pipeline] (Node *node) {
-		auto mesh_component = node->GetComponent<MeshComponent>();
-		if(mesh_component == nullptr)
+		auto renderable = node->GetComponent<Renderable>();
+		if(renderable == nullptr || !renderable->GetCurrentlyRenderable())
 			return;
-
-		auto mesh = mesh_component->GetMesh();
-		if(mesh == nullptr)
-			return;
-
-		command_buffer.bindVertexBuffers(0, { mesh->vertex_buffer.buffer }, { 0 });
-		command_buffer.bindIndexBuffer(mesh->index_buffer.buffer, 0, vk::IndexType::eUint16);
 
 		auto transform_component = node->GetTransformComponent();
 		TransformPushConstant transform_push_constant;
@@ -561,11 +554,16 @@ void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::F
 									 sizeof(TransformPushConstant),
 									 &transform_push_constant);
 
-		for(auto primitive : mesh->primitives)
+		renderable->BindBuffers(command_buffer);
+
+		unsigned int primitives_count = renderable->GetPrimitivesCount();
+		for(unsigned int i=0; i<primitives_count; i++)
 		{
+			auto primitive = renderable->GetPrimitive(i);
+
 			if(pipeline.material_descriptor_set_index >= 0)
 			{
-				auto descriptor_set = primitive.material_instance->GetDescriptorSet();
+				auto descriptor_set = primitive->GetMaterialInstance()->GetDescriptorSet();
 				command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 												  pipeline.pipeline_layout,
 												  static_cast<uint32_t>(pipeline.material_descriptor_set_index),
@@ -573,7 +571,7 @@ void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::F
 												  nullptr);
 			}
 
-			command_buffer.drawIndexed(primitive.indices_count, 1, primitive.indices_offset, 0, 0);
+			primitive->Draw(command_buffer);
 		}
 	});
 
