@@ -315,7 +315,7 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 		.setPVertexAttributeDescriptions(vertex_attribute_description.data());
 
 	auto input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo()
-		.setTopology(vk::PrimitiveTopology::eTriangleList);
+		.setTopology(material->GetPrimitiveTopology());
 
 	auto extent = color_render_target->GetExtent();
 	vk::Viewport viewport(0.0f, 0.0f, extent.width, extent.height, 0.0f, 1.0f);
@@ -363,12 +363,23 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 		.setPAttachments(&color_blend_attachment);
 
 
-	std::array<vk::DescriptorSetLayout, 2> descriptor_set_layouts = {
-		descriptor_set_layout,
-		material->GetDescriptorSetLayout()
+
+	std::vector<vk::DescriptorSetLayout> descriptor_set_layouts = {
+		descriptor_set_layout
 	};
 
+	pipeline.renderer_descriptor_set_index = 0;
 
+	auto material_descriptor_set_layout = material->GetDescriptorSetLayout();
+	if(material_descriptor_set_layout)
+	{
+		descriptor_set_layouts.push_back(material_descriptor_set_layout);
+		pipeline.material_descriptor_set_index = 1;
+	}
+	else
+	{
+		pipeline.material_descriptor_set_index = -1;
+	}
 
 
 	auto push_constant_range = vk::PushConstantRange()
@@ -378,7 +389,7 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 
 
 	auto pipeline_layout_info = vk::PipelineLayoutCreateInfo()
-		.setSetLayoutCount(descriptor_set_layouts.size())
+		.setSetLayoutCount(static_cast<uint32_t>(descriptor_set_layouts.size()))
 		.setPSetLayouts(descriptor_set_layouts.data())
 		.setPushConstantRangeCount(1)
 		.setPPushConstantRanges(&push_constant_range);
@@ -521,7 +532,11 @@ void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::F
 	auto pipeline = material_pipelines[0];
 
 	command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
-	command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 0, descriptor_set, nullptr);
+	command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+									  pipeline.pipeline_layout,
+									  static_cast<uint32_t>(pipeline.renderer_descriptor_set_index),
+									  descriptor_set,
+									  nullptr);
 
 	scene->GetRootNode()->TraversePreOrder([command_buffer, pipeline] (Node *node) {
 		auto mesh_component = node->GetComponent<MeshComponent>();
@@ -540,11 +555,24 @@ void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::F
 		if(transform_component != nullptr)
 			transform_push_constant.transform = transform_component->GetMatrixWorld();
 
-		command_buffer.pushConstants(pipeline.pipeline_layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(TransformPushConstant), &transform_push_constant);
+		command_buffer.pushConstants(pipeline.pipeline_layout,
+									 vk::ShaderStageFlagBits::eVertex,
+									 0,
+									 sizeof(TransformPushConstant),
+									 &transform_push_constant);
 
 		for(auto primitive : mesh->primitives)
 		{
-			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipeline_layout, 1, primitive.material_instance->GetDescriptorSet(), nullptr);
+			if(pipeline.material_descriptor_set_index >= 0)
+			{
+				auto descriptor_set = primitive.material_instance->GetDescriptorSet();
+				command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+												  pipeline.pipeline_layout,
+												  static_cast<uint32_t>(pipeline.material_descriptor_set_index),
+												  descriptor_set,
+												  nullptr);
+			}
+
 			command_buffer.drawIndexed(primitive.indices_count, 1, primitive.indices_offset, 0, 0);
 		}
 	});

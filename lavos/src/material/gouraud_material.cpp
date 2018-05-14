@@ -31,28 +31,7 @@ GouraudMaterial::~GouraudMaterial()
 
 void GouraudMaterial::CreateDescriptorSetLayout()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setDescriptorCount(1)
-			.setPImmutableSamplers(nullptr)
-			.setStageFlags(vk::ShaderStageFlagBits::eVertex),
-
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(1)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
-			.setPImmutableSamplers(nullptr)
-			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
-	};
-
-
-	auto create_info = vk::DescriptorSetLayoutCreateInfo()
-		.setBindingCount(static_cast<uint32_t>(bindings.size()))
-		.setPBindings(bindings.data());
-
-	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
+	descriptor_set_layout = nullptr;
 }
 
 std::vector<vk::DescriptorPoolSize> GouraudMaterial::GetDescriptorPoolSizes() const

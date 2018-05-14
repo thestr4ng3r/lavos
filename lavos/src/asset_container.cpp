@@ -408,9 +408,12 @@ static void LoadScenes(AssetContainer &container, tinygltf::Model &model)
 
 static vk::DescriptorPool CreateDescriptorPoolForGLTF(Engine *engine, Material *material, tinygltf::Model &model)
 {
-	auto material_instances_count = model.materials.size();
 	auto sizes = material->GetDescriptorPoolSizes();
 
+	if(sizes.empty())
+		return nullptr;
+
+	auto material_instances_count = model.materials.size();
 	for(auto &size : sizes)
 		size.descriptorCount *= material_instances_count;
 

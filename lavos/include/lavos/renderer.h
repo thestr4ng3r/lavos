@@ -48,6 +48,9 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 			vk::PipelineLayout pipeline_layout;
 			vk::Pipeline pipeline;
 
+			int renderer_descriptor_set_index;
+			int material_descriptor_set_index;
+
 			MaterialPipeline(Material *material) :
 				material(material) {}
 		};

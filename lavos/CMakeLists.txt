@@ -69,7 +69,9 @@ set(SOURCE_FILES
 		include/lavos/render_target.h
 		src/render_target.cpp
 		include/lavos/swapchain.h
-		src/swapchain.cpp)
+		src/swapchain.cpp
+		include/lavos/material/point_cloud_material.h
+		src/material/point_cloud_material.cpp)
 
 set(GLSL_FILES
 		material/unlit.vert
@@ -77,7 +79,9 @@ set(GLSL_FILES
 		material/phong.vert
 		material/phong.frag
 		material/gouraud.vert
-		material/gouraud.frag)
+		material/gouraud.frag
+		material/point_cloud.vert
+		material/point_cloud.frag)
 
 
 

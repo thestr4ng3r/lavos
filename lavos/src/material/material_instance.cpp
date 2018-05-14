@@ -21,21 +21,30 @@ MaterialInstance::~MaterialInstance()
 	for(auto &entry : textures)
 		engine->DestroyTexture(entry.second);
 
-	engine->GetVkDevice().freeDescriptorSets(descriptor_pool, descriptor_set);
+	if(descriptor_set)
+		engine->GetVkDevice().freeDescriptorSets(descriptor_pool, descriptor_set);
 }
 
 void MaterialInstance::CreateDescriptorSet()
 {
 	auto engine = material->GetEngine();
+	auto layout = material->GetDescriptorSetLayout();
 
-	vk::DescriptorSetLayout layouts[] = { material->GetDescriptorSetLayout() };
+	if(layout)
+	{
+		vk::DescriptorSetLayout layouts[] = { material->GetDescriptorSetLayout() };
 
-	auto alloc_info = vk::DescriptorSetAllocateInfo()
-		.setDescriptorPool(descriptor_pool)
-		.setDescriptorSetCount(1)
-		.setPSetLayouts(layouts);
+		auto alloc_info = vk::DescriptorSetAllocateInfo()
+				.setDescriptorPool(descriptor_pool)
+				.setDescriptorSetCount(1)
+				.setPSetLayouts(layouts);
 
-	descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
+		descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
+	}
+	else
+	{
+		descriptor_set = nullptr;
+	}
 }
 
 void MaterialInstance::CreateUniformBuffer()
@@ -45,7 +54,8 @@ void MaterialInstance::CreateUniformBuffer()
 
 void MaterialInstance::WriteDescriptorSet()
 {
-	material->WriteDescriptorSet(descriptor_set, this);
+	if(descriptor_set)
+		material->WriteDescriptorSet(descriptor_set, this);
 }
 
 void MaterialInstance::WriteUniformBuffer()

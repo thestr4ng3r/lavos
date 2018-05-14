@@ -45,6 +45,9 @@ class Material
 		static vk::ShaderModule CreateShaderModule(vk::Device device, std::string shader);
 
 		virtual Texture GetTextureDefaultImage() const 		{ return nullptr; };
+
+
+		virtual vk::PrimitiveTopology GetPrimitiveTopology()	{ return vk::PrimitiveTopology::eTriangleList; }
 };
 
 }
