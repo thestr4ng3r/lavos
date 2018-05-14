@@ -12,6 +12,14 @@ namespace lavos
 
 class Engine;
 
+/**
+ * Describes one type of Material with shaders and some Material-specific settings
+ * used to build a Vulkan Pipeline.
+ *
+ * This is not a material in the sense of a collection of settings and textures, but only
+ * the type of material, e.g. Phong, PBR, etc.
+ * The actual settings are defined by a MaterialInstance.
+ */
 class Material
 {
 	protected:
