@@ -29,6 +29,27 @@ class PointCloudMaterial : public Material
 		virtual void UpdateInstanceData(void *data, MaterialInstance *instance) override;
 
 		virtual vk::PrimitiveTopology GetPrimitiveTopology()	{ return vk::PrimitiveTopology::ePointList; }
+
+		std::vector<vk::VertexInputBindingDescription> GetVertexInputBindingDescriptions() override
+		{
+			return {
+				vk::VertexInputBindingDescription()
+						.setBinding(0)
+						.setStride(sizeof(glm::vec3))
+						.setInputRate(vk::VertexInputRate::eVertex)
+			};
+		}
+
+		std::vector<vk::VertexInputAttributeDescription> GetVertexInputAttributeDescriptions() override
+		{
+			return {
+				vk::VertexInputAttributeDescription()
+						.setBinding(0)
+						.setLocation(0)
+						.setFormat(vk::Format::eR32G32B32Sfloat)
+						.setOffset(0),
+			};
+		}
 };
 
 }

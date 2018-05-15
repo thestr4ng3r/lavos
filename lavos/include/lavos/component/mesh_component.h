@@ -23,8 +23,8 @@ class MeshComponent: public Component, public Renderable
 		bool GetCurrentlyRenderable() const override	{ return mesh != nullptr; }
 
 		void BindBuffers(vk::CommandBuffer command_buffer) override;
-		unsigned int GetPrimitivesCount() const override;
-		Primitive *GetPrimitive(unsigned int i) const override;
+		unsigned int GetPrimitivesCount() override;
+		Primitive *GetPrimitive(unsigned int i) override;
 };
 
 }

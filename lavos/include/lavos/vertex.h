@@ -34,7 +34,7 @@ struct alignas(sizeof(float)) Vertex
 			.setInputRate(vk::VertexInputRate::eVertex);
 	}
 
-	static std::array<vk::VertexInputAttributeDescription, 5> GetAttributeDescription()
+	static std::vector<vk::VertexInputAttributeDescription> GetAttributeDescription()
 	{
 		return {
 			vk::VertexInputAttributeDescription()

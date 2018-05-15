@@ -1,6 +1,7 @@
 
 #include "lavos/material/material.h"
 #include "lavos/engine.h"
+#include "lavos/vertex.h"
 
 #include "lavos/shader_load.h"
 
@@ -25,4 +26,14 @@ vk::ShaderModule Material::CreateShaderModule(vk::Device device, std::string sha
 		vk::ShaderModuleCreateInfo()
 			.setCodeSize(size)
 			.setPCode(code));
+}
+
+std::vector<vk::VertexInputBindingDescription> Material::GetVertexInputBindingDescriptions()
+{
+	return { Vertex::GetBindingDescription() };
+}
+
+std::vector<vk::VertexInputAttributeDescription> Material::GetVertexInputAttributeDescriptions()
+{
+	return Vertex::GetAttributeDescription();
 }

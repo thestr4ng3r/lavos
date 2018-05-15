@@ -12,12 +12,12 @@ void lavos::MeshComponent::BindBuffers(vk::CommandBuffer command_buffer)
 	command_buffer.bindIndexBuffer(mesh->index_buffer.buffer, 0, vk::IndexType::eUint16);
 }
 
-unsigned int lavos::MeshComponent::GetPrimitivesCount() const
+unsigned int lavos::MeshComponent::GetPrimitivesCount()
 {
 	return static_cast<unsigned int>(mesh->primitives.size());
 }
 
-lavos::Renderable::Primitive *lavos::MeshComponent::GetPrimitive(unsigned int i) const
+lavos::Renderable::Primitive *lavos::MeshComponent::GetPrimitive(unsigned int i)
 {
 	return &mesh->primitives[i];
 }

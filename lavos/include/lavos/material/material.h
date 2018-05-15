@@ -56,6 +56,9 @@ class Material
 
 
 		virtual vk::PrimitiveTopology GetPrimitiveTopology()	{ return vk::PrimitiveTopology::eTriangleList; }
+
+		virtual std::vector<vk::VertexInputBindingDescription> GetVertexInputBindingDescriptions();
+		virtual std::vector<vk::VertexInputAttributeDescription> GetVertexInputAttributeDescriptions();
 };
 
 }

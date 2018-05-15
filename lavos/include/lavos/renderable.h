@@ -41,8 +41,8 @@ class Renderable
 		 */
 		virtual void BindBuffers(vk::CommandBuffer command_buffer) =0;
 
-		virtual unsigned int GetPrimitivesCount() const =0;
-		virtual Primitive *GetPrimitive(unsigned int i) const =0;
+		virtual unsigned int GetPrimitivesCount() =0;
+		virtual Primitive *GetPrimitive(unsigned int i) =0;
 };
 
 }

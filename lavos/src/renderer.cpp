@@ -305,14 +305,14 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 
 	auto shader_stages = material->GetShaderStageCreateInfos();
 
-	auto vertex_binding_description = Vertex::GetBindingDescription();
-	auto vertex_attribute_description = Vertex::GetAttributeDescription();
+	auto vertex_binding_descriptions = material->GetVertexInputBindingDescriptions();
+	auto vertex_attribute_descriptions = material->GetVertexInputAttributeDescriptions();
 
 	auto vertex_input_info = vk::PipelineVertexInputStateCreateInfo()
-		.setVertexBindingDescriptionCount(1)
-		.setPVertexBindingDescriptions(&vertex_binding_description)
-		.setVertexAttributeDescriptionCount(vertex_attribute_description.size())
-		.setPVertexAttributeDescriptions(vertex_attribute_description.data());
+		.setVertexBindingDescriptionCount(static_cast<uint32_t>(vertex_binding_descriptions.size()))
+		.setPVertexBindingDescriptions(vertex_binding_descriptions.data())
+		.setVertexAttributeDescriptionCount(static_cast<uint32_t>(vertex_attribute_descriptions.size()))
+		.setPVertexAttributeDescriptions(vertex_attribute_descriptions.data());
 
 	auto input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo()
 		.setTopology(material->GetPrimitiveTopology());

@@ -10,13 +10,17 @@
 
 #include <lavos/glm_config.h>
 
-#include <lavos/component/mesh_component.h>
+#include <lavos/component/point_cloud_component.h>
 #include <lavos/material/point_cloud_material.h>
 #include <lavos/component/directional_light_component.h>
 #include <lavos/component/fp_controller_component.h>
 #include <lavos/asset_container.h>
+#include <lavos/point_cloud.h>
 
 #include <window_application.h>
+
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
 
 
 lavos::shell::glfw::WindowApplication *app = nullptr;
@@ -24,7 +28,7 @@ lavos::shell::glfw::WindowApplication *app = nullptr;
 lavos::Renderer *renderer = nullptr;
 lavos::Material *material;
 
-lavos::AssetContainer *asset_container = nullptr;
+lavos::PointCloud<glm::vec3> *point_cloud = nullptr;
 
 lavos::MaterialInstance *material_instance;
 
@@ -34,37 +38,54 @@ double last_cursor_x, last_cursor_y;
 lavos::FirstPersonControllerComponent *fp_controller;
 
 
-void Init(std::string gltf_filename)
+void Init()
 {
 	material = new lavos::PointCloudMaterial(app->GetEngine());
 	renderer = new lavos::Renderer(app->GetEngine(), app->GetSwapchain(), app->GetDepthRenderTarget());
 	renderer->AddMaterial(material);
 
-	asset_container = lavos::AssetContainer::LoadFromGLTF(app->GetEngine(), material, gltf_filename);
-
-	lavos::Scene *scene = asset_container->scenes[0];
-	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
+	scene = new lavos::Scene();
 
 	renderer->SetScene(scene);
 
-	lavos::CameraComponent *camera = scene->GetRootNode()->GetComponentInChildren<lavos::CameraComponent>();
-
-	if(camera == nullptr)
+	pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+	if(pcl::io::loadPCDFile("data/lamppost.pcd", *pcl_cloud) == -1)
 	{
-		lavos::Node *camera_node = new lavos::Node();
-		scene->GetRootNode()->AddChild(camera_node);
-
-		camera_node->AddComponent(new lavos::TransformComponent());
-
-		camera_node->GetTransformComponent()->translation = glm::vec3(5.0f, 5.0f, 5.0f);
-		camera_node->GetTransformComponent()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
-
-		camera = new lavos::CameraComponent();
-		camera->SetNearClip(0.01f);
-		camera_node->AddComponent(camera);
+		throw std::runtime_error("Failed to load point cloud.");
 	}
 
-	lavos::Node *light_node = new lavos::Node();
+	point_cloud = new lavos::PointCloud<glm::vec3>(app->GetEngine());
+	auto point_cloud_size = (*pcl_cloud).size();
+	point_cloud->points.resize(point_cloud_size);
+	for(size_t i=0; i<point_cloud_size; i++)
+	{
+		auto &pcl_point = (*pcl_cloud).points[i];
+		point_cloud->points[i] = glm::vec3(pcl_point.x, pcl_point.y, pcl_point.z);
+	}
+	point_cloud->CreateBuffers();
+
+	auto *point_cloud_node = new lavos::Node();
+	point_cloud_node->AddComponent(new lavos::TransformComponent());
+	scene->GetRootNode()->AddChild(point_cloud_node);
+
+	auto *point_cloud_component = new lavos::PointCloudComponent<glm::vec3>(point_cloud);
+	point_cloud_node->AddComponent(point_cloud_component);
+
+
+	auto *camera_node = new lavos::Node();
+	scene->GetRootNode()->AddChild(camera_node);
+
+	camera_node->AddComponent(new lavos::TransformComponent());
+
+	camera_node->GetTransformComponent()->translation = glm::vec3(-8.0f, 5.0f, -3.0f);
+	camera_node->GetTransformComponent()->SetLookAt(glm::vec3(-10.0f, 0.0f, -3.0f));
+
+	auto *camera = new lavos::CameraComponent();
+	camera->SetNearClip(0.01f);
+	camera_node->AddComponent(camera);
+
+
+	auto *light_node = new lavos::Node();
 	scene->GetRootNode()->AddChild(light_node);
 
 	light_node->AddComponent(new lavos::TransformComponent());
@@ -73,28 +94,24 @@ void Init(std::string gltf_filename)
 	lavos::DirectionalLightComponent *light = new lavos::DirectionalLightComponent();
 	light_node->AddComponent(light);
 
-	renderer->SetCamera(camera);
 
-	material_instance = asset_container->material_instances.front();
+	renderer->SetCamera(camera);
 }
 
 void Cleanup()
 {
-	delete asset_container;
 	delete renderer;
+	delete scene;
+	delete point_cloud;
 	delete material;
 	delete app;
 }
 
 int main(int argc, const char **argv)
 {
-	std::string gltf_filename = "data/gltftest.gltf";
-	if(argc > 1)
-		gltf_filename = argv[1];
+	app = new lavos::shell::glfw::WindowApplication(800, 600, "Point Cloud", true);
 
-	app = new lavos::shell::glfw::WindowApplication(800, 600, "GLTF", true);
-
-	Init(gltf_filename);
+	Init();
 
 	while(true)
 	{
