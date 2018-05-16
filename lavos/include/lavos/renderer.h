@@ -19,7 +19,9 @@ struct MatrixUniformBuffer
 	glm::mat4 projection;
 };
 
-struct alignas(sizeof(float)) LightingUniformBuffer
+static_assert(sizeof(MatrixUniformBuffer) == 128);
+
+struct LightingUniformBuffer
 {
 	glm::vec3 ambient_intensity;
 	std::uint32_t directional_light_enabled;
@@ -28,15 +30,21 @@ struct alignas(sizeof(float)) LightingUniformBuffer
 	glm::vec3 directional_light_intensity;
 };
 
-struct alignas(sizeof(float)) CameraUniformBuffer
+static_assert(sizeof(LightingUniformBuffer) == 44);
+
+struct CameraUniformBuffer
 {
 	glm::vec3 position;
 };
+
+static_assert(sizeof(CameraUniformBuffer) == 12);
 
 struct TransformPushConstant
 {
 	glm::mat4 transform;
 };
+
+static_assert(sizeof(TransformPushConstant) == 64);
 
 class Renderer: public ColorRenderTarget::ChangedCallback
 {
