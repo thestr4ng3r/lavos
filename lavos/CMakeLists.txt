@@ -74,7 +74,9 @@ set(SOURCE_FILES
 		src/material/point_cloud_material.cpp
 		include/lavos/point_cloud.h
 		include/lavos/component/point_cloud_component.h
-		include/lavos/renderable.h)
+		include/lavos/renderable.h
+		include/lavos/component/spot_light_component.h
+		src/component/spot_light_component.cpp)
 
 set(GLSL_FILES
 		material/unlit.vert
