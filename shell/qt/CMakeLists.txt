@@ -6,8 +6,8 @@ set(CMAKE_AUTORCC OFF)
 find_package(Qt5 5.10 COMPONENTS Core Gui REQUIRED)
 
 set(SOURCE_FILES
-        include/lavos_window.h
-        src/lavos_window.cpp
+		include/lavos_window.h
+		src/lavos_window.cpp
 		include/platform.h
 		src/platform.cpp)
 

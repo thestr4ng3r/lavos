@@ -1,11 +1,12 @@
 
-option(LAVOS_BUILD_QT_DEMOS "Build Qt Demo" OFF)
-
 add_subdirectory(gltf)
 add_subdirectory(firstperson)
 add_subdirectory(2d)
 add_subdirectory(room)
-add_subdirectory(point_cloud)
+
+if(LAVOS_BUILD_POINT_CLOUD_DEMO)
+	add_subdirectory(point_cloud)
+endif()
 
 if(LAVOS_BUILD_QT_DEMOS)
 	if(NOT LAVOS_BUILD_SHELL_QT)
