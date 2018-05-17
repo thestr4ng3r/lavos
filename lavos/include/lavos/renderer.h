@@ -12,7 +12,6 @@
 namespace lavos
 {
 
-
 struct MatrixUniformBuffer
 {
 	glm::mat4 modelview;
@@ -21,16 +20,28 @@ struct MatrixUniformBuffer
 
 static_assert(sizeof(MatrixUniformBuffer) == 128);
 
-struct LightingUniformBuffer
+
+struct LightingUniformBufferFixed
 {
 	glm::vec3 ambient_intensity;
 	std::uint32_t directional_light_enabled;
 	glm::vec3 directional_light_dir;
 	std::uint8_t unused_2[4];
 	glm::vec3 directional_light_intensity;
+	std::uint32_t spot_lights_count;
 };
 
-static_assert(sizeof(LightingUniformBuffer) == 44);
+struct LightingUniformBufferSpotLight
+{
+	glm::vec3 position;
+	float angle_cos;
+	glm::vec3 direction;
+	float unused;
+};
+
+static_assert(sizeof(LightingUniformBufferFixed) == 48);
+static_assert(sizeof(LightingUniformBufferSpotLight) == 32);
+
 
 struct CameraUniformBuffer
 {
@@ -39,12 +50,14 @@ struct CameraUniformBuffer
 
 static_assert(sizeof(CameraUniformBuffer) == 12);
 
+
 struct TransformPushConstant
 {
 	glm::mat4 transform;
 };
 
 static_assert(sizeof(TransformPushConstant) == 64);
+
 
 class Renderer: public ColorRenderTarget::ChangedCallback
 {
@@ -95,14 +108,17 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		lavos::Buffer camera_uniform_buffer;
 
 		void CreateRenderCommandPool();
+
 		void CleanupRenderCommandPool();
-
 		void CreateFramebuffers();
-		void CleanupFramebuffers();
 
+		void CleanupFramebuffers();
 		void CreateDescriptorPool();
+
 		void CreateDescriptorSetLayout();
 		void CreateDescriptorSet();
+
+		size_t GetLightingUniformBufferSize();
 
 		void CreateUniformBuffers();
 
@@ -122,6 +138,8 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		void RenderTargetChanged(RenderTarget *render_target) override;
 
 	public:
+		static const unsigned int max_spot_lights = 16;
+
 		Renderer(Engine *engine, ColorRenderTarget *color_render_target, DepthRenderTarget *depth_render_target);
 		~Renderer();
 

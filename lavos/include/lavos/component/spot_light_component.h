@@ -20,6 +20,16 @@ class SpotLightComponent: public Component
 		SpotLightComponent(glm::vec3 intensity = glm::vec3(1.0f, 1.0f, 1.0f), float angle = glm::half_pi<float>());
 		~SpotLightComponent();
 
+		/**
+		 * in radians
+		 */
+		float GetAngle() const 							{ return angle; }
+
+		/**
+		 * in radians
+		 */
+		void SetIntensity(float angle)					{ this->angle = angle; }
+
 		glm::vec3 GetIntensity() const 					{ return intensity; }
 		void SetIntensity(const glm::vec3 &intensity)	{ this->intensity = intensity; }
 };

@@ -16,6 +16,7 @@
 #include <lavos/material/gouraud_material.h>
 #include <lavos/material/unlit_material.h>
 #include <lavos/component/directional_light_component.h>
+#include <lavos/component/spot_light_component.h>
 #include <lavos/component/fp_controller_component.h>
 
 #include <window_application.h>
@@ -68,7 +69,7 @@ void Init(std::string gltf_filename)
 		camera_node = camera->GetNode();
 	}
 
-	camera_node->GetTransformComponent()->translation = glm::vec3(0.0f, 0.0f, 5.0f);
+	camera_node->GetTransformComponent()->translation = glm::vec3(0.0f, 1.0f, 0.0f);
 	camera_node->GetTransformComponent()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
 
 	fp_controller = new lavos::FirstPersonControllerComponent();
@@ -79,9 +80,12 @@ void Init(std::string gltf_filename)
 	scene->GetRootNode()->AddChild(light_node);
 
 	light_node->AddComponent(new lavos::TransformComponent());
-	light_node->GetTransformComponent()->SetLookAt(glm::vec3(-1.0f, -1.0f, -1.0f));
+	light_node->GetTransformComponent()->translation = glm::vec3(0.0f, 1.0f, 3.0f);
+	light_node->GetTransformComponent()->SetLookAt(glm::vec3(2.0f, -1.0f, 0.0f));
 
-	lavos::DirectionalLightComponent *light = new lavos::DirectionalLightComponent();
+	//lavos::DirectionalLightComponent *light = new lavos::DirectionalLightComponent();
+	//light_node->AddComponent(light);
+	lavos::SpotLightComponent *light = new lavos::SpotLightComponent();
 	light_node->AddComponent(light);
 
 	renderer->SetCamera(camera);

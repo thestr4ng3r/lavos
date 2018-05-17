@@ -46,5 +46,17 @@ void main()
 		color += base_color.rgb * LightingPhong(normal, -lighting_uni.directional_light_dir, cam_dir, material_uni.phong_params.specular_exponent);
 	}
 
+	for(int i=0; i<lighting_uni.spot_lights_count; i++)
+	{
+	    SpotLight spot = lighting_uni.spot_lights[i];
+	    vec3 light_dir = normalize(spot.position - position_in);
+
+	    float ndotl = -dot(spot.direction, light_dir);
+	    if(ndotl < spot.angle_cos)
+	        continue;
+
+	    color += base_color.rgb * LightingPhong(normal, light_dir, cam_dir, material_uni.phong_params.specular_exponent);
+	}
+
 	out_color = vec4(color, base_color.a);
 }

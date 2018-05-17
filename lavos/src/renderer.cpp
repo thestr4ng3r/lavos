@@ -4,6 +4,7 @@
 
 #include "lavos/glm_config.h"
 #include "lavos/component/directional_light_component.h"
+#include "lavos/component/spot_light_component.h"
 #include "lavos/renderer.h"
 #include "lavos/shader_load.h"
 #include "lavos/vertex.h"
@@ -149,13 +150,19 @@ void Renderer::CreateDescriptorSetLayout()
 }
 
 
+size_t Renderer::GetLightingUniformBufferSize()
+{
+	return sizeof(LightingUniformBufferFixed)
+		   + max_spot_lights * sizeof(LightingUniformBufferSpotLight);
+}
+
 void Renderer::CreateUniformBuffers()
 {
 	matrix_uniform_buffer = engine->CreateBuffer(sizeof(MatrixUniformBuffer),
 												 vk::BufferUsageFlagBits::eUniformBuffer,
 												 VMA_MEMORY_USAGE_CPU_ONLY);
 
-	lighting_uniform_buffer = engine->CreateBuffer(sizeof(LightingUniformBuffer),
+	lighting_uniform_buffer = engine->CreateBuffer(GetLightingUniformBufferSize(),
 												   vk::BufferUsageFlagBits::eUniformBuffer,
 												   VMA_MEMORY_USAGE_CPU_ONLY);
 
@@ -191,31 +198,49 @@ void Renderer::UpdateCameraUniformBuffer()
 	engine->UnmapMemory(camera_uniform_buffer.allocation);
 }
 
+
 void Renderer::UpdateLightingUniformBuffer()
 {
-	LightingUniformBuffer ubo;
-	memset(&ubo, 0, sizeof(ubo));
+	LightingUniformBufferFixed fixed;
+	memset(&fixed, 0, sizeof(fixed));
 
-	ubo.ambient_intensity = scene->GetAmbientLightIntensity();
+	fixed.ambient_intensity = scene->GetAmbientLightIntensity();
 
 	auto dir_light = scene->GetRootNode()->GetComponentInChildren<DirectionalLightComponent>();
 	if(dir_light != nullptr)
 	{
-		ubo.directional_light_enabled = 1;
-		ubo.directional_light_dir = glm::normalize(dir_light->GetNode()->GetTransformComponent()->GetMatrixWorld()
-												   * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
-		ubo.directional_light_intensity = dir_light->GetIntensity();
+		fixed.directional_light_enabled = 1;
+		fixed.directional_light_dir = glm::normalize(dir_light->GetNode()->GetTransformComponent()->GetMatrixWorld()
+													 * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
+		fixed.directional_light_intensity = dir_light->GetIntensity();
 	}
 	else
 	{
-		ubo.directional_light_enabled = 0;
+		fixed.directional_light_enabled = 0;
+	}
+
+
+	std::vector<LightingUniformBufferSpotLight> spot_light_buffers(max_spot_lights);
+	memset(spot_light_buffers.data(), 0, sizeof(LightingUniformBufferSpotLight) * spot_light_buffers.size());
+
+	auto spot_lights = scene->GetRootNode()->GetComponentsInChildren<SpotLightComponent>();
+
+	fixed.spot_lights_count = static_cast<uint32_t>(spot_lights.size());
+
+	for(unsigned int i=0; i<std::min(spot_lights.size(), spot_light_buffers.size()); i++)
+	{
+		auto spot_light = spot_lights[i];
+		glm::mat4 transform_mat = spot_light->GetNode()->GetTransformComponent()->GetMatrixWorld();
+		spot_light_buffers[i].position = transform_mat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		spot_light_buffers[i].direction = transform_mat * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+		spot_light_buffers[i].angle_cos = cosf(spot_light->GetAngle());
 	}
 
 	void *data = engine->MapMemory(lighting_uniform_buffer.allocation);
-	memcpy(data, &ubo, sizeof(ubo));
+	memcpy(data, &fixed, sizeof(fixed));
+	memcpy(data + 48, spot_light_buffers.data(), sizeof(LightingUniformBufferSpotLight) * spot_light_buffers.size());
 	engine->UnmapMemory(lighting_uniform_buffer.allocation);
 }
-
 
 void Renderer::CreateDescriptorSet()
 {
@@ -245,7 +270,7 @@ void Renderer::CreateDescriptorSet()
 	auto lighting_buffer_info = vk::DescriptorBufferInfo()
 		.setBuffer(lighting_uniform_buffer.buffer)
 		.setOffset(0)
-		.setRange(sizeof(LightingUniformBuffer));
+		.setRange(GetLightingUniformBufferSize());
 
 	auto lighting_buffer_write = vk::WriteDescriptorSet()
 		.setDstSet(descriptor_set)
@@ -283,6 +308,7 @@ void Renderer::AddMaterial(Material *material)
 	material_pipelines.push_back(CreateMaterialPipeline(material));
 }
 
+
 void Renderer::RemoveMaterial(Material *material)
 {
 	for(auto it=material_pipelines.begin(); it!=material_pipelines.end(); it++)
@@ -295,7 +321,6 @@ void Renderer::RemoveMaterial(Material *material)
 		}
 	}
 }
-
 
 Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
 {
@@ -435,6 +460,7 @@ void Renderer::RecreateAllMaterialPipelines()
 	}
 }
 
+
 void Renderer::CreateRenderPasses()
 {
 	auto color_attachment = vk::AttachmentDescription()
@@ -487,11 +513,12 @@ void Renderer::CreateRenderPasses()
 			.setPDependencies(&subpass_dependency));
 }
 
-
 void Renderer::CleanupRenderPasses()
 {
 	engine->GetVkDevice().destroyRenderPass(render_pass);
 }
+
+
 
 void Renderer::CreateRenderCommandBuffer()
 {
@@ -501,8 +528,6 @@ void Renderer::CreateRenderCommandBuffer()
 					.setLevel(vk::CommandBufferLevel::ePrimary)
 					.setCommandBufferCount(1)).front();
 }
-
-
 
 void Renderer::CleanupRenderCommandBuffer()
 {
