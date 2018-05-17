@@ -236,7 +236,7 @@ void Renderer::UpdateLightingUniformBuffer()
 		spot_light_buffers[i].angle_cos = cosf(spot_light->GetAngle());
 	}
 
-	void *data = engine->MapMemory(lighting_uniform_buffer.allocation);
+	std::uint8_t *data = static_cast<std::uint8_t *>(engine->MapMemory(lighting_uniform_buffer.allocation));
 	memcpy(data, &fixed, sizeof(fixed));
 	memcpy(data + 48, spot_light_buffers.data(), sizeof(LightingUniformBufferSpotLight) * spot_light_buffers.size());
 	engine->UnmapMemory(lighting_uniform_buffer.allocation);

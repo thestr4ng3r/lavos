@@ -96,18 +96,43 @@ std::vector<const char *> Engine::GetRequiredDeviceExtensions()
 	return extensions;
 }
 
-bool Engine::CheckValidationLayerSupport()
+#define LAVOS_VK_LAYER_RENDERDOC_Capture "VK_LAYER_RENDERDOC_Capture"
+
+std::vector<const char *> Engine::EnableValidationLayers()
 {
-	std::cout << "Available Layers:" << std::endl;
+	std::vector<const char *> layers_requested;
+	std::vector<const char *> layers_enabled;
+
+	if(info.enable_validation_layers)
+		std::copy(validation_layers.begin(), validation_layers.end(), std::back_inserter(layers_requested));
+
+	if(info.enable_renderdoc)
+	{
+		bool already_inserted = false;
+		for(auto layer_name : layers_requested)
+		{
+			if(strcmp(layer_name, LAVOS_VK_LAYER_RENDERDOC_Capture) == 0)
+			{
+				already_inserted = true;
+				break;
+			}
+		}
+
+		if(!already_inserted)
+			layers_requested.push_back(LAVOS_VK_LAYER_RENDERDOC_Capture);
+	}
+
+
+	//std::cout << "Available Layers:" << std::endl;
 
 	auto layers_available = vk::enumerateInstanceLayerProperties();
 
-	for(const auto &layer_props : layers_available)
+	/*for(const auto &layer_props : layers_available)
 	{
 		std::cout << "\t" << layer_props.layerName << std::endl;
-	}
+	}*/
 
-	for(const char *layer_name : validation_layers)
+	for(auto layer_name : layers_requested)
 	{
 		bool layer_found = false;
 
@@ -116,15 +141,16 @@ bool Engine::CheckValidationLayerSupport()
 			if(strcmp(layer_name, layer_props.layerName) == 0)
 			{
 				layer_found = true;
+				layers_enabled.push_back(layer_name);
 				break;
 			}
 		}
 
 		if(!layer_found)
-			return false;
+			std::cerr << "Layer " << layer_name << " requested but not available." << std::endl;
 	}
 
-	return true;
+	return layers_enabled;
 }
 
 void Engine::CreateInstance()
@@ -148,22 +174,9 @@ void Engine::CreateInstance()
 	create_info.setEnabledExtensionCount(static_cast<uint32_t>(required_extensions.size()));
 	create_info.setPpEnabledExtensionNames(required_extensions.data());
 
-
-	// layers
-
-	if(info.enable_validation_layers)
-	{
-		if(!CheckValidationLayerSupport())
-			throw std::runtime_error("validation layers requested, but not available!");
-
-		create_info.setEnabledLayerCount(static_cast<uint32_t>(validation_layers.size()));
-		create_info.setPpEnabledLayerNames(validation_layers.data());
-	}
-	else
-	{
-		create_info.setEnabledLayerCount(0);
-	}
-
+	auto layers = EnableValidationLayers();
+	create_info.setEnabledLayerCount(static_cast<uint32_t>(layers.size()));
+	create_info.setPpEnabledLayerNames(layers.data());
 
 	instance = vk::createInstance(create_info);
 }

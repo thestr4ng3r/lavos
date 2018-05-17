@@ -20,6 +20,7 @@ class Engine
 		{
 			std::string app_info;
 			bool enable_validation_layers = false;
+			bool enable_renderdoc = false;
 			std::set<std::string> required_instance_extensions;
 			std::set<std::string> required_device_extensions;
 
@@ -60,7 +61,7 @@ class Engine
 		std::vector<const char *> GetRequiredInstanceExtensions();
 		std::vector<const char *> GetRequiredDeviceExtensions();
 
-		bool CheckValidationLayerSupport();
+		std::vector<const char *> EnableValidationLayers();
 
 		void CreateInstance();
 		void SetupDebugCallback();
