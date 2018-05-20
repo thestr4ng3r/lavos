@@ -16,3 +16,5 @@
 #  include "vk_mem_alloc.h"
 #  undef VMA_IMPLEMENTATION
 #endif
+
+#include "mikktspace.c"

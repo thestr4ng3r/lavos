@@ -42,6 +42,8 @@ class Mesh
 		void CreateVertexBuffer();
 		void CreateIndexBuffer();
 		void CreateBuffers();
+
+		void GenerateTangentSpaceMikkTSpace(Primitive *primitive = nullptr);
 };
 
 }
