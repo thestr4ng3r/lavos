@@ -3,6 +3,7 @@
 #define LAVOS_SPOT_LIGHT_SHADOW_H
 
 #include "image.h"
+#include "buffer.h"
 
 namespace lavos
 {
@@ -31,9 +32,12 @@ class SpotLightShadow
 		vk::CommandBuffer command_buffer;
 		vk::Semaphore semaphore;
 
+		lavos::Buffer matrix_uniform_buffer;
+
 		void CreateImage();
 		void CreateRenderPass();
 		void CreateFramebuffer();
+		void CreateUniformBuffer();
 
 	public:
 		SpotLightShadow(Engine *engine, SpotLightComponent *light, std::uint32_t width, std::uint32_t height);

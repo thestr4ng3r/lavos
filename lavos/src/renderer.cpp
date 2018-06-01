@@ -5,6 +5,7 @@
 #include "lavos/glm_config.h"
 #include "lavos/component/directional_light_component.h"
 #include "lavos/component/spot_light_component.h"
+#include "lavos/spot_light_shadow.h"
 #include "lavos/renderer.h"
 #include "lavos/shader_load.h"
 #include "lavos/vertex.h"
@@ -589,6 +590,18 @@ void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::F
 void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> wait_semaphores,
 						 std::vector<vk::PipelineStageFlags> wait_stages, std::vector<vk::Semaphore> signal_semaphores)
 {
+	std::vector<SpotLightComponent *> spot_lights = scene->GetRootNode()->GetComponentsInChildren<SpotLightComponent>();
+	std::vector<SpotLightShadow *> spot_light_shadows;
+
+	for(SpotLightComponent *spot_light : spot_lights)
+	{
+		auto shadow = spot_light->GetShadow();
+		if(!shadow)
+			continue;
+		shadow->BuildCommandBuffer(this);
+		spot_light_shadows.push_back(shadow);
+	}
+
 	render_command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 	DrawFrameRecord(render_command_buffer, dst_framebuffers[image_index]);
 	render_command_buffer.end();

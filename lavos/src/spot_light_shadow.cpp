@@ -123,6 +123,13 @@ void SpotLightShadow::CreateFramebuffer()
 	framebuffer = engine->GetVkDevice().createFramebuffer(create_info);
 }
 
+void SpotLightShadow::CreateUniformBuffer()
+{
+	matrix_uniform_buffer = engine->CreateBuffer(sizeof(MatrixUniformBuffer),
+												 vk::BufferUsageFlagBits::eUniformBuffer,
+												 VMA_MEMORY_USAGE_CPU_ONLY);
+}
+
 void SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
 {
 	const vk::Device &device = engine->GetVkDevice();
@@ -160,10 +167,10 @@ void SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
 	// TODO command_buffer.setDepthBias()
 
 	command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
-	
+
 	// TODO: render stuff
-	
+
 	command_buffer.endRenderPass();
-	
+
 	command_buffer.end();
 }

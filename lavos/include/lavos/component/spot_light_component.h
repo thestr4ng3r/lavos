@@ -10,6 +10,7 @@
 namespace lavos
 {
 
+class Engine;
 class SpotLightShadow;
 
 class SpotLightComponent: public Component
@@ -36,6 +37,10 @@ class SpotLightComponent: public Component
 
 		glm::vec3 GetIntensity() const 					{ return intensity; }
 		void SetIntensity(const glm::vec3 &intensity)	{ this->intensity = intensity; }
+
+		void InitShadow(Engine *engine, std::uint32_t width, std::uint32_t height);
+		void DestroyShadow();
+		SpotLightShadow *GetShadow()					{ return shadow; }
 };
 
 }
