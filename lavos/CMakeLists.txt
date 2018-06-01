@@ -78,7 +78,8 @@ set(SOURCE_FILES
 		include/lavos/component/spot_light_component.h
 		src/component/spot_light_component.cpp
 		include/lavos/spot_light_shadow.h
-		src/spot_light_shadow.cpp)
+		src/spot_light_shadow.cpp
+		src/buffer.cpp)
 
 set(GLSL_FILES
 		material/unlit.vert

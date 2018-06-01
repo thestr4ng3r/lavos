@@ -15,10 +15,12 @@ SpotLightShadow::SpotLightShadow(Engine *engine, SpotLightComponent *light, std:
 	CreateImage();
 	CreateRenderPass();
 	CreateFramebuffer();
+	CreateUniformBuffer();
 }
 
 SpotLightShadow::~SpotLightShadow()
 {
+	delete matrix_uniform_buffer;
 }
 
 void SpotLightShadow::CreateImage()

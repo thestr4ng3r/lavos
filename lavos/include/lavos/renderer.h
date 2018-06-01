@@ -3,6 +3,7 @@
 #define LAVOS_RENDERER_H
 
 #include <map>
+#include <memory>
 
 #include "component/camera_component.h"
 #include "engine.h"
@@ -107,9 +108,9 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		vk::DescriptorSetLayout descriptor_set_layout;
 		vk::DescriptorSet descriptor_set;
 
-		lavos::Buffer matrix_uniform_buffer;
-		lavos::Buffer lighting_uniform_buffer;
-		lavos::Buffer camera_uniform_buffer;
+		lavos::Buffer *matrix_uniform_buffer;
+		lavos::Buffer *lighting_uniform_buffer;
+		lavos::Buffer *camera_uniform_buffer;
 
 		void CreateFramebuffers();
 

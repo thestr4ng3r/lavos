@@ -481,7 +481,7 @@ bool Engine::HasStencilComponent(vk::Format format)
 	return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
 }
 
-Buffer Engine::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, VmaMemoryUsage vma_usage, vk::SharingMode sharing_mode)
+Buffer *Engine::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, VmaMemoryUsage vma_usage, vk::SharingMode sharing_mode)
 {
 	auto create_info = vk::BufferCreateInfo()
 			.setSize(size)
@@ -498,12 +498,12 @@ Buffer Engine::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, Vma
 	if(result != VK_SUCCESS)
 		throw std::runtime_error("Failed to create buffer.");
 
-	return Buffer(buffer, allocation);
+	return new Buffer(this, buffer, allocation);
 }
 
-void Engine::DestroyBuffer(const Buffer &buffer)
+void Engine::DestroyBuffer(vk::Buffer buffer, VmaAllocation allocation)
 {
-	vmaDestroyBuffer(allocator, buffer.buffer, buffer.allocation);
+	vmaDestroyBuffer(allocator, buffer, allocation);
 }
 
 Image Engine::CreateImage(vk::ImageCreateInfo create_info, VmaMemoryUsage vma_usage)

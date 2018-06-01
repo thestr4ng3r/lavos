@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "vertex.h"
 #include "buffer.h"
@@ -33,8 +34,8 @@ class Mesh
 		std::vector<uint16_t> indices;
 		std::vector<Primitive> primitives;
 
-		lavos::Buffer vertex_buffer;
-		lavos::Buffer index_buffer;
+		lavos::Buffer *vertex_buffer = nullptr;
+		lavos::Buffer *index_buffer = nullptr;
 
 		Mesh(Engine *engine);
 		~Mesh();

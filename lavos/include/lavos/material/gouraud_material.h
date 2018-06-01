@@ -18,7 +18,7 @@ class GouraudMaterial: public Material
 
 		struct InstanceData
 		{
-			lavos::Buffer uniform_buffer;
+			lavos::Buffer *uniform_buffer;
 		};
 
 		void CreateDescriptorSetLayout();

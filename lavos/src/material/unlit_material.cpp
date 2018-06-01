@@ -79,7 +79,7 @@ void UnlitMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, Materia
 	auto instance_data = reinterpret_cast<InstanceData *>(instance->GetInstanceData());
 
 	auto ubo_info = vk::DescriptorBufferInfo()
-		.setBuffer(instance_data->uniform_buffer.buffer)
+		.setBuffer(instance_data->uniform_buffer->GetVkBuffer())
 		.setOffset(0)
 		.setRange(sizeof(UniformBuffer));
 
@@ -128,7 +128,7 @@ void *UnlitMaterial::CreateInstanceData()
 void UnlitMaterial::DestroyInstanceData(void *data_p)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
-	engine->DestroyBuffer(data->uniform_buffer);
+	delete data->uniform_buffer;
 	delete data;
 }
 
@@ -140,7 +140,6 @@ void UnlitMaterial::UpdateInstanceData(void *data_p, MaterialInstance *instance)
 
 	ubo.color_factor = instance->GetParameter(parameter_slot_base_color_factor, glm::vec3(1.0f, 1.0f, 1.0f));
 
-	void *buffer_data = engine->MapMemory(data->uniform_buffer.allocation);
-	memcpy(buffer_data, &ubo, sizeof(ubo));
-	engine->UnmapMemory(data->uniform_buffer.allocation);
+	memcpy(data->uniform_buffer->Map(), &ubo, sizeof(ubo));
+	data->uniform_buffer->UnMap();
 }

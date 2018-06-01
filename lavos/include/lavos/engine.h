@@ -108,8 +108,8 @@ class Engine
 		vk::CommandBuffer BeginSingleTimeCommandBuffer();
 		void EndSingleTimeCommandBuffer(vk::CommandBuffer command_buffer);
 
-		Buffer CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, VmaMemoryUsage vma_usage, vk::SharingMode sharing_mode = vk::SharingMode::eExclusive);
-		void DestroyBuffer(const Buffer &buffer);
+		Buffer *CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, VmaMemoryUsage vma_usage, vk::SharingMode sharing_mode = vk::SharingMode::eExclusive);
+		void DestroyBuffer(vk::Buffer buffer, VmaAllocation allocation);
 
 		void *MapMemory(const VmaAllocation &allocation);
 		void UnmapMemory(const VmaAllocation &allocation);

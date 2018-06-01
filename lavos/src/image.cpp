@@ -77,9 +77,8 @@ Image Image::LoadFromPixelData(Engine *engine, vk::Format format, uint32_t width
 
 	auto staging_buffer = engine->CreateBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY);
 
-	void *data = engine->MapMemory(staging_buffer.allocation);
-	memcpy(data, image_pixels, image_size);
-	engine->UnmapMemory(staging_buffer.allocation);
+	memcpy(staging_buffer->Map(), image_pixels, image_size);
+	staging_buffer->UnMap();
 
 	if(image_pixels != pixels)
 		delete [] image_pixels;
@@ -91,11 +90,11 @@ Image Image::LoadFromPixelData(Engine *engine, vk::Format format, uint32_t width
 
 
 	engine->TransitionImageLayout(image.image, actual_format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-	engine->CopyBufferTo2DImage(staging_buffer.buffer, image.image, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+	engine->CopyBufferTo2DImage(staging_buffer->GetVkBuffer(), image.image, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 	engine->TransitionImageLayout(image.image, actual_format, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
 
 
-	engine->DestroyBuffer(staging_buffer);
+	delete staging_buffer;
 
 	return image;
 }

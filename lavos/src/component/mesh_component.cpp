@@ -8,8 +8,8 @@ lavos::MeshComponent::MeshComponent(lavos::Mesh *mesh)
 
 void lavos::MeshComponent::BindBuffers(vk::CommandBuffer command_buffer)
 {
-	command_buffer.bindVertexBuffers(0, { mesh->vertex_buffer.buffer }, { 0 });
-	command_buffer.bindIndexBuffer(mesh->index_buffer.buffer, 0, vk::IndexType::eUint16);
+	command_buffer.bindVertexBuffers(0, { mesh->vertex_buffer->GetVkBuffer() }, { 0 });
+	command_buffer.bindIndexBuffer(mesh->index_buffer->GetVkBuffer(), 0, vk::IndexType::eUint16);
 }
 
 unsigned int lavos::MeshComponent::GetPrimitivesCount()

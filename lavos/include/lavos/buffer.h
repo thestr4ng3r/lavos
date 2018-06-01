@@ -8,30 +8,27 @@
 namespace lavos
 {
 
+class Engine;
+
 class Buffer
 {
-	public:
+	private:
+		Engine * const engine;
+
 		vk::Buffer buffer;
 		VmaAllocation allocation;
+		void *map = nullptr;
 
-		Buffer(std::nullptr_t = nullptr)
-			: buffer(nullptr), allocation(nullptr) {}
+	public:
+		Buffer(Engine *engine, vk::Buffer buffer, VmaAllocation allocation)
+			: engine(engine), buffer(buffer), allocation(allocation) {}
 
-		Buffer(vk::Buffer buffer, VmaAllocation allocation)
-			: buffer(buffer), allocation(allocation) {}
+		~Buffer();
 
+		vk::Buffer GetVkBuffer()	{ return buffer; }
 
-		bool operator==(Buffer const &rhs) const
-		{
-			return buffer == rhs.buffer
-				   && allocation == rhs.allocation;
-		}
-
-		bool operator!=(Buffer const &rhs) const
-		{
-			return buffer != rhs.buffer
-				   || allocation != rhs.allocation;
-		}
+		void *Map();
+		void UnMap();
 };
 
 }

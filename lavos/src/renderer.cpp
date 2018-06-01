@@ -45,9 +45,9 @@ Renderer::~Renderer()
 
 	device.destroyDescriptorPool(descriptor_pool);
 
-	engine->DestroyBuffer(matrix_uniform_buffer);
-	engine->DestroyBuffer(lighting_uniform_buffer);
-	engine->DestroyBuffer(camera_uniform_buffer);
+	delete matrix_uniform_buffer;
+	delete lighting_uniform_buffer;
+	delete camera_uniform_buffer;
 
 	CleanupFramebuffers();
 
@@ -166,9 +166,8 @@ void Renderer::UpdateMatrixUniformBuffer()
 	matrix_ubo.projection = camera->GetProjectionMatrix();
 	matrix_ubo.projection[1][1] *= -1.0f;
 
-	void *data = engine->MapMemory(matrix_uniform_buffer.allocation);
-	memcpy(data, &matrix_ubo, sizeof(matrix_ubo));
-	engine->UnmapMemory(matrix_uniform_buffer.allocation);
+	memcpy(matrix_uniform_buffer->Map(), &matrix_ubo, sizeof(matrix_ubo));
+	matrix_uniform_buffer->UnMap();
 }
 
 void Renderer::UpdateCameraUniformBuffer()
@@ -176,9 +175,8 @@ void Renderer::UpdateCameraUniformBuffer()
 	CameraUniformBuffer ubo;
 	ubo.position = camera->GetNode()->GetTransformComponent()->GetMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-	void *data = engine->MapMemory(camera_uniform_buffer.allocation);
-	memcpy(data, &ubo, sizeof(ubo));
-	engine->UnmapMemory(camera_uniform_buffer.allocation);
+	memcpy(camera_uniform_buffer->Map(), &ubo, sizeof(ubo));
+	camera_uniform_buffer->UnMap();
 }
 
 
@@ -219,10 +217,10 @@ void Renderer::UpdateLightingUniformBuffer()
 		spot_light_buffers[i].angle_cos = cosf(spot_light->GetAngle());
 	}
 
-	std::uint8_t *data = static_cast<std::uint8_t *>(engine->MapMemory(lighting_uniform_buffer.allocation));
+	std::uint8_t *data = static_cast<std::uint8_t *>(lighting_uniform_buffer->Map());
 	memcpy(data, &fixed, sizeof(fixed));
 	memcpy(data + 48, spot_light_buffers.data(), sizeof(LightingUniformBufferSpotLight) * spot_light_buffers.size());
-	engine->UnmapMemory(lighting_uniform_buffer.allocation);
+	lighting_uniform_buffer->UnMap();
 }
 
 void Renderer::CreateDescriptorSet()
@@ -237,7 +235,7 @@ void Renderer::CreateDescriptorSet()
 	descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
 
 	auto matrix_buffer_info = vk::DescriptorBufferInfo()
-		.setBuffer(matrix_uniform_buffer.buffer)
+		.setBuffer(matrix_uniform_buffer->GetVkBuffer())
 		.setOffset(0)
 		.setRange(sizeof(MatrixUniformBuffer));
 
@@ -251,7 +249,7 @@ void Renderer::CreateDescriptorSet()
 
 
 	auto lighting_buffer_info = vk::DescriptorBufferInfo()
-		.setBuffer(lighting_uniform_buffer.buffer)
+		.setBuffer(lighting_uniform_buffer->GetVkBuffer())
 		.setOffset(0)
 		.setRange(GetLightingUniformBufferSize());
 
@@ -265,7 +263,7 @@ void Renderer::CreateDescriptorSet()
 
 
 	auto camera_buffer_info = vk::DescriptorBufferInfo()
-		.setBuffer(camera_uniform_buffer.buffer)
+		.setBuffer(camera_uniform_buffer->GetVkBuffer())
 		.setOffset(0)
 		.setRange(sizeof(CameraUniformBuffer));
 

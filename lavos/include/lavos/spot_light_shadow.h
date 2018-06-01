@@ -32,7 +32,7 @@ class SpotLightShadow
 		vk::CommandBuffer command_buffer;
 		vk::Semaphore semaphore;
 
-		lavos::Buffer matrix_uniform_buffer;
+		lavos::Buffer *matrix_uniform_buffer = nullptr;
 
 		void CreateImage();
 		void CreateRenderPass();
