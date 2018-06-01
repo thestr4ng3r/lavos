@@ -2,6 +2,8 @@
 #ifndef LAVOS_RENDERER_H
 #define LAVOS_RENDERER_H
 
+#include <map>
+
 #include "component/camera_component.h"
 #include "engine.h"
 #include "material/material.h"
@@ -11,6 +13,9 @@
 
 namespace lavos
 {
+
+class SpotLightComponent;
+class SpotLightShadow;
 
 struct MatrixUniformBuffer
 {

@@ -10,11 +10,15 @@
 namespace lavos
 {
 
+class SpotLightShadow;
+
 class SpotLightComponent: public Component
 {
 	private:
 		glm::vec3 intensity;
 		float angle;
+
+		SpotLightShadow *shadow = nullptr;
 
 	public:
 		SpotLightComponent(glm::vec3 intensity = glm::vec3(1.0f, 1.0f, 1.0f), float angle = glm::half_pi<float>());
