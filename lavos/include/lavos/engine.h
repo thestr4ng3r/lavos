@@ -56,6 +56,7 @@ class Engine
 
 
 		vk::CommandPool transient_command_pool;
+		vk::CommandPool render_command_pool;
 
 
 		std::vector<const char *> GetRequiredInstanceExtensions();
@@ -101,6 +102,8 @@ class Engine
 		vk::Format FindSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 		vk::Format FindDepthFormat();
 		static bool HasStencilComponent(vk::Format format);
+
+		vk::CommandPool GetRenderCommandPool()						{ return render_command_pool; }
 
 		vk::CommandBuffer BeginSingleTimeCommandBuffer();
 		void EndSingleTimeCommandBuffer(vk::CommandBuffer command_buffer);

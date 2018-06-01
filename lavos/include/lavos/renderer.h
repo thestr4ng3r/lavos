@@ -89,7 +89,6 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 
 		bool auto_set_camera_aspect = true;
 
-		vk::CommandPool render_command_pool;
 		vk::CommandBuffer render_command_buffer;
 
 		ColorRenderTarget *color_render_target;
@@ -112,9 +111,6 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		lavos::Buffer lighting_uniform_buffer;
 		lavos::Buffer camera_uniform_buffer;
 
-		void CreateRenderCommandPool();
-
-		void CleanupRenderCommandPool();
 		void CreateFramebuffers();
 
 		void CleanupFramebuffers();

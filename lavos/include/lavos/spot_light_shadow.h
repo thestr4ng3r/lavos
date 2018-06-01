@@ -38,6 +38,8 @@ class SpotLightShadow
 	public:
 		SpotLightShadow(Engine *engine, SpotLightComponent *light, std::uint32_t width, std::uint32_t height);
 		~SpotLightShadow();
+
+		void BuildCommandBuffer(Renderer *renderer);
 };
 
 }

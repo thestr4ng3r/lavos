@@ -28,7 +28,6 @@ Renderer::Renderer(Engine *engine, ColorRenderTarget *color_render_target, Depth
 
 	CreateFramebuffers();
 
-	CreateRenderCommandPool();
 	CreateRenderCommandBuffer();
 }
 
@@ -50,25 +49,8 @@ Renderer::~Renderer()
 	engine->DestroyBuffer(camera_uniform_buffer);
 
 	CleanupFramebuffers();
-	CleanupRenderCommandPool();
 
 	CleanupRenderPasses();
-}
-
-void Renderer::CreateRenderCommandPool()
-{
-	auto queue_family_indices = engine->GetQueueFamilyIndices();
-
-	auto command_pool_info = vk::CommandPoolCreateInfo()
-		.setFlags(vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-		.setQueueFamilyIndex(static_cast<uint32_t>(queue_family_indices.graphics_family));
-
-	render_command_pool = engine->GetVkDevice().createCommandPool(command_pool_info);
-}
-
-void Renderer::CleanupRenderCommandPool()
-{
-	engine->GetVkDevice().destroyCommandPool(render_command_pool);
 }
 
 void Renderer::CreateFramebuffers()
@@ -524,14 +506,14 @@ void Renderer::CreateRenderCommandBuffer()
 {
 	render_command_buffer = engine->GetVkDevice().allocateCommandBuffers(
 			vk::CommandBufferAllocateInfo()
-					.setCommandPool(render_command_pool)
+					.setCommandPool(engine->GetRenderCommandPool())
 					.setLevel(vk::CommandBufferLevel::ePrimary)
 					.setCommandBufferCount(1)).front();
 }
 
 void Renderer::CleanupRenderCommandBuffer()
 {
-	engine->GetVkDevice().freeCommandBuffers(render_command_pool, render_command_buffer);
+	engine->GetVkDevice().freeCommandBuffers(engine->GetRenderCommandPool(), render_command_buffer);
 }
 
 void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer)

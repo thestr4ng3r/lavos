@@ -122,3 +122,48 @@ void SpotLightShadow::CreateFramebuffer()
 
 	framebuffer = engine->GetVkDevice().createFramebuffer(create_info);
 }
+
+void SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
+{
+	const vk::Device &device = engine->GetVkDevice();
+
+	if(!command_buffer)
+	{
+		command_buffer = *engine->GetVkDevice().allocateCommandBuffers(
+				vk::CommandBufferAllocateInfo(engine->GetRenderCommandPool(),
+											  vk::CommandBufferLevel::ePrimary,
+											  1)).begin();
+	}
+
+	if(!semaphore)
+	{
+		semaphore = device.createSemaphore(vk::SemaphoreCreateInfo());
+	}
+
+	auto clear_value = vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0));
+
+	auto render_pass_begin_info = vk::RenderPassBeginInfo()
+			.setRenderPass(render_pass)
+			.setFramebuffer(framebuffer)
+			.setRenderArea(vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(width, height)))
+			.setClearValueCount(2) // TODO: really 2?
+			.setPClearValues(&clear_value);
+
+	command_buffer.begin(vk::CommandBufferBeginInfo());
+
+	auto viewport = vk::Viewport(0, 0, width, height, 0.0f, 1.0f);
+	command_buffer.setViewport(0, 1, &viewport);
+
+	auto scissor = vk::Rect2D(vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(width, height)));
+	command_buffer.setScissor(0, 1, &scissor);
+
+	// TODO command_buffer.setDepthBias()
+
+	command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
+	
+	// TODO: render stuff
+	
+	command_buffer.endRenderPass();
+	
+	command_buffer.end();
+}

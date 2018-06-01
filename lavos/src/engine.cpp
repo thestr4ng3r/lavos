@@ -60,6 +60,7 @@ Engine::Engine(const CreateInfo &info)
 
 Engine::~Engine()
 {
+	device.destroy(render_command_pool);
 	device.destroy(transient_command_pool);
 
 	vmaDestroyAllocator(allocator);
@@ -399,11 +400,15 @@ void Engine::CreateAllocator()
 
 void Engine::CreateGlobalCommandPools()
 {
-	auto command_pool_info = vk::CommandPoolCreateInfo()
-			.setFlags(vk::CommandPoolCreateFlagBits::eTransient)
-			.setQueueFamilyIndex(static_cast<uint32_t>(queue_family_indices.graphics_family));
+	transient_command_pool = device.createCommandPool(
+			vk::CommandPoolCreateInfo()
+					.setFlags(vk::CommandPoolCreateFlagBits::eTransient)
+					.setQueueFamilyIndex(static_cast<uint32_t>(queue_family_indices.graphics_family)));
 
-	transient_command_pool = device.createCommandPool(command_pool_info);
+	render_command_pool = device.createCommandPool(
+			vk::CommandPoolCreateInfo()
+					.setFlags(vk::CommandPoolCreateFlagBits::eTransient | vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+					.setQueueFamilyIndex(static_cast<uint32_t>(queue_family_indices.graphics_family)));
 }
 
 vk::CommandBuffer Engine::BeginSingleTimeCommandBuffer()
