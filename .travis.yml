@@ -1,0 +1,43 @@
+language: cpp
+sudo: false
+dist: trusty
+
+addons:
+  apt:
+    sources:
+      ubuntu-toolchain-r-test
+    packages:
+      - g++-7
+      - ninja-build
+
+      # GLFW
+      - libxrandr-dev
+      - libxinerama-dev
+      - libxcursor-dev
+      - libxi-dev
+
+env:
+  - CI_DEPS_URL="https://github.com/thestr4ng3r/lavos-ci-deps/releases/download/v1/lavos-ci-deps-linux-x86_64.tar.gz"
+    VULKAN_VERSION=1.1.73.0
+
+before_install:
+  - export CC=gcc-7
+  - export CXX=g++-7
+
+install:
+  - cd thirdparty || exit 1
+  - wget $CI_DEPS_URL || exit 1
+  - tar -xf lavos-ci-deps-linux-x86_64.tar.gz || exit 1
+  - export VULKAN_SDK_PREFIX=`pwd`/vulkansdk/$VULKAN_VERSION/x86_64
+  - export SHADERC_PREFIX=`pwd`/shaderc
+  - cd $TRAVIS_BUILD_DIR || exit 1
+
+script:
+  - mkdir build && cd build || exit 1
+  - cmake
+    -GNinja
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_PREFIX_PATH="$VULKAN_SDK_PREFIX;$SHADERC_PREFIX"
+    ..
+    || exit 1
+  - ninja -j 4 || exit 1

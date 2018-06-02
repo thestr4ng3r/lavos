@@ -3,3 +3,5 @@ cmake-build-*
 *.swp
 *.spv
 raw/
+/thirdparty/vulkansdk*
+/thirdparty/shaderc*
