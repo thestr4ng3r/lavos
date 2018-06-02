@@ -30,19 +30,24 @@ class GouraudMaterial: public Material
 		Texture texture_default_normal;
 
 	public:
-		static const MaterialInstance::ParameterSlot parameter_slot_specular_exponent = 1000;
+		static const Material::ParameterSlot parameter_slot_specular_exponent = 1000;
 
 		GouraudMaterial(Engine *engine);
 		~GouraudMaterial();
 
-		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes() const override;
-		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos() const override;
+		bool GetRenderModeSupport(RenderMode render_mode) const override
+		{
+			return render_mode == DefaultRenderMode::ColorForward;
+		}
 
-		virtual void WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
+		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes(Material::RenderMode render_mode) const override;
+		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(Material::RenderMode render_mode) const override;
 
-		virtual void *CreateInstanceData() override;
-		virtual void DestroyInstanceData(void *data) override;
-		virtual void UpdateInstanceData(void *data, MaterialInstance *instance) override;
+		virtual void WriteDescriptorSet(Material::RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
+
+		virtual void *CreateInstanceData(Material::RenderMode render_mode) override;
+		virtual void DestroyInstanceData(Material::RenderMode render_mode, void *data) override;
+		virtual void UpdateInstanceData(Material::RenderMode render_mode, void *data, MaterialInstance *instance) override;
 };
 
 }

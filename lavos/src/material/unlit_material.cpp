@@ -52,7 +52,7 @@ void UnlitMaterial::CreateDescriptorSetLayout()
 	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
 }
 
-std::vector<vk::DescriptorPoolSize> UnlitMaterial::GetDescriptorPoolSizes() const
+std::vector<vk::DescriptorPoolSize> UnlitMaterial::GetDescriptorPoolSizes(RenderMode render_mode) const
 {
 	return {
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
@@ -60,7 +60,7 @@ std::vector<vk::DescriptorPoolSize> UnlitMaterial::GetDescriptorPoolSizes() cons
 	};
 }
 
-std::vector<vk::PipelineShaderStageCreateInfo> UnlitMaterial::GetShaderStageCreateInfos() const
+std::vector<vk::PipelineShaderStageCreateInfo> UnlitMaterial::GetShaderStageCreateInfos(RenderMode render_mode) const
 {
 	return {
 		vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
@@ -74,9 +74,9 @@ std::vector<vk::PipelineShaderStageCreateInfo> UnlitMaterial::GetShaderStageCrea
 	};
 }
 
-void UnlitMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance)
+void UnlitMaterial::WriteDescriptorSet(RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance)
 {
-	auto instance_data = reinterpret_cast<InstanceData *>(instance->GetInstanceData());
+	auto instance_data = reinterpret_cast<InstanceData *>(instance->GetInstanceData(render_mode));
 
 	auto ubo_info = vk::DescriptorBufferInfo()
 		.setBuffer(instance_data->uniform_buffer->GetVkBuffer())
@@ -114,7 +114,7 @@ void UnlitMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, Materia
 	engine->GetVkDevice().updateDescriptorSets({image_write, ubo_write}, nullptr);
 }
 
-void *UnlitMaterial::CreateInstanceData()
+void *UnlitMaterial::CreateInstanceData(RenderMode render_mode)
 {
 	InstanceData *data = new InstanceData();
 
@@ -125,14 +125,14 @@ void *UnlitMaterial::CreateInstanceData()
 	return data;
 }
 
-void UnlitMaterial::DestroyInstanceData(void *data_p)
+void UnlitMaterial::DestroyInstanceData(RenderMode render_mode, void *data_p)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 	delete data->uniform_buffer;
 	delete data;
 }
 
-void UnlitMaterial::UpdateInstanceData(void *data_p, MaterialInstance *instance)
+void UnlitMaterial::UpdateInstanceData(RenderMode render_mode, void *data_p, MaterialInstance *instance)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 

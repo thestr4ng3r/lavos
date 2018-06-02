@@ -65,6 +65,7 @@ struct TransformPushConstant
 static_assert(sizeof(TransformPushConstant) == 64);
 
 
+
 class Renderer: public ColorRenderTarget::ChangedCallback
 {
 	public:
@@ -124,8 +125,6 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 
 		void CreateUniformBuffers();
 
-		MaterialPipeline CreateMaterialPipeline(Material *material);
-		void DestroyMaterialPipeline(const MaterialPipeline &material_pipeline);
 		void RecreateAllMaterialPipelines();
 
 		void CreateRenderPasses();
@@ -154,6 +153,9 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 
 		void AddMaterial(Material *material);
 		void RemoveMaterial(Material *material);
+
+		MaterialPipeline CreateMaterialPipeline(Material *material, Material::RenderMode render_mode);
+		void DestroyMaterialPipeline(const MaterialPipeline &material_pipeline);
 
 		void UpdateMatrixUniformBuffer();
 		void UpdateCameraUniformBuffer();

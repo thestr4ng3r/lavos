@@ -19,14 +19,19 @@ class PointCloudMaterial : public Material
 		PointCloudMaterial(Engine *engine);
 		~PointCloudMaterial();
 
-		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes() const override;
+		bool GetRenderModeSupport(RenderMode render_mode) const override
+		{
+			return render_mode == DefaultRenderMode::ColorForward;
+		}
 
-		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos() const override;
+		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes(Material::RenderMode render_mode) const override;
 
-		virtual void WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
-		virtual void *CreateInstanceData() override;
-		virtual void DestroyInstanceData(void *data) override;
-		virtual void UpdateInstanceData(void *data, MaterialInstance *instance) override;
+		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(Material::RenderMode render_mode) const override;
+
+		virtual void WriteDescriptorSet(Material::RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
+		virtual void *CreateInstanceData(Material::RenderMode render_mode) override;
+		virtual void DestroyInstanceData(Material::RenderMode render_mode, void *data) override;
+		virtual void UpdateInstanceData(Material::RenderMode render_mode, void *data, MaterialInstance *instance) override;
 
 		virtual vk::PrimitiveTopology GetPrimitiveTopology()	{ return vk::PrimitiveTopology::ePointList; }
 

@@ -408,7 +408,7 @@ static void LoadScenes(AssetContainer &container, tinygltf::Model &model)
 
 static vk::DescriptorPool CreateDescriptorPoolForGLTF(Engine *engine, Material *material, tinygltf::Model &model)
 {
-	auto sizes = material->GetDescriptorPoolSizes();
+	auto sizes = material->GetDescriptorPoolSizes(Material::DefaultRenderMode::ColorForward);
 
 	if(sizes.empty())
 		return nullptr;

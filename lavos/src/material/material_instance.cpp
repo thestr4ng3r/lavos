@@ -8,62 +8,63 @@ using namespace lavos;
 MaterialInstance::MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool)
 	: material(material), descriptor_pool(descriptor_pool)
 {
-	CreateDescriptorSet();
-	CreateUniformBuffer();
+	CreateDescriptorSet(Material::DefaultRenderMode::ColorForward); // TODO: depend on context
+	CreateInstanceData(Material::DefaultRenderMode::ColorForward); // TODO: depend on context
 }
 
 MaterialInstance::~MaterialInstance()
 {
 	auto engine = material->GetEngine();
 
-	material->DestroyInstanceData(instance_data);
+	for(auto it : instance_data)
+		material->DestroyInstanceData(it.first, it.second);
 
 	for(auto &entry : textures)
 		engine->DestroyTexture(entry.second);
 
-	if(descriptor_set)
-		engine->GetVkDevice().freeDescriptorSets(descriptor_pool, descriptor_set);
+	for(auto it : descriptor_sets)
+		engine->GetVkDevice().freeDescriptorSets(descriptor_pool, it.second);
 }
 
-void MaterialInstance::CreateDescriptorSet()
+void MaterialInstance::CreateDescriptorSet(Material::RenderMode render_mode)
 {
 	auto engine = material->GetEngine();
 	auto layout = material->GetDescriptorSetLayout();
 
-	if(layout)
-	{
-		vk::DescriptorSetLayout layouts[] = { material->GetDescriptorSetLayout() };
+	if(!layout)
+		return;
 
-		auto alloc_info = vk::DescriptorSetAllocateInfo()
-				.setDescriptorPool(descriptor_pool)
-				.setDescriptorSetCount(1)
-				.setPSetLayouts(layouts);
+	vk::DescriptorSetLayout layouts[] = { material->GetDescriptorSetLayout() };
 
-		descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
-	}
-	else
-	{
-		descriptor_set = nullptr;
-	}
-}
+	auto alloc_info = vk::DescriptorSetAllocateInfo()
+			.setDescriptorPool(descriptor_pool)
+			.setDescriptorSetCount(1)
+			.setPSetLayouts(layouts);
 
-void MaterialInstance::CreateUniformBuffer()
-{
-	instance_data = material->CreateInstanceData();
-}
-
-void MaterialInstance::WriteDescriptorSet()
-{
+	auto descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
 	if(descriptor_set)
-		material->WriteDescriptorSet(descriptor_set, this);
+		descriptor_sets[render_mode] = descriptor_set;
 }
 
-void MaterialInstance::WriteUniformBuffer()
+void MaterialInstance::CreateInstanceData(Material::RenderMode render_mode)
 {
-	material->UpdateInstanceData(instance_data, this);
+	instance_data[render_mode] = material->CreateInstanceData(render_mode);
 }
 
-void MaterialInstance::SetTexture(MaterialInstance::TextureSlot slot, Texture texture)
+void MaterialInstance::WriteDescriptorSet(Material::RenderMode render_mode)
+{
+	auto descriptor_set = GetDescriptorSet(render_mode);
+	if(descriptor_set)
+		material->WriteDescriptorSet(render_mode, descriptor_set, this);
+}
+
+void MaterialInstance::WriteInstanceData(Material::RenderMode render_mode)
+{
+	auto data = instance_data[render_mode];
+	material->UpdateInstanceData(render_mode, data, this);
+}
+
+void MaterialInstance::SetTexture(Material::TextureSlot slot, Texture texture)
 {
 	if(texture == nullptr)
 	{
@@ -74,7 +75,7 @@ void MaterialInstance::SetTexture(MaterialInstance::TextureSlot slot, Texture te
 	textures[slot] = texture;
 }
 
-Texture *MaterialInstance::GetTexture(MaterialInstance::TextureSlot slot)
+Texture *MaterialInstance::GetTexture(Material::TextureSlot slot)
 {
 	auto it = textures.find(slot);
 
@@ -84,12 +85,12 @@ Texture *MaterialInstance::GetTexture(MaterialInstance::TextureSlot slot)
 	return nullptr;
 }
 
-void MaterialInstance::SetParameter(MaterialInstance::ParameterSlot slot, MaterialInstance::Parameter parameter)
+void MaterialInstance::SetParameter(Material::ParameterSlot slot, MaterialInstance::Parameter parameter)
 {
 	parameters.insert(std::make_pair(slot, parameter));
 }
 
-MaterialInstance::Parameter *MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot)
+MaterialInstance::Parameter *MaterialInstance::GetParameter(Material::ParameterSlot slot)
 {
 	auto it = parameters.find(slot);
 
@@ -99,7 +100,7 @@ MaterialInstance::Parameter *MaterialInstance::GetParameter(MaterialInstance::Pa
 	return nullptr;
 }
 
-float MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, float default_value)
+float MaterialInstance::GetParameter(Material::ParameterSlot slot, float default_value)
 {
 	auto it = parameters.find(slot);
 
@@ -109,7 +110,7 @@ float MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, float
 	return default_value;
 }
 
-glm::vec2 MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, glm::vec2 default_value)
+glm::vec2 MaterialInstance::GetParameter(Material::ParameterSlot slot, glm::vec2 default_value)
 {
 	auto it = parameters.find(slot);
 
@@ -119,7 +120,7 @@ glm::vec2 MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, g
 	return default_value;
 }
 
-glm::vec3 MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, glm::vec3 default_value)
+glm::vec3 MaterialInstance::GetParameter(Material::ParameterSlot slot, glm::vec3 default_value)
 {
 	auto it = parameters.find(slot);
 
@@ -129,7 +130,7 @@ glm::vec3 MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, g
 	return default_value;
 }
 
-glm::vec4 MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, glm::vec4 default_value)
+glm::vec4 MaterialInstance::GetParameter(Material::ParameterSlot slot, glm::vec4 default_value)
 {
 	auto it = parameters.find(slot);
 
@@ -141,6 +142,9 @@ glm::vec4 MaterialInstance::GetParameter(MaterialInstance::ParameterSlot slot, g
 
 void MaterialInstance::WriteAllData()
 {
-	WriteUniformBuffer();
-	WriteDescriptorSet();
+	for(auto it : instance_data)
+		WriteInstanceData(it.first);
+
+	for(auto it : descriptor_sets)
+		WriteDescriptorSet(it.first);
 }

@@ -34,7 +34,7 @@ void GouraudMaterial::CreateDescriptorSetLayout()
 	descriptor_set_layout = nullptr;
 }
 
-std::vector<vk::DescriptorPoolSize> GouraudMaterial::GetDescriptorPoolSizes() const
+std::vector<vk::DescriptorPoolSize> GouraudMaterial::GetDescriptorPoolSizes(Material::RenderMode render_mode) const
 {
 	return {
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
@@ -42,7 +42,7 @@ std::vector<vk::DescriptorPoolSize> GouraudMaterial::GetDescriptorPoolSizes() co
 	};
 }
 
-std::vector<vk::PipelineShaderStageCreateInfo> GouraudMaterial::GetShaderStageCreateInfos() const
+std::vector<vk::PipelineShaderStageCreateInfo> GouraudMaterial::GetShaderStageCreateInfos(Material::RenderMode render_mode) const
 {
 	return {
 		vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
@@ -57,9 +57,9 @@ std::vector<vk::PipelineShaderStageCreateInfo> GouraudMaterial::GetShaderStageCr
 }
 
 
-void GouraudMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance)
+void GouraudMaterial::WriteDescriptorSet(Material::RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance)
 {
-	auto instance_data = reinterpret_cast<InstanceData *>(instance->GetInstanceData());
+	auto instance_data = reinterpret_cast<InstanceData *>(instance->GetInstanceData(render_mode));
 
 	auto ubo_info = vk::DescriptorBufferInfo()
 		.setBuffer(instance_data->uniform_buffer->GetVkBuffer())
@@ -98,7 +98,7 @@ void GouraudMaterial::WriteDescriptorSet(vk::DescriptorSet descriptor_set, Mater
 }
 
 
-void *GouraudMaterial::CreateInstanceData()
+void *GouraudMaterial::CreateInstanceData(Material::RenderMode render_mode)
 {
 	InstanceData *data = new InstanceData();
 
@@ -109,14 +109,14 @@ void *GouraudMaterial::CreateInstanceData()
 	return data;
 }
 
-void GouraudMaterial::DestroyInstanceData(void *data_p)
+void GouraudMaterial::DestroyInstanceData(Material::RenderMode render_mode, void *data_p)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 	delete data->uniform_buffer;
 	delete data;
 }
 
-void GouraudMaterial::UpdateInstanceData(void *data_p, MaterialInstance *instance)
+void GouraudMaterial::UpdateInstanceData(Material::RenderMode render_mode, void *data_p, MaterialInstance *instance)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 

@@ -286,7 +286,7 @@ void Renderer::AddMaterial(Material *material)
 			return;
 	}
 
-	material_pipelines.push_back(CreateMaterialPipeline(material));
+	material_pipelines.push_back(CreateMaterialPipeline(material, Material::DefaultRenderMode::ColorForward));
 }
 
 
@@ -303,13 +303,13 @@ void Renderer::RemoveMaterial(Material *material)
 	}
 }
 
-Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material)
+Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material, Material::RenderMode render_mode)
 {
 	auto device = engine->GetVkDevice();
 
 	auto pipeline = MaterialPipeline(material);
 
-	auto shader_stages = material->GetShaderStageCreateInfos();
+	auto shader_stages = material->GetShaderStageCreateInfos(render_mode);
 
 	auto vertex_binding_descriptions = material->GetVertexInputBindingDescriptions();
 	auto vertex_attribute_descriptions = material->GetVertexInputAttributeDescriptions();
@@ -437,7 +437,7 @@ void Renderer::RecreateAllMaterialPipelines()
 	{
 		auto material = material_pipeline.material;
 		DestroyMaterialPipeline(material_pipeline);
-		material_pipeline = CreateMaterialPipeline(material);
+		material_pipeline = CreateMaterialPipeline(material, Material::DefaultRenderMode::ColorForward);
 	}
 }
 
@@ -569,7 +569,7 @@ void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::F
 
 			if(pipeline.material_descriptor_set_index >= 0)
 			{
-				auto descriptor_set = primitive->GetMaterialInstance()->GetDescriptorSet();
+				auto descriptor_set = primitive->GetMaterialInstance()->GetDescriptorSet(Material::DefaultRenderMode::ColorForward);
 				command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 												  pipeline.pipeline_layout,
 												  static_cast<uint32_t>(pipeline.material_descriptor_set_index),

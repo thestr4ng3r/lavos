@@ -5,12 +5,12 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../texture.h"
-#include "material_instance.h"
 
 namespace lavos
 {
 
 class Engine;
+class MaterialInstance;
 
 /**
  * Describes one type of Material with shaders and some Material-specific settings
@@ -28,10 +28,29 @@ class Material
 		vk::DescriptorSetLayout descriptor_set_layout;
 
 	public:
-		static const MaterialInstance::TextureSlot texture_slot_base_color = 0;
-		static const MaterialInstance::TextureSlot texture_slot_normal = 1;
+		/**
+		 * Mode in which a Material can be rendered, e.g. default forward or shadow.
+		 * See DefaultRenderMode for builtin values.
+		 */
+		using RenderMode = int;
 
-		static const MaterialInstance::ParameterSlot parameter_slot_base_color_factor = 0;
+		/**
+		 * Builtin values for RenderMode.
+		 * Custom modes can start from DefaultRenderMode::User0.
+		 */
+		enum DefaultRenderMode : RenderMode {
+			ColorForward = 0,
+			Shadow,
+			User0
+		};
+
+		using TextureSlot = unsigned int;
+		using ParameterSlot = unsigned int;
+
+		static const TextureSlot texture_slot_base_color = 0;
+		static const TextureSlot texture_slot_normal = 1;
+
+		static const ParameterSlot parameter_slot_base_color_factor = 0;
 
 
 		Material(Engine *engine);
@@ -41,14 +60,16 @@ class Material
 
 		vk::DescriptorSetLayout GetDescriptorSetLayout() const		{ return descriptor_set_layout; }
 
-		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes() const =0;
-		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos() const =0;
+		virtual bool GetRenderModeSupport(RenderMode render_mode) const =0;
 
-		virtual void WriteDescriptorSet(vk::DescriptorSet descriptor_set, MaterialInstance *instance) =0;
+		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes(RenderMode render_mode) const =0;
+		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(RenderMode render_mode) const =0;
 
-		virtual void *CreateInstanceData()											{ return nullptr; }
-		virtual void DestroyInstanceData(void *data)								{}
-		virtual void UpdateInstanceData(void *data, MaterialInstance *instance) 	{}
+		virtual void WriteDescriptorSet(RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) =0;
+
+		virtual void *CreateInstanceData(RenderMode render_mode)											{ return nullptr; }
+		virtual void DestroyInstanceData(RenderMode render_mode, void *data)								{}
+		virtual void UpdateInstanceData(RenderMode render_mode, void *data, MaterialInstance *instance) 	{}
 
 		static vk::ShaderModule CreateShaderModule(vk::Device device, std::string shader);
 
