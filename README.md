@@ -1,5 +1,7 @@
 # Lavos
 
+[![Build Status](https://travis-ci.com/thestr4ng3r/lavos.svg?branch=master)](https://travis-ci.com/thestr4ng3r/lavos)
+
 Lavos is a 3D engine framework based on the Vulkan graphics API.
 
 It aims to have a more modular architecture than other engines, such as Unity.
