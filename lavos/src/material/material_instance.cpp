@@ -29,12 +29,13 @@ MaterialInstance::~MaterialInstance()
 void MaterialInstance::CreateDescriptorSet(Material::RenderMode render_mode)
 {
 	auto engine = material->GetEngine();
-	auto layout = material->GetDescriptorSetLayout();
+	auto descriptor_set_layout_id = material->GetDescriptorSetLayoutId(render_mode);
+	auto layout = material->GetDescriptorSetLayout(descriptor_set_layout_id);
 
 	if(!layout)
 		return;
 
-	vk::DescriptorSetLayout layouts[] = { material->GetDescriptorSetLayout() };
+	vk::DescriptorSetLayout layouts[] = { layout->layout };
 
 	auto alloc_info = vk::DescriptorSetAllocateInfo()
 			.setDescriptorPool(descriptor_pool)

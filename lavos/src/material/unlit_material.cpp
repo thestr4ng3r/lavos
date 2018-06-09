@@ -9,7 +9,7 @@ using namespace lavos;
 
 UnlitMaterial::UnlitMaterial(lavos::Engine *engine) : Material(engine)
 {
-	CreateDescriptorSetLayout();
+	CreateDescriptorSetLayouts();
 
 	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/unlit.vert");
 	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/unlit.frag");
@@ -27,7 +27,7 @@ UnlitMaterial::~UnlitMaterial()
 	device.destroyShaderModule(frag_shader_module);
 }
 
-void UnlitMaterial::CreateDescriptorSetLayout()
+void UnlitMaterial::CreateDescriptorSetLayouts()
 {
 	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
 		vk::DescriptorSetLayoutBinding()
@@ -45,19 +45,7 @@ void UnlitMaterial::CreateDescriptorSetLayout()
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
 	};
 
-	auto create_info = vk::DescriptorSetLayoutCreateInfo()
-		.setBindingCount(static_cast<uint32_t>(bindings.size()))
-		.setPBindings(bindings.data());
-
-	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
-}
-
-std::vector<vk::DescriptorPoolSize> UnlitMaterial::GetDescriptorPoolSizes(RenderMode render_mode) const
-{
-	return {
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1)
-	};
+	CreateDescriptorSetLayout(DescriptorSetLayoutIdDefault, bindings);
 }
 
 std::vector<vk::PipelineShaderStageCreateInfo> UnlitMaterial::GetShaderStageCreateInfos(RenderMode render_mode) const

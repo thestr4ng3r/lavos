@@ -21,13 +21,18 @@ class PhongMaterial: public Material
 			lavos::Buffer *uniform_buffer;
 		};
 
-		void CreateDescriptorSetLayout();
+		enum : Material::DescriptorSetLayoutId {
+			DescriptorSetLayoutIdDefault,
+			DescriptorSetLayoutIdShadow
+		};
 
 		vk::ShaderModule vert_shader_module;
 		vk::ShaderModule frag_shader_module;
 
 		Texture texture_default_base_color;
 		Texture texture_default_normal;
+
+		void CreateDescriptorSetLayouts();
 
 	public:
 		static const Material::ParameterSlot parameter_slot_specular_exponent = 1000;
@@ -40,7 +45,13 @@ class PhongMaterial: public Material
 			return render_mode == DefaultRenderMode::ColorForward;
 		}
 
-		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes(Material::RenderMode render_mode) const override;
+		DescriptorSetLayoutId GetDescriptorSetLayoutId(RenderMode render_mode) const override
+		{
+			if(render_mode == DefaultRenderMode::Shadow)
+				return DescriptorSetLayoutIdShadow;
+			return DescriptorSetLayoutIdDefault;
+		}
+
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(Material::RenderMode render_mode) const override;
 
 		virtual void WriteDescriptorSet(Material::RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;

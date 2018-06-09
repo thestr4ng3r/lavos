@@ -9,7 +9,7 @@ using namespace lavos;
 
 GouraudMaterial::GouraudMaterial(lavos::Engine *engine) : Material(engine)
 {
-	CreateDescriptorSetLayout();
+	CreateDescriptorSetLayouts();
 
 	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/gouraud.vert");
 	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/gouraud.frag");
@@ -29,17 +29,10 @@ GouraudMaterial::~GouraudMaterial()
 	device.destroyShaderModule(frag_shader_module);
 }
 
-void GouraudMaterial::CreateDescriptorSetLayout()
+void GouraudMaterial::CreateDescriptorSetLayouts()
 {
-	descriptor_set_layout = nullptr;
-}
-
-std::vector<vk::DescriptorPoolSize> GouraudMaterial::GetDescriptorPoolSizes(Material::RenderMode render_mode) const
-{
-	return {
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1)
-	};
+	// TODO: how did this even work?
+	// descriptor_set_layout = nullptr;
 }
 
 std::vector<vk::PipelineShaderStageCreateInfo> GouraudMaterial::GetShaderStageCreateInfos(Material::RenderMode render_mode) const

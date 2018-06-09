@@ -4,6 +4,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include <unordered_map>
+
 #include "../texture.h"
 
 namespace lavos
@@ -22,11 +24,6 @@ class MaterialInstance;
  */
 class Material
 {
-	protected:
-		Engine *engine;
-
-		vk::DescriptorSetLayout descriptor_set_layout;
-
 	public:
 		/**
 		 * Mode in which a Material can be rendered, e.g. default forward or shadow.
@@ -44,6 +41,8 @@ class Material
 			User0
 		};
 
+		using DescriptorSetLayoutId = int;
+
 		using TextureSlot = unsigned int;
 		using ParameterSlot = unsigned int;
 
@@ -52,17 +51,31 @@ class Material
 
 		static const ParameterSlot parameter_slot_base_color_factor = 0;
 
+		struct DescriptorSetLayout
+		{
+			vk::DescriptorSetLayout layout;
+			std::vector<vk::DescriptorPoolSize> pool_sizes;
+		};
 
+	private:
+		std::unordered_map<RenderMode, DescriptorSetLayout> descriptor_set_layouts;
+
+	protected:
+		Engine *engine;
+
+		void CreateDescriptorSetLayout(DescriptorSetLayoutId id, const std::vector<vk::DescriptorSetLayoutBinding> &bindings);
+
+	public:
 		Material(Engine *engine);
 		virtual ~Material();
 
 		Engine *GetEngine() const							 		{ return engine; }
 
-		vk::DescriptorSetLayout GetDescriptorSetLayout() const		{ return descriptor_set_layout; }
+		const DescriptorSetLayout *GetDescriptorSetLayout(DescriptorSetLayoutId id) const;
 
 		virtual bool GetRenderModeSupport(RenderMode render_mode) const =0;
 
-		virtual std::vector<vk::DescriptorPoolSize> GetDescriptorPoolSizes(RenderMode render_mode) const =0;
+		virtual DescriptorSetLayoutId GetDescriptorSetLayoutId(RenderMode render_mode) const =0;
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(RenderMode render_mode) const =0;
 
 		virtual void WriteDescriptorSet(RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) =0;

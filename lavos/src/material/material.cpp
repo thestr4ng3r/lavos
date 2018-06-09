@@ -14,7 +14,45 @@ Material::Material(lavos::Engine *engine)
 
 Material::~Material()
 {
-	engine->GetVkDevice().destroyDescriptorSetLayout(descriptor_set_layout);
+	for(auto &it : descriptor_set_layouts)
+		engine->GetVkDevice().destroyDescriptorSetLayout(it.second.layout);
+}
+
+void Material::CreateDescriptorSetLayout(DescriptorSetLayoutId id,
+										 const std::vector<vk::DescriptorSetLayoutBinding> &bindings)
+{
+	assert(descriptor_set_layouts.find(id) == descriptor_set_layouts.end());
+
+	auto create_info = vk::DescriptorSetLayoutCreateInfo()
+			.setBindingCount(static_cast<uint32_t>(bindings.size()))
+			.setPBindings(bindings.data());
+
+	DescriptorSetLayout layout;
+	layout.layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
+
+	std::unordered_map<vk::DescriptorType, uint32_t> descriptor_counts;
+	for(auto binding : bindings)
+	{
+		if(descriptor_counts.find(binding.descriptorType) == descriptor_counts.end())
+			descriptor_counts[binding.descriptorType] = 1;
+		else
+			descriptor_counts[binding.descriptorType]++;
+	}
+
+	layout.pool_sizes.resize(descriptor_counts.size());
+	int i=0;
+	for(auto it : descriptor_counts)
+		layout.pool_sizes[i++] = vk::DescriptorPoolSize(it.first, it.second);
+
+	descriptor_set_layouts[id] = layout;
+}
+
+const Material::DescriptorSetLayout *Material::GetDescriptorSetLayout(DescriptorSetLayoutId id) const
+{
+	auto it = descriptor_set_layouts.find(id);
+	if(it == descriptor_set_layouts.end())
+		return nullptr;
+	return &it->second;
 }
 
 vk::ShaderModule Material::CreateShaderModule(vk::Device device, std::string shader)

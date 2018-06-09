@@ -9,7 +9,7 @@ using namespace lavos;
 
 PointCloudMaterial::PointCloudMaterial(lavos::Engine *engine) : Material(engine)
 {
-	CreateDescriptorSetLayout();
+	CreateDescriptorSetLayouts();
 
 	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/point_cloud.vert");
 	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/point_cloud.frag");
@@ -23,14 +23,8 @@ PointCloudMaterial::~PointCloudMaterial()
 	device.destroyShaderModule(frag_shader_module);
 }
 
-void PointCloudMaterial::CreateDescriptorSetLayout()
+void PointCloudMaterial::CreateDescriptorSetLayouts()
 {
-	descriptor_set_layout = nullptr;
-}
-
-std::vector<vk::DescriptorPoolSize> PointCloudMaterial::GetDescriptorPoolSizes(Material::RenderMode render_mode) const
-{
-	return {};
 }
 
 std::vector<vk::PipelineShaderStageCreateInfo> PointCloudMaterial::GetShaderStageCreateInfos(Material::RenderMode render_mode) const

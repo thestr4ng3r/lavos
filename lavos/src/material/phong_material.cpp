@@ -9,7 +9,7 @@ using namespace lavos;
 
 PhongMaterial::PhongMaterial(lavos::Engine *engine) : Material(engine)
 {
-	CreateDescriptorSetLayout();
+	CreateDescriptorSetLayouts();
 
 	vert_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/phong.vert");
 	frag_shader_module = CreateShaderModule(engine->GetVkDevice(), "material/phong.frag");
@@ -29,7 +29,7 @@ PhongMaterial::~PhongMaterial()
 	device.destroyShaderModule(frag_shader_module);
 }
 
-void PhongMaterial::CreateDescriptorSetLayout()
+void PhongMaterial::CreateDescriptorSetLayouts()
 {
 	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
 		vk::DescriptorSetLayoutBinding()
@@ -54,20 +54,7 @@ void PhongMaterial::CreateDescriptorSetLayout()
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
 	};
 
-
-	auto create_info = vk::DescriptorSetLayoutCreateInfo()
-		.setBindingCount(static_cast<uint32_t>(bindings.size()))
-		.setPBindings(bindings.data());
-
-	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
-}
-
-std::vector<vk::DescriptorPoolSize> PhongMaterial::GetDescriptorPoolSizes(Material::RenderMode render_mode) const
-{
-	return {
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1),
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 2)
-	};
+	CreateDescriptorSetLayout(DescriptorSetLayoutIdDefault, bindings);
 }
 
 std::vector<vk::PipelineShaderStageCreateInfo> PhongMaterial::GetShaderStageCreateInfos(Material::RenderMode render_mode) const
