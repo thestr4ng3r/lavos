@@ -15,11 +15,6 @@ class UnlitMaterial: public Material
 			glm::vec3 color_factor;
 		};
 
-		struct InstanceData
-		{
-			lavos::Buffer *uniform_buffer;
-		};
-
 		enum : Material::DescriptorSetId {
 			DescriptorSetLayoutIdDefault
 		};

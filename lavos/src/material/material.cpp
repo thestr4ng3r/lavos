@@ -75,3 +75,13 @@ std::vector<vk::VertexInputAttributeDescription> Material::GetVertexInputAttribu
 {
 	return Vertex::GetAttributeDescription();
 }
+
+Material::UBOInstanceData::UBOInstanceData(lavos::Buffer *uniform_buffer)
+		: uniform_buffer(uniform_buffer)
+{
+}
+
+Material::UBOInstanceData::~UBOInstanceData()
+{
+	delete uniform_buffer;
+}

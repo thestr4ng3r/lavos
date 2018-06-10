@@ -7,6 +7,7 @@
 #include <map>
 
 #include "../texture.h"
+#include "../buffer.h"
 
 namespace lavos
 {
@@ -65,6 +66,14 @@ class Material
 		Engine *engine;
 
 		void CreateDescriptorSetLayout(DescriptorSetId id, const std::vector<vk::DescriptorSetLayoutBinding> &bindings);
+
+		struct UBOInstanceData
+		{
+			lavos::Buffer *uniform_buffer;
+
+			UBOInstanceData(lavos::Buffer *uniform_buffer);
+			~UBOInstanceData();
+		};
 
 	public:
 		Material(Engine *engine);

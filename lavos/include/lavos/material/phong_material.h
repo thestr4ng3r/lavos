@@ -16,11 +16,6 @@ class PhongMaterial: public Material
 			float specular_exponent;
 		};
 
-		struct InstanceData
-		{
-			lavos::Buffer *uniform_buffer;
-		};
-
 		enum : Material::DescriptorSetId {
 			DescriptorSetLayoutIdDefault,
 			DescriptorSetLayoutIdShadow

@@ -64,7 +64,7 @@ std::vector<vk::PipelineShaderStageCreateInfo> UnlitMaterial::GetShaderStageCrea
 
 void UnlitMaterial::WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance)
 {
-	auto instance_data = reinterpret_cast<InstanceData *>(instance->GetInstanceData(id));
+	auto instance_data = reinterpret_cast<UBOInstanceData *>(instance->GetInstanceData(id));
 
 	auto ubo_info = vk::DescriptorBufferInfo()
 		.setBuffer(instance_data->uniform_buffer->GetVkBuffer())
@@ -104,25 +104,22 @@ void UnlitMaterial::WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet des
 
 void *UnlitMaterial::CreateInstanceData(InstanceDataId id)
 {
-	InstanceData *data = new InstanceData();
+	auto buffer = engine->CreateBuffer(sizeof(UniformBuffer),
+									   vk::BufferUsageFlagBits::eUniformBuffer,
+									   VMA_MEMORY_USAGE_CPU_ONLY);
 
-	data->uniform_buffer = engine->CreateBuffer(sizeof(UniformBuffer),
-												vk::BufferUsageFlagBits::eUniformBuffer,
-												VMA_MEMORY_USAGE_CPU_ONLY);
-
-	return data;
+	return new UBOInstanceData(buffer);
 }
 
 void UnlitMaterial::DestroyInstanceData(InstanceDataId id, void *data_p)
 {
-	auto data = reinterpret_cast<InstanceData *>(data_p);
-	delete data->uniform_buffer;
+	auto data = reinterpret_cast<UBOInstanceData *>(data_p);
 	delete data;
 }
 
 void UnlitMaterial::UpdateInstanceData(InstanceDataId id, void *data_p, MaterialInstance *instance)
 {
-	auto data = reinterpret_cast<InstanceData *>(data_p);
+	auto data = reinterpret_cast<UBOInstanceData *>(data_p);
 
 	UniformBuffer ubo;
 
