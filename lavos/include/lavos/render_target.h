@@ -96,15 +96,15 @@ class ManagedDepthRenderTarget : public DepthRenderTarget, RenderTarget::Changed
 		void CleanupResources();
 
 	protected:
-		void RenderTargetChanged(RenderTarget *render_target);
+		void RenderTargetChanged(RenderTarget *render_target) override;
 
 	public:
 		ManagedDepthRenderTarget(Engine *engine, ColorRenderTarget *color_render_target);
 		~ManagedDepthRenderTarget() override;
 
-		virtual vk::Extent2D GetExtent() const	{ return color_render_target->GetExtent(); }
-		vk::Format GetFormat() const			{ return format; }
-		vk::ImageView GetImageView() const  	{ return image_view; }
+		vk::Extent2D GetExtent() const override			{ return color_render_target->GetExtent(); }
+		vk::Format GetFormat() const override			{ return format; }
+		vk::ImageView GetImageView() const override  	{ return image_view; }
 };
 
 

@@ -24,14 +24,14 @@ class PointCloudMaterial : public Material
 			return render_mode == DefaultRenderMode::ColorForward;
 		}
 
-		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(Material::RenderMode render_mode) const override;
+		std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(Material::RenderMode render_mode) const override;
 
-		virtual void WriteDescriptorSet(Material::RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
-		virtual void *CreateInstanceData(Material::RenderMode render_mode) override;
-		virtual void DestroyInstanceData(Material::RenderMode render_mode, void *data) override;
-		virtual void UpdateInstanceData(Material::RenderMode render_mode, void *data, MaterialInstance *instance) override;
+		void WriteDescriptorSet(Material::RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
+		void *CreateInstanceData(Material::RenderMode render_mode) override;
+		void DestroyInstanceData(Material::RenderMode render_mode, void *data) override;
+		void UpdateInstanceData(Material::RenderMode render_mode, void *data, MaterialInstance *instance) override;
 
-		virtual vk::PrimitiveTopology GetPrimitiveTopology()	{ return vk::PrimitiveTopology::ePointList; }
+		vk::PrimitiveTopology GetPrimitiveTopology() override	{ return vk::PrimitiveTopology::ePointList; }
 
 		std::vector<vk::VertexInputBindingDescription> GetVertexInputBindingDescriptions() override
 		{

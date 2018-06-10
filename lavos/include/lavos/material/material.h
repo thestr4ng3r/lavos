@@ -75,10 +75,10 @@ class Material
 
 		virtual bool GetRenderModeSupport(RenderMode render_mode) const =0;
 
-		virtual DescriptorSetLayoutId GetDescriptorSetLayoutId(RenderMode render_mode) const 				{ return render_mode; }
+		virtual DescriptorSetLayoutId GetDescriptorSetLayoutId(RenderMode render_mode) const 				{ return render_mode; };
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(RenderMode render_mode) const =0;
 
-		virtual void WriteDescriptorSet(RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) =0;
+		virtual void WriteDescriptorSet(DescriptorSetLayoutId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) =0;
 
 		virtual void *CreateInstanceData(RenderMode render_mode)											{ return nullptr; }
 		virtual void DestroyInstanceData(RenderMode render_mode, void *data)								{}
