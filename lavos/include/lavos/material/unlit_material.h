@@ -40,11 +40,6 @@ class UnlitMaterial: public Material
 			return render_mode == DefaultRenderMode::ColorForward;
 		}
 
-		DescriptorSetLayoutId GetDescriptorSetLayoutId(RenderMode render_mode) const override
-		{
-			return DescriptorSetLayoutIdDefault;
-		}
-
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(RenderMode render_mode) const override;
 
 		virtual void WriteDescriptorSet(RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
