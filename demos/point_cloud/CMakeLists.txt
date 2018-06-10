@@ -1,5 +1,5 @@
 
-find_package(PCL 1.3 REQUIRED)
+find_package(PCL 1.3 REQUIRED COMPONENTS common io)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
@@ -9,7 +9,8 @@ set(SOURCE_FILES
 
 add_executable(point_cloud ${SOURCE_FILES})
 target_link_libraries(point_cloud
-		${PCL_LIBRARIES}
+		${PCL_COMMON_LIBRARIES}
+		${PCL_IO_LIBRARIES}
 		lavos
 		lavos_shell_glfw
 		glfw
