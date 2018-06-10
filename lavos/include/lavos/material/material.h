@@ -4,7 +4,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include <unordered_map>
+#include <map>
 
 #include "../texture.h"
 
@@ -58,7 +58,7 @@ class Material
 		};
 
 	private:
-		std::unordered_map<RenderMode, DescriptorSetLayout> descriptor_set_layouts;
+		std::map<RenderMode, DescriptorSetLayout> descriptor_set_layouts;
 
 	protected:
 		Engine *engine;

@@ -30,7 +30,7 @@ void Material::CreateDescriptorSetLayout(DescriptorSetLayoutId id,
 	DescriptorSetLayout layout;
 	layout.layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
 
-	std::unordered_map<vk::DescriptorType, uint32_t> descriptor_counts;
+	std::map<vk::DescriptorType, uint32_t> descriptor_counts;
 	for(auto binding : bindings)
 	{
 		if(descriptor_counts.find(binding.descriptorType) == descriptor_counts.end())
