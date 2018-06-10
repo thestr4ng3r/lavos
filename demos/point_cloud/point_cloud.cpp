@@ -41,7 +41,10 @@ lavos::FirstPersonControllerComponent *fp_controller;
 void Init()
 {
 	material = new lavos::PointCloudMaterial(app->GetEngine());
-	renderer = new lavos::Renderer(app->GetEngine(), app->GetSwapchain(), app->GetDepthRenderTarget());
+
+	auto render_config = lavos::RenderConfigBuilder().Build();
+
+	renderer = new lavos::Renderer(app->GetEngine(), render_config, app->GetSwapchain(), app->GetDepthRenderTarget());
 	renderer->AddMaterial(material);
 
 	scene = new lavos::Scene();

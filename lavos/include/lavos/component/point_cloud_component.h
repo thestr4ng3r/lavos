@@ -29,7 +29,7 @@ class PointCloudComponent: public Component, public Renderable, public Renderabl
 
 		void BindBuffers(vk::CommandBuffer command_buffer) override
 		{
-			command_buffer.bindVertexBuffers(0, { point_cloud->vertex_buffer.buffer }, { 0 });
+			command_buffer.bindVertexBuffers(0, { point_cloud->vertex_buffer->GetVkBuffer() }, { 0 });
 		}
 
 		unsigned int GetPrimitivesCount() override							{ return 1; }

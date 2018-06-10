@@ -22,7 +22,7 @@ class PointCloud
 	public:
 		std::vector<Point> points;
 
-		lavos::Buffer vertex_buffer;
+		lavos::Buffer *vertex_buffer = nullptr;
 
 		PointCloud(Engine *engine);
 		~PointCloud();
@@ -41,7 +41,7 @@ inline PointCloud<Point>::PointCloud(Engine *engine)
 template<class Point>
 inline PointCloud<Point>::~PointCloud()
 {
-	engine->DestroyBuffer(vertex_buffer);
+	delete vertex_buffer;
 }
 
 template<class Point>
@@ -50,16 +50,15 @@ inline void PointCloud<Point>::CreateVertexBuffer()
 	vk::DeviceSize size = sizeof(points[0]) * points.size();
 
 	auto staging_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY);
-	void *data = engine->MapMemory(staging_buffer.allocation);
-	memcpy(data, points.data(), size);
-	engine->UnmapMemory(staging_buffer.allocation);
+	memcpy(staging_buffer->Map(), points.data(), size);
+	staging_buffer->UnMap();
 
 	vertex_buffer = engine->CreateBuffer(size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
 										 VMA_MEMORY_USAGE_GPU_ONLY);
 
-	engine->CopyBuffer(staging_buffer.buffer, vertex_buffer.buffer, size);
+	engine->CopyBuffer(staging_buffer->GetVkBuffer(), vertex_buffer->GetVkBuffer(), size);
 
-	engine->DestroyBuffer(staging_buffer);
+	delete staging_buffer;
 }
 
 template<class Point>
