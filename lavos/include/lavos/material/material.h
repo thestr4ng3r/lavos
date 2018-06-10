@@ -42,6 +42,7 @@ class Material
 		};
 
 		using DescriptorSetId = int;
+		using InstanceDataId = int;
 
 		using TextureSlot = unsigned int;
 		using ParameterSlot = unsigned int;
@@ -75,14 +76,15 @@ class Material
 
 		virtual bool GetRenderModeSupport(RenderMode render_mode) const =0;
 
-		virtual DescriptorSetId GetDescriptorSetLayoutId(RenderMode render_mode) const 				{ return render_mode; };
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(RenderMode render_mode) const =0;
 
+		virtual DescriptorSetId GetDescriptorSetId(RenderMode render_mode) const 					{ return render_mode; };
 		virtual void WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) =0;
 
-		virtual void *CreateInstanceData(RenderMode render_mode)											{ return nullptr; }
-		virtual void DestroyInstanceData(RenderMode render_mode, void *data)								{}
-		virtual void UpdateInstanceData(RenderMode render_mode, void *data, MaterialInstance *instance) 	{}
+		virtual InstanceDataId GetInstanceDataId(RenderMode render_mode)							{ return render_mode; }
+		virtual void *CreateInstanceData(InstanceDataId id)											{ return nullptr; }
+		virtual void DestroyInstanceData(InstanceDataId id, void *data)								{}
+		virtual void UpdateInstanceData(InstanceDataId id, void *data, MaterialInstance *instance) 	{}
 
 		static vk::ShaderModule CreateShaderModule(vk::Device device, std::string shader);
 

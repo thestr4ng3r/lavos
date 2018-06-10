@@ -91,7 +91,7 @@ void GouraudMaterial::WriteDescriptorSet(Material::DescriptorSetId id, vk::Descr
 }
 
 
-void *GouraudMaterial::CreateInstanceData(Material::RenderMode render_mode)
+void *GouraudMaterial::CreateInstanceData(InstanceDataId id)
 {
 	InstanceData *data = new InstanceData();
 
@@ -102,14 +102,14 @@ void *GouraudMaterial::CreateInstanceData(Material::RenderMode render_mode)
 	return data;
 }
 
-void GouraudMaterial::DestroyInstanceData(Material::RenderMode render_mode, void *data_p)
+void GouraudMaterial::DestroyInstanceData(InstanceDataId id, void *data_p)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 	delete data->uniform_buffer;
 	delete data;
 }
 
-void GouraudMaterial::UpdateInstanceData(Material::RenderMode render_mode, void *data_p, MaterialInstance *instance)
+void GouraudMaterial::UpdateInstanceData(InstanceDataId id, void *data_p, MaterialInstance *instance)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 

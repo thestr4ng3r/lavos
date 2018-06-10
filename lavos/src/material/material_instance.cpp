@@ -8,8 +8,8 @@ using namespace lavos;
 MaterialInstance::MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool)
 	: material(material), descriptor_pool(descriptor_pool)
 {
-	CreateDescriptorSet(Material::DefaultRenderMode::ColorForward); // TODO: depend on context
-	CreateInstanceData(Material::DefaultRenderMode::ColorForward); // TODO: depend on context
+	CreateDescriptorSet(material->GetDescriptorSetId(Material::DefaultRenderMode::ColorForward)); // TODO: depend on context
+	CreateInstanceData(material->GetInstanceDataId(Material::DefaultRenderMode::ColorForward)); // TODO: depend on context
 }
 
 MaterialInstance::~MaterialInstance()
@@ -29,7 +29,7 @@ MaterialInstance::~MaterialInstance()
 void MaterialInstance::CreateDescriptorSet(Material::RenderMode render_mode)
 {
 	auto engine = material->GetEngine();
-	auto descriptor_set_layout_id = material->GetDescriptorSetLayoutId(render_mode);
+	auto descriptor_set_layout_id = material->GetDescriptorSetId(render_mode);
 	auto layout = material->GetDescriptorSetLayout(descriptor_set_layout_id);
 
 	if(!layout)

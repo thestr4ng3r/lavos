@@ -44,9 +44,9 @@ class UnlitMaterial: public Material
 
 		void WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
 
-		void *CreateInstanceData(RenderMode render_mode) override;
-		void DestroyInstanceData(RenderMode render_mode, void *data) override;
-		void UpdateInstanceData(RenderMode render_mode, void *data, MaterialInstance *instance) override;
+		void *CreateInstanceData(InstanceDataId id) override;
+		void DestroyInstanceData(InstanceDataId id, void *data) override;
+		void UpdateInstanceData(InstanceDataId id, void *data, MaterialInstance *instance) override;
 };
 
 }

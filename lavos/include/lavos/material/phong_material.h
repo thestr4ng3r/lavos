@@ -47,11 +47,11 @@ class PhongMaterial: public Material
 
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(Material::RenderMode render_mode) const override;
 
-		virtual void WriteDescriptorSet(Material::DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
+		virtual void WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
 
-		virtual void *CreateInstanceData(Material::RenderMode render_mode) override;
-		virtual void DestroyInstanceData(Material::RenderMode render_mode, void *data) override;
-		virtual void UpdateInstanceData(Material::RenderMode render_mode, void *data, MaterialInstance *instance) override;
+		virtual void *CreateInstanceData(InstanceDataId id) override;
+		virtual void DestroyInstanceData(InstanceDataId id, void *data) override;
+		virtual void UpdateInstanceData(InstanceDataId id, void *data, MaterialInstance *instance) override;
 };
 
 }

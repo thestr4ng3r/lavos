@@ -42,14 +42,14 @@ class MaterialInstance
 
 		vk::DescriptorPool descriptor_pool;
 
-		std::unordered_map<Material::RenderMode, vk::DescriptorSet> descriptor_sets;
-		std::unordered_map<Material::RenderMode, void *> instance_data;
+		std::map<Material::DescriptorSetId, vk::DescriptorSet> descriptor_sets;
+		std::map<Material::InstanceDataId, void *> instance_data;
 
-		void CreateDescriptorSet(Material::RenderMode render_mode);
-		void CreateInstanceData(Material::RenderMode render_mode);
+		void CreateDescriptorSet(Material::DescriptorSetId id);
+		void CreateInstanceData(Material::InstanceDataId id);
 
-		void WriteDescriptorSet(Material::RenderMode render_mode);
-		void WriteInstanceData(Material::RenderMode render_mode);
+		void WriteDescriptorSet(Material::DescriptorSetId id);
+		void WriteInstanceData(Material::InstanceDataId id);
 
 	public:
 		MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool);

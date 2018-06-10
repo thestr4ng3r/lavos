@@ -132,7 +132,7 @@ void PhongMaterial::WriteDescriptorSet(Material::DescriptorSetId id, vk::Descrip
 }
 
 
-void *PhongMaterial::CreateInstanceData(Material::RenderMode render_mode)
+void *PhongMaterial::CreateInstanceData(InstanceDataId id)
 {
 	InstanceData *data = new InstanceData();
 
@@ -143,14 +143,14 @@ void *PhongMaterial::CreateInstanceData(Material::RenderMode render_mode)
 	return data;
 }
 
-void PhongMaterial::DestroyInstanceData(Material::RenderMode render_mode, void *data_p)
+void PhongMaterial::DestroyInstanceData(InstanceDataId id, void *data_p)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 	delete data->uniform_buffer;
 	delete data;
 }
 
-void PhongMaterial::UpdateInstanceData(Material::RenderMode render_mode, void *data_p, MaterialInstance *instance)
+void PhongMaterial::UpdateInstanceData(InstanceDataId id, void *data_p, MaterialInstance *instance)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 

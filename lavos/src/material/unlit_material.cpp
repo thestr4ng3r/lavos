@@ -102,7 +102,7 @@ void UnlitMaterial::WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet des
 	engine->GetVkDevice().updateDescriptorSets({image_write, ubo_write}, nullptr);
 }
 
-void *UnlitMaterial::CreateInstanceData(RenderMode render_mode)
+void *UnlitMaterial::CreateInstanceData(InstanceDataId id)
 {
 	InstanceData *data = new InstanceData();
 
@@ -113,14 +113,14 @@ void *UnlitMaterial::CreateInstanceData(RenderMode render_mode)
 	return data;
 }
 
-void UnlitMaterial::DestroyInstanceData(RenderMode render_mode, void *data_p)
+void UnlitMaterial::DestroyInstanceData(InstanceDataId id, void *data_p)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 	delete data->uniform_buffer;
 	delete data;
 }
 
-void UnlitMaterial::UpdateInstanceData(RenderMode render_mode, void *data_p, MaterialInstance *instance)
+void UnlitMaterial::UpdateInstanceData(InstanceDataId id, void *data_p, MaterialInstance *instance)
 {
 	auto data = reinterpret_cast<InstanceData *>(data_p);
 

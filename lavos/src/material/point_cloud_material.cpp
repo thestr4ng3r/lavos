@@ -47,15 +47,15 @@ void PointCloudMaterial::WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSe
 	return;
 }
 
-void *PointCloudMaterial::CreateInstanceData(RenderMode render_mode)
+void *PointCloudMaterial::CreateInstanceData(InstanceDataId id)
 {
 	return nullptr;
 }
 
-void PointCloudMaterial::DestroyInstanceData(RenderMode render_mode, void *data_p)
+void PointCloudMaterial::DestroyInstanceData(InstanceDataId id, void *data_p)
 {
 }
 
-void PointCloudMaterial::UpdateInstanceData(RenderMode render_mode, void *data_p, MaterialInstance *instance)
+void PointCloudMaterial::UpdateInstanceData(InstanceDataId id, void *data_p, MaterialInstance *instance)
 {
 }

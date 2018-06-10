@@ -376,7 +376,7 @@ Renderer::MaterialPipeline Renderer::CreateMaterialPipeline(Material *material, 
 
 	pipeline.renderer_descriptor_set_index = 0;
 
-	auto descriptor_set_layout_id = material->GetDescriptorSetLayoutId(render_mode);
+	auto descriptor_set_layout_id = material->GetDescriptorSetId(render_mode);
 	auto material_descriptor_set_layout = material->GetDescriptorSetLayout(descriptor_set_layout_id);
 	if(material_descriptor_set_layout)
 	{

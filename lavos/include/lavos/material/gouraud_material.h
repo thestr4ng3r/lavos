@@ -46,11 +46,11 @@ class GouraudMaterial: public Material
 
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(Material::RenderMode render_mode) const override;
 
-		void WriteDescriptorSet(Material::DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
+		void WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
 
-		void *CreateInstanceData(Material::RenderMode render_mode) override;
-		void DestroyInstanceData(Material::RenderMode render_mode, void *data) override;
-		void UpdateInstanceData(Material::RenderMode render_mode, void *data, MaterialInstance *instance) override;
+		void *CreateInstanceData(InstanceDataId id) override;
+		void DestroyInstanceData(InstanceDataId id, void *data) override;
+		void UpdateInstanceData(InstanceDataId id, void *data, MaterialInstance *instance) override;
 };
 
 }
