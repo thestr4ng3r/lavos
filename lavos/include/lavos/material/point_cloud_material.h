@@ -24,12 +24,12 @@ class PointCloudMaterial : public Material
 			return render_mode == DefaultRenderMode::ColorForward;
 		}
 
-		std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(Material::RenderMode render_mode) const override;
+		std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(RenderMode render_mode) const override;
 
-		void WriteDescriptorSet(Material::RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
-		void *CreateInstanceData(Material::RenderMode render_mode) override;
-		void DestroyInstanceData(Material::RenderMode render_mode, void *data) override;
-		void UpdateInstanceData(Material::RenderMode render_mode, void *data, MaterialInstance *instance) override;
+		void WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
+		void *CreateInstanceData(RenderMode render_mode) override;
+		void DestroyInstanceData(RenderMode render_mode, void *data) override;
+		void UpdateInstanceData(RenderMode render_mode, void *data, MaterialInstance *instance) override;
 
 		vk::PrimitiveTopology GetPrimitiveTopology() override	{ return vk::PrimitiveTopology::ePointList; }
 

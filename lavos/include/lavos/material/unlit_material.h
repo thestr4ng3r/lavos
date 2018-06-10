@@ -20,7 +20,7 @@ class UnlitMaterial: public Material
 			lavos::Buffer *uniform_buffer;
 		};
 
-		enum : Material::DescriptorSetLayoutId {
+		enum : Material::DescriptorSetId {
 			DescriptorSetLayoutIdDefault
 		};
 
@@ -40,13 +40,13 @@ class UnlitMaterial: public Material
 			return render_mode == DefaultRenderMode::ColorForward;
 		}
 
-		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(RenderMode render_mode) const override;
+		std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(RenderMode render_mode) const override;
 
-		virtual void WriteDescriptorSet(RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
+		void WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
 
-		virtual void *CreateInstanceData(RenderMode render_mode) override;
-		virtual void DestroyInstanceData(RenderMode render_mode, void *data) override;
-		virtual void UpdateInstanceData(RenderMode render_mode, void *data, MaterialInstance *instance) override;
+		void *CreateInstanceData(RenderMode render_mode) override;
+		void DestroyInstanceData(RenderMode render_mode, void *data) override;
+		void UpdateInstanceData(RenderMode render_mode, void *data, MaterialInstance *instance) override;
 };
 
 }

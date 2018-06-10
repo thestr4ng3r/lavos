@@ -41,7 +41,7 @@ class Material
 			User0
 		};
 
-		using DescriptorSetLayoutId = int;
+		using DescriptorSetId = int;
 
 		using TextureSlot = unsigned int;
 		using ParameterSlot = unsigned int;
@@ -63,7 +63,7 @@ class Material
 	protected:
 		Engine *engine;
 
-		void CreateDescriptorSetLayout(DescriptorSetLayoutId id, const std::vector<vk::DescriptorSetLayoutBinding> &bindings);
+		void CreateDescriptorSetLayout(DescriptorSetId id, const std::vector<vk::DescriptorSetLayoutBinding> &bindings);
 
 	public:
 		Material(Engine *engine);
@@ -71,14 +71,14 @@ class Material
 
 		Engine *GetEngine() const							 		{ return engine; }
 
-		const DescriptorSetLayout *GetDescriptorSetLayout(DescriptorSetLayoutId id) const;
+		const DescriptorSetLayout *GetDescriptorSetLayout(DescriptorSetId id) const;
 
 		virtual bool GetRenderModeSupport(RenderMode render_mode) const =0;
 
-		virtual DescriptorSetLayoutId GetDescriptorSetLayoutId(RenderMode render_mode) const 				{ return render_mode; };
+		virtual DescriptorSetId GetDescriptorSetLayoutId(RenderMode render_mode) const 				{ return render_mode; };
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(RenderMode render_mode) const =0;
 
-		virtual void WriteDescriptorSet(DescriptorSetLayoutId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) =0;
+		virtual void WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) =0;
 
 		virtual void *CreateInstanceData(RenderMode render_mode)											{ return nullptr; }
 		virtual void DestroyInstanceData(RenderMode render_mode, void *data)								{}

@@ -21,7 +21,7 @@ class PhongMaterial: public Material
 			lavos::Buffer *uniform_buffer;
 		};
 
-		enum : Material::DescriptorSetLayoutId {
+		enum : Material::DescriptorSetId {
 			DescriptorSetLayoutIdDefault,
 			DescriptorSetLayoutIdShadow
 		};
@@ -47,7 +47,7 @@ class PhongMaterial: public Material
 
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(Material::RenderMode render_mode) const override;
 
-		virtual void WriteDescriptorSet(Material::RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
+		virtual void WriteDescriptorSet(Material::DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance) override;
 
 		virtual void *CreateInstanceData(Material::RenderMode render_mode) override;
 		virtual void DestroyInstanceData(Material::RenderMode render_mode, void *data) override;

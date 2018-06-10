@@ -18,7 +18,7 @@ Material::~Material()
 		engine->GetVkDevice().destroyDescriptorSetLayout(it.second.layout);
 }
 
-void Material::CreateDescriptorSetLayout(DescriptorSetLayoutId id,
+void Material::CreateDescriptorSetLayout(DescriptorSetId id,
 										 const std::vector<vk::DescriptorSetLayoutBinding> &bindings)
 {
 	assert(descriptor_set_layouts.find(id) == descriptor_set_layouts.end());
@@ -47,7 +47,7 @@ void Material::CreateDescriptorSetLayout(DescriptorSetLayoutId id,
 	descriptor_set_layouts[id] = layout;
 }
 
-const Material::DescriptorSetLayout *Material::GetDescriptorSetLayout(DescriptorSetLayoutId id) const
+const Material::DescriptorSetLayout *Material::GetDescriptorSetLayout(DescriptorSetId id) const
 {
 	auto it = descriptor_set_layouts.find(id);
 	if(it == descriptor_set_layouts.end())

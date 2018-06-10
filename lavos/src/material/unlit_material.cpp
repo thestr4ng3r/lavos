@@ -62,9 +62,9 @@ std::vector<vk::PipelineShaderStageCreateInfo> UnlitMaterial::GetShaderStageCrea
 	};
 }
 
-void UnlitMaterial::WriteDescriptorSet(RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance)
+void UnlitMaterial::WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance)
 {
-	auto instance_data = reinterpret_cast<InstanceData *>(instance->GetInstanceData(render_mode));
+	auto instance_data = reinterpret_cast<InstanceData *>(instance->GetInstanceData(id));
 
 	auto ubo_info = vk::DescriptorBufferInfo()
 		.setBuffer(instance_data->uniform_buffer->GetVkBuffer())

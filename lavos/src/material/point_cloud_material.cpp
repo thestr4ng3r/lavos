@@ -27,7 +27,7 @@ void PointCloudMaterial::CreateDescriptorSetLayouts()
 {
 }
 
-std::vector<vk::PipelineShaderStageCreateInfo> PointCloudMaterial::GetShaderStageCreateInfos(Material::RenderMode render_mode) const
+std::vector<vk::PipelineShaderStageCreateInfo> PointCloudMaterial::GetShaderStageCreateInfos(RenderMode render_mode) const
 {
 	return {
 			vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags(),
@@ -42,20 +42,20 @@ std::vector<vk::PipelineShaderStageCreateInfo> PointCloudMaterial::GetShaderStag
 }
 
 
-void PointCloudMaterial::WriteDescriptorSet(Material::RenderMode render_mode, vk::DescriptorSet descriptor_set, MaterialInstance *instance)
+void PointCloudMaterial::WriteDescriptorSet(DescriptorSetId id, vk::DescriptorSet descriptor_set, MaterialInstance *instance)
 {
 	return;
 }
 
-void *PointCloudMaterial::CreateInstanceData(Material::RenderMode render_mode)
+void *PointCloudMaterial::CreateInstanceData(RenderMode render_mode)
 {
 	return nullptr;
 }
 
-void PointCloudMaterial::DestroyInstanceData(Material::RenderMode render_mode, void *data_p)
+void PointCloudMaterial::DestroyInstanceData(RenderMode render_mode, void *data_p)
 {
 }
 
-void PointCloudMaterial::UpdateInstanceData(Material::RenderMode render_mode, void *data_p, MaterialInstance *instance)
+void PointCloudMaterial::UpdateInstanceData(RenderMode render_mode, void *data_p, MaterialInstance *instance)
 {
 }
