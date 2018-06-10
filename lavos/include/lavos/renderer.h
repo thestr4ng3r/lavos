@@ -11,6 +11,7 @@
 #include "mesh.h"
 #include "scene.h"
 #include "render_target.h"
+#include "render_config.h"
 
 namespace lavos
 {
@@ -86,6 +87,8 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 	private:
 		Engine * const engine;
 
+		const RenderConfig config;
+
 		Scene *scene = nullptr;
 		CameraComponent *camera = nullptr;
 
@@ -141,7 +144,7 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 	public:
 		static const unsigned int max_spot_lights = 16;
 
-		Renderer(Engine *engine, ColorRenderTarget *color_render_target, DepthRenderTarget *depth_render_target);
+		Renderer(Engine *engine, const RenderConfig &config, ColorRenderTarget *color_render_target, DepthRenderTarget *depth_render_target);
 		~Renderer();
 
 		Engine *GetEngine() const 							{ return engine; }

@@ -16,16 +16,20 @@ class AssetContainer
 {
 	public:
 		Engine * const engine;
+		const RenderConfig render_config;
+
 		vk::DescriptorPool descriptor_pool;
 
 		std::vector<MaterialInstance *> material_instances;
 		std::vector<Mesh *> meshes;
 		std::vector<Scene *> scenes;
 
-		AssetContainer(Engine *engine);
+		AssetContainer(Engine *engine, const RenderConfig &render_config);
 		~AssetContainer();
 
-		static AssetContainer *LoadFromGLTF(Engine *engine, Material *material, std::string filename);
+		const RenderConfig &GetRenderConfig()	{ return render_config; }
+
+		static AssetContainer *LoadFromGLTF(Engine *engine, const RenderConfig &render_config, Material *material, std::string filename);
 };
 
 }

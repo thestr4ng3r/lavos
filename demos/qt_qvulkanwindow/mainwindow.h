@@ -81,6 +81,8 @@ class MainWindowRenderer: public QVulkanWindowRenderer
 		lavos::Engine *engine = nullptr;
 		QVulkanWindow *window;
 
+		lavos::RenderConfig render_config;
+
 		lavos::PhongMaterial *material = nullptr;
 		lavos::Scene *scene = nullptr;
 		lavos::CameraComponent *camera = nullptr;

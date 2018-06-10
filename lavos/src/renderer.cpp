@@ -13,8 +13,11 @@
 
 using namespace lavos;
 
-Renderer::Renderer(Engine *engine, ColorRenderTarget *color_render_target, DepthRenderTarget *depth_render_target)
-	: engine(engine)
+Renderer::Renderer(Engine *engine,
+				   const RenderConfig &config,
+				   ColorRenderTarget *color_render_target,
+				   DepthRenderTarget *depth_render_target)
+	: engine(engine), config(config)
 {
 	this->color_render_target = color_render_target;
 	this->depth_render_target = depth_render_target;

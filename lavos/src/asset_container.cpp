@@ -16,8 +16,8 @@
 
 using namespace lavos;
 
-AssetContainer::AssetContainer(Engine *engine)
-	: engine(engine)
+AssetContainer::AssetContainer(Engine *engine, const RenderConfig &render_config)
+	: engine(engine), render_config(render_config)
 {
 }
 
@@ -163,7 +163,7 @@ static void LoadMaterialInstances(AssetContainer &container, Material *material,
 {
 	for(const auto &gltf_material : model.materials)
 	{
-		auto material_instance = new MaterialInstance(material, container.descriptor_pool);
+		auto material_instance = new MaterialInstance(material, container.GetRenderConfig(), container.descriptor_pool);
 
 		material_instance->SetTexture(Material::texture_slot_base_color,
 									  LoadSubParameterTexture(container, model, gltf_material.values, "baseColorTexture", "index"));
@@ -427,9 +427,9 @@ static vk::DescriptorPool CreateDescriptorPoolForGLTF(Engine *engine, Material *
 }
 
 
-static AssetContainer *LoadGLTF(Engine *engine, Material *material, tinygltf::Model &model)
+static AssetContainer *LoadGLTF(Engine *engine, const RenderConfig &render_config, Material *material, tinygltf::Model &model)
 {
-	AssetContainer *container = new AssetContainer(engine);
+	AssetContainer *container = new AssetContainer(engine, render_config);
 	container->descriptor_pool = CreateDescriptorPoolForGLTF(engine, material, model);
 
 	try
@@ -452,7 +452,7 @@ static AssetContainer *LoadGLTF(Engine *engine, Material *material, tinygltf::Mo
 #include <android_common.h>
 #endif
 
-AssetContainer *AssetContainer::LoadFromGLTF(Engine *engine, Material *material, std::string filename)
+AssetContainer *AssetContainer::LoadFromGLTF(Engine *engine, const RenderConfig &render_config, Material *material, std::string filename)
 {
 	tinygltf::TinyGLTF loader;
 	tinygltf::Model model;
@@ -473,5 +473,5 @@ AssetContainer *AssetContainer::LoadFromGLTF(Engine *engine, Material *material,
 	if(!success)
 		throw std::runtime_error("Failed to load glTF file.");
 
-	return LoadGLTF(engine, material, model);
+	return LoadGLTF(engine, render_config, material, model);
 }

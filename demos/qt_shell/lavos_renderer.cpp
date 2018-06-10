@@ -23,7 +23,9 @@ void LavosWindowRenderer::InitializeSwapchainResources(lavos::shell::qt::LavosWi
 {
 	material = new lavos::PhongMaterial(engine);
 
-	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
+	render_config = lavos::RenderConfigBuilder().Build();
+
+	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, render_config, material, "data/gltftest.gltf");
 
 	scene = asset_container->scenes[0];
 	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
@@ -54,7 +56,7 @@ void LavosWindowRenderer::InitializeSwapchainResources(lavos::shell::qt::LavosWi
 	lavos::DirectionalLightComponent *light = new lavos::DirectionalLightComponent();
 	light_node->AddComponent(light);
 
-	renderer = new lavos::Renderer(engine, window->GetSwapchain(), window->GetDepthRenderTarget());
+	renderer = new lavos::Renderer(engine, render_config, window->GetSwapchain(), window->GetDepthRenderTarget());
 	renderer->AddMaterial(material);
 
 	renderer->SetScene(scene);

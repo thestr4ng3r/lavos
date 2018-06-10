@@ -5,11 +5,14 @@
 
 using namespace lavos;
 
-MaterialInstance::MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool)
+MaterialInstance::MaterialInstance(Material *material, const RenderConfig &render_config, vk::DescriptorPool descriptor_pool)
 	: material(material), descriptor_pool(descriptor_pool)
 {
-	CreateDescriptorSet(material->GetDescriptorSetId(Material::DefaultRenderMode::ColorForward)); // TODO: depend on context
-	CreateInstanceData(material->GetInstanceDataId(Material::DefaultRenderMode::ColorForward)); // TODO: depend on context
+	for(auto render_mode : render_config.GetMaterialRenderModes())
+	{
+		CreateDescriptorSet(material->GetDescriptorSetId(render_mode));
+		CreateInstanceData(material->GetInstanceDataId(render_mode));
+	}
 }
 
 MaterialInstance::~MaterialInstance()
@@ -26,11 +29,13 @@ MaterialInstance::~MaterialInstance()
 		engine->GetVkDevice().freeDescriptorSets(descriptor_pool, it.second);
 }
 
-void MaterialInstance::CreateDescriptorSet(Material::RenderMode render_mode)
+void MaterialInstance::CreateDescriptorSet(Material::DescriptorSetId id)
 {
+	if(descriptor_sets.find(id) != descriptor_sets.end())
+		return;
+
 	auto engine = material->GetEngine();
-	auto descriptor_set_layout_id = material->GetDescriptorSetId(render_mode);
-	auto layout = material->GetDescriptorSetLayout(descriptor_set_layout_id);
+	auto layout = material->GetDescriptorSetLayout(id);
 
 	if(!layout)
 		return;
@@ -44,12 +49,15 @@ void MaterialInstance::CreateDescriptorSet(Material::RenderMode render_mode)
 
 	auto descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
 	if(descriptor_set)
-		descriptor_sets[render_mode] = descriptor_set;
+		descriptor_sets[id] = descriptor_set;
 }
 
-void MaterialInstance::CreateInstanceData(Material::RenderMode render_mode)
+void MaterialInstance::CreateInstanceData(Material::InstanceDataId id)
 {
-	instance_data[render_mode] = material->CreateInstanceData(render_mode);
+	if(instance_data.find(id) != instance_data.end())
+		return;
+
+	instance_data[id] = material->CreateInstanceData(id);
 }
 
 void MaterialInstance::WriteDescriptorSet(Material::RenderMode render_mode)

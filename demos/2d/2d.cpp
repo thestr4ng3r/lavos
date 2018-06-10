@@ -57,10 +57,13 @@ CameraControllerComponent *camera_controller;
 void Init(std::string gltf_filename)
 {
 	material = new lavos::GouraudMaterial(app->GetEngine());
-	renderer = new lavos::Renderer(app->GetEngine(), app->GetSwapchain(), app->GetDepthRenderTarget());
+
+	auto render_config = lavos::RenderConfigBuilder().Build();
+
+	renderer = new lavos::Renderer(app->GetEngine(), render_config, app->GetSwapchain(), app->GetDepthRenderTarget());
 	renderer->AddMaterial(material);
 
-	asset_container = lavos::AssetContainer::LoadFromGLTF(app->GetEngine(), material, gltf_filename);
+	asset_container = lavos::AssetContainer::LoadFromGLTF(app->GetEngine(), render_config, material, gltf_filename);
 
 	scene = asset_container->scenes[0];
 	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));

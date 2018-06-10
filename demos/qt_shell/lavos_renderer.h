@@ -9,6 +9,8 @@ class LavosWindowRenderer : public lavos::shell::qt::LavosWindow::Renderer
 	private:
 		lavos::Engine *engine = nullptr;
 
+		lavos::RenderConfig render_config;
+
 		lavos::PhongMaterial *material = nullptr;
 		lavos::Scene *scene = nullptr;
 		lavos::CameraComponent *camera = nullptr;

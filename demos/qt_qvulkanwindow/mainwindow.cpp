@@ -15,7 +15,9 @@ void MainWindowRenderer::initResources()
 
 	material = new lavos::PhongMaterial(engine);
 
-	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, material, "data/gltftest.gltf");
+	render_config = lavos::RenderConfigBuilder().Build();
+
+	asset_container = lavos::AssetContainer::LoadFromGLTF(engine, render_config, material, "data/gltftest.gltf");
 
 	scene = asset_container->scenes[0];
 	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
@@ -58,7 +60,7 @@ void MainWindowRenderer::initSwapChainResources()
 	color_render_target = new QVulkanWindowColorRenderTarget(window);
 	depth_render_target = new QVulkanWindowDepthRenderTarget(window);
 
-	renderer = new lavos::Renderer(engine, color_render_target, depth_render_target);
+	renderer = new lavos::Renderer(engine, render_config, color_render_target, depth_render_target);
 	renderer->AddMaterial(material);
 
 	renderer->SetScene(scene);

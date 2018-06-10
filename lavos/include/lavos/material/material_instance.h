@@ -8,6 +8,7 @@
 #include "../texture.h"
 #include "../buffer.h"
 #include "material.h"
+#include "../render_config.h"
 
 namespace lavos
 {
@@ -52,7 +53,7 @@ class MaterialInstance
 		void WriteInstanceData(Material::InstanceDataId id);
 
 	public:
-		MaterialInstance(Material *material, vk::DescriptorPool descriptor_pool);
+		MaterialInstance(Material *material, const RenderConfig &config, vk::DescriptorPool descriptor_pool);
 		~MaterialInstance();
 
 		void WriteAllData();
