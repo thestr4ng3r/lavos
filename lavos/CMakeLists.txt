@@ -91,7 +91,9 @@ set(GLSL_FILES
 		material/gouraud.vert
 		material/gouraud.frag
 		material/point_cloud.vert
-		material/point_cloud.frag)
+		material/point_cloud.frag
+		material/shadow.vert
+		material/shadow.frag)
 
 
 

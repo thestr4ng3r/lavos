@@ -24,6 +24,9 @@ class PhongMaterial: public Material
 		vk::ShaderModule vert_shader_module;
 		vk::ShaderModule frag_shader_module;
 
+		vk::ShaderModule shadow_vert_shader_module;
+		vk::ShaderModule shadow_frag_shader_module;
+
 		Texture texture_default_base_color;
 		Texture texture_default_normal;
 
@@ -37,7 +40,8 @@ class PhongMaterial: public Material
 
 		bool GetRenderModeSupport(RenderMode render_mode) const override
 		{
-			return render_mode == DefaultRenderMode::ColorForward;
+			return render_mode == DefaultRenderMode::ColorForward
+					|| render_mode == DefaultRenderMode::Shadow;
 		}
 
 		virtual std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStageCreateInfos(Material::RenderMode render_mode) const override;
