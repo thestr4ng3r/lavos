@@ -136,7 +136,7 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		void CreateRenderCommandBuffer();
 		void CleanupRenderCommandBuffer();
 
-		void RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer);
+		void RecordRenderables(vk::CommandBuffer command_buffer, Material::RenderMode render_mode);
 
 	protected:
 		void RenderTargetChanged(RenderTarget *render_target) override;

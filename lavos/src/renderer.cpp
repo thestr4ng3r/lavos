@@ -519,26 +519,8 @@ void Renderer::CleanupRenderCommandBuffer()
 	engine->GetVkDevice().freeCommandBuffers(engine->GetRenderCommandPool(), render_command_buffer);
 }
 
-void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer)
+void Renderer::RecordRenderables(vk::CommandBuffer command_buffer, Material::RenderMode render_mode)
 {
-	// TODO: here is a LOT of potential for optimization
-
-	std::array<vk::ClearValue, 2> clear_values = {
-		vk::ClearColorValue(std::array<float, 4>{{0.0f, 0.0f, 0.0f, 1.0f }}),
-		vk::ClearDepthStencilValue(1.0f, 0)
-	};
-
-	auto extent = color_render_target->GetExtent();
-
-	command_buffer.beginRenderPass(
-		vk::RenderPassBeginInfo()
-			.setRenderPass(render_pass)
-			.setFramebuffer(dst_framebuffer)
-			.setRenderArea(vk::Rect2D({0, 0 }, extent))
-			.setClearValueCount(clear_values.size())
-			.setPClearValues(clear_values.data()),
-		vk::SubpassContents::eInline);
-
 	auto pipeline = material_pipelines[0];
 
 	command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
@@ -586,7 +568,6 @@ void Renderer::RecordRenderCommandBuffer(vk::CommandBuffer command_buffer, vk::F
 	});
 
 
-	command_buffer.endRenderPass();
 }
 
 void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> wait_semaphores,
@@ -632,7 +613,25 @@ void Renderer::DrawFrameRecord(vk::CommandBuffer command_buffer, vk::Framebuffer
 	UpdateLightingUniformBuffer();
 	UpdateCameraUniformBuffer();
 
-	RecordRenderCommandBuffer(command_buffer, dst_framebuffer);
+	std::array<vk::ClearValue, 2> clear_values = {
+			vk::ClearColorValue(std::array<float, 4>{{0.0f, 0.0f, 0.0f, 1.0f }}),
+			vk::ClearDepthStencilValue(1.0f, 0)
+	};
+
+	auto extent = color_render_target->GetExtent();
+
+	command_buffer.beginRenderPass(
+			vk::RenderPassBeginInfo()
+					.setRenderPass(render_pass)
+					.setFramebuffer(dst_framebuffer)
+					.setRenderArea(vk::Rect2D({0, 0 }, extent))
+					.setClearValueCount(clear_values.size())
+					.setPClearValues(clear_values.data()),
+			vk::SubpassContents::eInline);
+
+	RecordRenderables(command_buffer, Material::DefaultRenderMode::ColorForward);
+
+	command_buffer.endRenderPass();
 }
 
 void Renderer::RenderTargetChanged(RenderTarget *render_target)
