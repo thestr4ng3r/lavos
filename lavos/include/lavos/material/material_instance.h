@@ -56,6 +56,8 @@ class MaterialInstance
 		MaterialInstance(Material *material, const RenderConfig &config, vk::DescriptorPool descriptor_pool);
 		~MaterialInstance();
 
+		Material *GetMaterial() const	{ return material; }
+
 		void WriteAllData();
 
 		vk::DescriptorSet GetDescriptorSet(Material::RenderMode render_mode) const	{ auto it = descriptor_sets.find(render_mode); return it == descriptor_sets.end() ? vk::DescriptorSet() : it->second; }

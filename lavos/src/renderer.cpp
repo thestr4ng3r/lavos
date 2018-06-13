@@ -521,53 +521,96 @@ void Renderer::CleanupRenderCommandBuffer()
 
 void Renderer::RecordRenderables(vk::CommandBuffer command_buffer, Material::RenderMode render_mode)
 {
-	auto pipeline = material_pipelines[0];
+	std::multimap<Material *, std::set<std::pair<Node *, Renderable *>>> material_primitives;
 
-	command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
-	command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-									  pipeline.pipeline_layout,
-									  static_cast<uint32_t>(pipeline.renderer_descriptor_set_index),
-									  descriptor_set,
-									  nullptr);
-
-	scene->GetRootNode()->TraversePreOrder([command_buffer, pipeline] (Node *node) {
+	scene->GetRootNode()->TraversePreOrder([&material_primitives] (Node *node) {
 		auto renderable = node->GetComponent<Renderable>();
 		if(renderable == nullptr || !renderable->GetCurrentlyRenderable())
 			return;
-
-		auto transform_component = node->GetTransformComponent();
-		TransformPushConstant transform_push_constant;
-		if(transform_component != nullptr)
-			transform_push_constant.transform = transform_component->GetMatrixWorld();
-
-		command_buffer.pushConstants(pipeline.pipeline_layout,
-									 vk::ShaderStageFlagBits::eVertex,
-									 0,
-									 sizeof(TransformPushConstant),
-									 &transform_push_constant);
-
-		renderable->BindBuffers(command_buffer);
 
 		unsigned int primitives_count = renderable->GetPrimitivesCount();
 		for(unsigned int i=0; i<primitives_count; i++)
 		{
 			auto primitive = renderable->GetPrimitive(i);
+			auto material = primitive->GetMaterialInstance()->GetMaterial();
 
-			if(pipeline.material_descriptor_set_index >= 0)
-			{
-				auto descriptor_set = primitive->GetMaterialInstance()->GetDescriptorSet(Material::DefaultRenderMode::ColorForward);
-				command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-												  pipeline.pipeline_layout,
-												  static_cast<uint32_t>(pipeline.material_descriptor_set_index),
-												  descriptor_set,
-												  nullptr);
-			}
-
-			primitive->Draw(command_buffer);
+			auto it = material_primitives.find(material);
+			if(it != material_primitives.end())
+				it->second.insert(std::pair<Node *, Renderable *>(node, renderable));
+			else
+				material_primitives.insert(std::pair<Material *, std::set<std::pair<Node *, Renderable *>>>(
+						material, { std::pair<Node *, Renderable *>(node, renderable) }));
 		}
 	});
 
+	for(auto &entry : material_primitives)
+	{
+		auto material = entry.first;
+		auto &renderables = entry.second;
 
+		// TODO: Allow getting the MaterialPipelines from somewhere else for other RenderModes
+		MaterialPipeline *pipeline = nullptr;
+		for(auto &p : material_pipelines)
+		{
+			if(p.material == material)
+				pipeline = &p;
+		}
+
+		if(!pipeline)
+			continue;
+
+		int material_descriptor_set_index = pipeline->material_descriptor_set_index;
+		auto pipeline_layout = pipeline->pipeline_layout;
+
+		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->pipeline);
+		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+										  pipeline_layout,
+										  static_cast<uint32_t>(pipeline->renderer_descriptor_set_index),
+										  descriptor_set,
+										  nullptr);
+
+
+		for(auto &renderable_entry : renderables)
+		{
+			auto node = renderable_entry.first;
+			auto renderable = renderable_entry.second;
+
+			auto transform_component = node->GetTransformComponent();
+			TransformPushConstant transform_push_constant;
+			if(transform_component != nullptr)
+				transform_push_constant.transform = transform_component->GetMatrixWorld();
+
+			command_buffer.pushConstants(pipeline_layout,
+										 vk::ShaderStageFlagBits::eVertex,
+										 0,
+										 sizeof(TransformPushConstant),
+										 &transform_push_constant);
+
+			renderable->BindBuffers(command_buffer);
+
+			unsigned int primitives_count = renderable->GetPrimitivesCount();
+			for(unsigned int i=0; i<primitives_count; i++)
+			{
+				auto primitive = renderable->GetPrimitive(i);
+
+				auto material_instance = primitive->GetMaterialInstance();
+				if(material_instance->GetMaterial() != material)
+					continue;
+
+				if(material_descriptor_set_index >= 0)
+				{
+					auto descriptor_set = primitive->GetMaterialInstance()->GetDescriptorSet(render_mode);
+					command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+													  pipeline_layout,
+													  static_cast<uint32_t>(material_descriptor_set_index),
+													  descriptor_set,
+													  nullptr);
+				}
+
+				primitive->Draw(command_buffer);
+			}
+		}
+	}
 }
 
 void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> wait_semaphores,
