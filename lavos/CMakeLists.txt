@@ -8,6 +8,16 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(Shaderc REQUIRED)
 
+function(parse_make_deps OUTPUT_VAR MAKE_DEPS)
+	if("${MAKE_DEPS}" MATCHES "^[^:]+:*(.*)$")
+		string(STRIP "${CMAKE_MATCH_1}" DEPS)
+		string(REPLACE " " ";" DEPS "${DEPS}")
+		set("${OUTPUT_VAR}" "${DEPS}" PARENT_SCOPE)
+	else()
+		set("${OUTPUT_VAR}" "" PARENT_SCOPE)
+	endif()
+endfunction()
+
 macro(add_spirv_shaders SPIRV_FILES_VAR GLSL_FILES_VAR)
 	set(${SPIRV_FILES_VAR} "")
 	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/shader")
@@ -16,9 +26,15 @@ macro(add_spirv_shaders SPIRV_FILES_VAR GLSL_FILES_VAR)
 		set(spirv_file "${CMAKE_CURRENT_BINARY_DIR}/shader/${glsl_file}.spv")
 		set(glsl_file "${CMAKE_CURRENT_SOURCE_DIR}/glsl/${glsl_file}")
 		list(APPEND ${SPIRV_FILES_VAR} "${spirv_file}")
+
+		execute_process(COMMAND "${Shaderc_GLSLC}" -M "${glsl_file}"
+				OUTPUT_VARIABLE GLSL_MAKE_DEPS)
+		parse_make_deps(GLSL_DEPS "${GLSL_MAKE_DEPS}")
+
 		add_custom_command(OUTPUT "${spirv_file}"
-				COMMAND ${Shaderc_GLSLC} "${glsl_file}" -o "${spirv_file}"
-				MAIN_DEPENDENCY "${glsl_file}")
+				COMMAND "${Shaderc_GLSLC}" "${glsl_file}" -o "${spirv_file}"
+				MAIN_DEPENDENCY "${glsl_file}"
+				DEPENDS ${GLSL_DEPS})
 	endforeach()
 endmacro()
 
