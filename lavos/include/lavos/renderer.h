@@ -26,7 +26,7 @@ struct MatrixUniformBuffer
 	glm::mat4 projection;
 };
 
-static_assert(sizeof(MatrixUniformBuffer) == 128);
+static_assert(sizeof(MatrixUniformBuffer) == 128, "MatrixUniformBuffer memory layout");
 
 
 struct LightingUniformBufferFixed
@@ -47,8 +47,8 @@ struct LightingUniformBufferSpotLight
 	float unused;
 };
 
-static_assert(sizeof(LightingUniformBufferFixed) == 48);
-static_assert(sizeof(LightingUniformBufferSpotLight) == 32);
+static_assert(sizeof(LightingUniformBufferFixed) == 48, "LightingUniformBufferFixed memory layout");
+static_assert(sizeof(LightingUniformBufferSpotLight) == 32, "LightingUniformBufferSpotLight memory layout");
 
 
 struct CameraUniformBuffer
@@ -56,7 +56,7 @@ struct CameraUniformBuffer
 	glm::vec3 position;
 };
 
-static_assert(sizeof(CameraUniformBuffer) == 12);
+static_assert(sizeof(CameraUniformBuffer) == 12, "CameraUniformBuffer memory layout");
 
 
 struct TransformPushConstant
@@ -64,7 +64,7 @@ struct TransformPushConstant
 	glm::mat4 transform;
 };
 
-static_assert(sizeof(TransformPushConstant) == 64);
+static_assert(sizeof(TransformPushConstant) == 64, "TransformPushConstant memory layout");
 
 
 
