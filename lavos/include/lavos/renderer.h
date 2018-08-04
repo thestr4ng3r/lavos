@@ -12,6 +12,7 @@
 #include "scene.h"
 #include "render_target.h"
 #include "render_config.h"
+#include "material_pipeline_manager.h"
 
 namespace lavos
 {
@@ -69,20 +70,7 @@ static_assert(sizeof(TransformPushConstant) == 64);
 
 class Renderer: public ColorRenderTarget::ChangedCallback
 {
-	public:
-		struct MaterialPipeline
-		{
-			Material *material;
-
-			vk::PipelineLayout pipeline_layout;
-			vk::Pipeline pipeline;
-
-			int renderer_descriptor_set_index;
-			int material_descriptor_set_index;
-
-			MaterialPipeline(Material *material) :
-				material(material) {}
-		};
+	friend class MaterialPipelineManager;
 
 	private:
 		Engine * const engine;
@@ -101,11 +89,9 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 
 		std::vector<vk::Framebuffer> dst_framebuffers;
 
+		MaterialPipelineManager material_pipeline_manager;
 
 		vk::RenderPass render_pass;
-
-
-		std::vector<MaterialPipeline> material_pipelines;
 
 		vk::DescriptorPool descriptor_pool;
 
@@ -128,15 +114,11 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 
 		void CreateUniformBuffers();
 
-		void RecreateAllMaterialPipelines();
-
 		void CreateRenderPasses();
 		void CleanupRenderPasses();
 
 		void CreateRenderCommandBuffer();
 		void CleanupRenderCommandBuffer();
-
-		void RecordRenderables(vk::CommandBuffer command_buffer, Material::RenderMode render_mode);
 
 	protected:
 		void RenderTargetChanged(RenderTarget *render_target) override;
@@ -149,7 +131,7 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 
 		Engine *GetEngine() const 							{ return engine; }
 
-		vk::DescriptorPool GetDescriptorPool() const 		{ return descriptor_pool; }
+		//vk::DescriptorPool GetDescriptorPool() const 		{ return descriptor_pool; }
 
 		void SetScene(Scene *scene)							{ this->scene = scene; }
 		void SetCamera(CameraComponent *camera)				{ this->camera = camera; }
@@ -157,15 +139,11 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		void AddMaterial(Material *material);
 		void RemoveMaterial(Material *material);
 
-		MaterialPipeline CreateMaterialPipeline(Material *material, Material::RenderMode render_mode);
-		void DestroyMaterialPipeline(const MaterialPipeline &material_pipeline);
-
 		void UpdateMatrixUniformBuffer();
 		void UpdateCameraUniformBuffer();
 		void UpdateLightingUniformBuffer();
 
-		MaterialPipeline GetMaterialPipeline(int index)		{ return material_pipelines[index]; }
-		vk::DescriptorSet GetDescriptorSet()				{ return descriptor_set; }
+		//MaterialPipeline GetMaterialPipeline(int index)		{ return material_pipelines[index]; }
 
 		vk::RenderPass GetRenderPass() const				{ return render_pass; }
 
@@ -178,6 +156,7 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 					   std::vector<vk::Semaphore> signal_semaphores);
 
 		void DrawFrameRecord(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer);
+		void RecordRenderables(vk::CommandBuffer command_buffer, Material::RenderMode render_mode);
 };
 
 }

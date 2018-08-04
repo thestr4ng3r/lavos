@@ -97,7 +97,9 @@ set(SOURCE_FILES
 		src/spot_light_shadow.cpp
 		src/buffer.cpp
 		include/lavos/render_config.h
-		src/render_config.cpp)
+		src/render_config.cpp
+		include/lavos/material_pipeline_manager.h
+		src/material_pipeline_manager.cpp)
 
 set(GLSL_FILES
 		material/unlit.vert
