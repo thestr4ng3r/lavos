@@ -17,7 +17,7 @@ Renderer::Renderer(Engine *engine,
 				   const RenderConfig &config,
 				   ColorRenderTarget *color_render_target,
 				   DepthRenderTarget *depth_render_target)
-	: engine(engine), config(config), material_pipeline_manager(this)
+	: engine(engine), config(config)
 {
 	this->color_render_target = color_render_target;
 	this->depth_render_target = depth_render_target;
@@ -32,6 +32,8 @@ Renderer::Renderer(Engine *engine,
 
 	CreateFramebuffers();
 
+	material_pipeline_manager = new MaterialPipelineManager(engine, CreateMaterialPipelineConfiguration());
+
 	CreateRenderCommandBuffer();
 }
 
@@ -43,7 +45,7 @@ Renderer::~Renderer()
 
 	device.destroyDescriptorSetLayout(descriptor_set_layout);
 
-	material_pipeline_manager.DestroyAllMaterialPipelines();
+	delete material_pipeline_manager;
 
 	device.destroyDescriptorPool(descriptor_pool);
 
@@ -54,6 +56,14 @@ Renderer::~Renderer()
 	CleanupFramebuffers();
 
 	CleanupRenderPasses();
+}
+
+MaterialPipelineConfiguration Renderer::CreateMaterialPipelineConfiguration()
+{
+	return MaterialPipelineConfiguration(
+			color_render_target->GetExtent(),
+			descriptor_set_layout,
+			render_pass);
 }
 
 void Renderer::CreateFramebuffers()
@@ -282,13 +292,13 @@ void Renderer::CreateDescriptorSet()
 
 void Renderer::AddMaterial(Material *material)
 {
-	material_pipeline_manager.AddMaterial(material);
+	material_pipeline_manager->AddMaterial(material);
 }
 
 
 void Renderer::RemoveMaterial(Material *material)
 {
-	material_pipeline_manager.RemoveMaterial(material);
+	material_pipeline_manager->RemoveMaterial(material);
 }
 
 
@@ -396,7 +406,7 @@ void Renderer::RecordRenderables(vk::CommandBuffer command_buffer, Material::Ren
 		auto &renderables = entry.second;
 
 		// TODO: Allow getting the MaterialPipelines from somewhere else for other RenderModes
-		MaterialPipeline *pipeline = material_pipeline_manager.GetMaterialPipeline(material);
+		MaterialPipeline *pipeline = material_pipeline_manager->GetMaterialPipeline(material);
 		if(!pipeline)
 			continue;
 
@@ -523,7 +533,7 @@ void Renderer::RenderTargetChanged(RenderTarget *render_target)
 	//CleanupRenderPasses();
 	//CreateRenderPasses();
 
-	material_pipeline_manager.RecreateAllMaterialPipelines(); // TODO: really necessary?
+	material_pipeline_manager->SetConfiguration(CreateMaterialPipelineConfiguration());
 
 	CleanupFramebuffers();
 	CreateFramebuffers();

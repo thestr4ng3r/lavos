@@ -14,10 +14,10 @@ SpotLightComponent::~SpotLightComponent()
 	DestroyShadow();
 }
 
-void SpotLightComponent::InitShadow(Engine *engine, std::uint32_t width, std::uint32_t height)
+void SpotLightComponent::InitShadow(Engine *engine, SpotLightShadowRenderer *renderer)
 {
 	DestroyShadow();
-	shadow = new SpotLightShadow(engine, this, width, height);
+	shadow = new SpotLightShadow(engine, this, renderer);
 }
 
 void SpotLightComponent::DestroyShadow()

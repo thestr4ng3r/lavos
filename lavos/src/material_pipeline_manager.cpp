@@ -6,24 +6,36 @@
 
 using namespace lavos;
 
-MaterialPipelineManager::MaterialPipelineManager(Renderer *renderer) : renderer(renderer)
+MaterialPipelineManager::MaterialPipelineManager(Engine *engine, const MaterialPipelineConfiguration &config)
+	: engine(engine),
+	config(config)
 {
 }
 
 MaterialPipelineManager::~MaterialPipelineManager()
 {
+	DestroyAllMaterialPipelines();
+}
+
+void MaterialPipelineManager::SetConfiguration(const MaterialPipelineConfiguration &config)
+{
+	if(config == this->config)
+		return;
+
+	this->config = config;
+	RecreateAllMaterialPipelines();
 }
 
 MaterialPipeline MaterialPipelineManager::CreateMaterialPipeline(Material *material, Material::RenderMode render_mode)
 {
-	auto device = renderer->GetEngine()->GetVkDevice();
+	auto device = engine->GetVkDevice();
 
 	auto pipeline = MaterialPipeline(material);
 
 	// pipeline layout
 
 	std::vector<vk::DescriptorSetLayout> descriptor_set_layouts = {
-			renderer->descriptor_set_layout
+		config.renderer_descriptor_set_layout
 	};
 
 	pipeline.renderer_descriptor_set_index = 0;
@@ -72,9 +84,8 @@ MaterialPipeline MaterialPipelineManager::CreateMaterialPipeline(Material *mater
 	auto input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo()
 			.setTopology(material->GetPrimitiveTopology());
 
-	auto extent = renderer->color_render_target->GetExtent();
-	vk::Viewport viewport(0.0f, 0.0f, extent.width, extent.height, 0.0f, 1.0f);
-	vk::Rect2D scissor({0, 0}, extent);
+	vk::Viewport viewport(0.0f, 0.0f, config.extent.width, config.extent.height, 0.0f, 1.0f);
+	vk::Rect2D scissor({0, 0}, config.extent);
 
 	auto viewport_state_info = vk::PipelineViewportStateCreateInfo()
 			.setViewportCount(1)
@@ -129,7 +140,7 @@ MaterialPipeline MaterialPipelineManager::CreateMaterialPipeline(Material *mater
 			.setPColorBlendState(&color_blend_info)
 			.setPDynamicState(nullptr)
 			.setLayout(pipeline.pipeline_layout)
-			.setRenderPass(renderer->render_pass)
+			.setRenderPass(config.render_pass)
 			.setSubpass(0);
 
 
@@ -140,7 +151,7 @@ MaterialPipeline MaterialPipelineManager::CreateMaterialPipeline(Material *mater
 
 void MaterialPipelineManager::DestroyMaterialPipeline(const MaterialPipeline &material_pipeline)
 {
-	auto &device = renderer->GetEngine()->GetVkDevice();
+	auto &device = engine->GetVkDevice();
 	device.destroyPipeline(material_pipeline.pipeline);
 	device.destroyPipelineLayout(material_pipeline.pipeline_layout);
 }

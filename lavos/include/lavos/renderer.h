@@ -89,7 +89,7 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 
 		std::vector<vk::Framebuffer> dst_framebuffers;
 
-		MaterialPipelineManager material_pipeline_manager;
+		MaterialPipelineManager *material_pipeline_manager;
 
 		vk::RenderPass render_pass;
 
@@ -101,6 +101,9 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		lavos::Buffer *matrix_uniform_buffer;
 		lavos::Buffer *lighting_uniform_buffer;
 		lavos::Buffer *camera_uniform_buffer;
+
+
+		MaterialPipelineConfiguration CreateMaterialPipelineConfiguration();
 
 		void CreateFramebuffers();
 

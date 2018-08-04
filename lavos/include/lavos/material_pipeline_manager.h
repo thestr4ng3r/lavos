@@ -10,6 +10,7 @@
 namespace lavos
 {
 
+class Engine;
 class Renderer;
 
 struct MaterialPipeline
@@ -26,25 +27,50 @@ struct MaterialPipeline
 			material(material) {}
 };
 
+struct MaterialPipelineConfiguration
+{
+	vk::Extent2D extent;
+	vk::DescriptorSetLayout renderer_descriptor_set_layout;
+	vk::RenderPass render_pass;
+
+	MaterialPipelineConfiguration(vk::Extent2D extent,
+			vk::DescriptorSetLayout renderer_descriptor_set_layout,
+			vk::RenderPass render_pass)
+			: extent(extent),
+			renderer_descriptor_set_layout(renderer_descriptor_set_layout),
+			render_pass(render_pass) {}
+};
+
+static inline bool operator==(const MaterialPipelineConfiguration &a, const MaterialPipelineConfiguration &b)
+{
+	return a.extent == b.extent
+		&& a.renderer_descriptor_set_layout == b.renderer_descriptor_set_layout
+		&& a.render_pass == b.render_pass;
+}
+
 class MaterialPipelineManager
 {
 	private:
-		Renderer * const renderer;
+		Engine * const engine;
+
+		MaterialPipelineConfiguration config;
+
 		std::vector<MaterialPipeline> material_pipelines;
 
 		MaterialPipeline CreateMaterialPipeline(Material *material, Material::RenderMode render_mode);
 		void DestroyMaterialPipeline(const MaterialPipeline &material_pipeline);
 
-	public:
-		explicit MaterialPipelineManager(Renderer *renderer);
-		~MaterialPipelineManager();
-
 		void DestroyAllMaterialPipelines();
+		void RecreateAllMaterialPipelines();
+
+	public:
+		MaterialPipelineManager(Engine *engine, const MaterialPipelineConfiguration &config);
+		~MaterialPipelineManager();
 
 		void AddMaterial(Material *material);
 		void RemoveMaterial(Material *material);
 
-		void RecreateAllMaterialPipelines();
+		void SetConfiguration(const MaterialPipelineConfiguration &config);
 
 		MaterialPipeline *GetMaterialPipeline(Material *material);
 };

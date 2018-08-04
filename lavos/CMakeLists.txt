@@ -99,7 +99,11 @@ set(SOURCE_FILES
 		include/lavos/render_config.h
 		src/render_config.cpp
 		include/lavos/material_pipeline_manager.h
-		src/material_pipeline_manager.cpp)
+		src/material_pipeline_manager.cpp
+		include/lavos/sub_renderer.h
+		src/sub_renderer.cpp
+		include/lavos/spot_light_shadow_renderer.h
+		src/spot_light_shadow_renderer.cpp)
 
 set(GLSL_FILES
 		material/unlit.vert
