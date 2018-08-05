@@ -19,6 +19,7 @@ namespace lavos
 
 class SpotLightComponent;
 class SpotLightShadow;
+class SubRenderer;
 
 struct MatrixUniformBuffer
 {
@@ -102,6 +103,9 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		lavos::Buffer *lighting_uniform_buffer;
 		lavos::Buffer *camera_uniform_buffer;
 
+		std::vector<Material *> materials;
+		std::vector<SubRenderer *> sub_renderers;
+
 
 		MaterialPipelineConfiguration CreateMaterialPipelineConfiguration();
 
@@ -138,6 +142,18 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 
 		void SetScene(Scene *scene)							{ this->scene = scene; }
 		void SetCamera(CameraComponent *camera)				{ this->camera = camera; }
+
+		/**
+		 * Adds a SubRenderer to the Renderer.
+		 * The Renderer takes ownership of sub_renderer.
+		 */
+		void AddSubRenderer(SubRenderer *sub_renderer);
+
+		/**
+		 * Removes a SubRenderer from the Renderer.
+		 * The ownership of sub_renderer is removed from the Renderer.
+		 */
+		void RemoveSubRenderer(SubRenderer *sub_renderer);
 
 		void AddMaterial(Material *material);
 		void RemoveMaterial(Material *material);

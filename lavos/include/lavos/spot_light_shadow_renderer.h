@@ -20,9 +20,15 @@ class SpotLightShadowRenderer : public SubRenderer
 		std::uint32_t height;
 		vk::Format format;
 
-		vk::RenderPass render_pass;
+		vk::DescriptorSetLayout descriptor_set_layout; // TODO: scope of this could be higher (common for all SpotLightShadowRenderers)
+		vk::RenderPass render_pass; // TODO: scope of this could be higher (depends only on format)
+
+		MaterialPipelineManager *material_pipeline_manager;
+
+		MaterialPipelineConfiguration CreateMaterialPipelineConfiguration();
 
 		void CreateRenderPass();
+		void CreateDescriptorSetLayout();
 
 	public:
 		SpotLightShadowRenderer(lavos::Engine *engine, std::uint32_t width, std::uint32_t height);

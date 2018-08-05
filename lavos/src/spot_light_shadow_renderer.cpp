@@ -1,6 +1,4 @@
 
-#include <lavos/spot_light_shadow_renderer.h>
-
 #include "lavos/spot_light_shadow_renderer.h"
 #include "lavos/engine.h"
 
@@ -14,11 +12,24 @@ SpotLightShadowRenderer::SpotLightShadowRenderer(Engine *engine, std::uint32_t w
 	format = vk::Format::eD16Unorm;
 
 	CreateRenderPass();
+	CreateDescriptorSetLayout();
+
+	material_pipeline_manager = new MaterialPipelineManager(engine, CreateMaterialPipelineConfiguration());
 }
 
 SpotLightShadowRenderer::~SpotLightShadowRenderer()
 {
-	engine->GetVkDevice().destroyRenderPass(render_pass);
+	const auto &device = engine->GetVkDevice();
+	device.destroyDescriptorSetLayout(descriptor_set_layout);
+	device.destroyRenderPass(render_pass);
+}
+
+MaterialPipelineConfiguration SpotLightShadowRenderer::CreateMaterialPipelineConfiguration()
+{
+	return MaterialPipelineConfiguration(
+			vk::Extent2D(width, height),
+			descriptor_set_layout,
+			render_pass);
 }
 
 void SpotLightShadowRenderer::CreateRenderPass()
@@ -72,12 +83,30 @@ void SpotLightShadowRenderer::CreateRenderPass()
 	render_pass = engine->GetVkDevice().createRenderPass(create_info);
 }
 
+void SpotLightShadowRenderer::CreateDescriptorSetLayout()
+{
+	std::array<vk::DescriptorSetLayoutBinding, 1> bindings = {
+			// matrix
+			vk::DescriptorSetLayoutBinding()
+					.setBinding(0)
+					.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+					.setDescriptorCount(1)
+					.setStageFlags(vk::ShaderStageFlagBits::eVertex),
+	};
+
+	auto create_info = vk::DescriptorSetLayoutCreateInfo()
+			.setBindingCount(static_cast<uint32_t>(bindings.size()))
+			.setPBindings(bindings.data());
+
+	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
+}
+
 void SpotLightShadowRenderer::AddMaterial(Material *material)
 {
-
+	material_pipeline_manager->AddMaterial(material);
 }
 
 void SpotLightShadowRenderer::RemoveMaterial(Material *material)
 {
-
+	material_pipeline_manager->RemoveMaterial(material);
 }

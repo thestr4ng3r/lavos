@@ -10,6 +10,7 @@
 #include "lavos/shader_load.h"
 #include "lavos/vertex.h"
 #include "lavos/component/mesh_component.h"
+#include "lavos/sub_renderer.h"
 
 using namespace lavos;
 
@@ -114,7 +115,7 @@ void Renderer::CreateDescriptorPool()
 
 void Renderer::CreateDescriptorSetLayout()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
+	std::array<vk::DescriptorSetLayoutBinding, 3> bindings = {
 		// matrix
 		vk::DescriptorSetLayoutBinding()
 			.setBinding(0)
@@ -290,15 +291,53 @@ void Renderer::CreateDescriptorSet()
 	engine->GetVkDevice().updateDescriptorSets({matrix_buffer_write, lighting_buffer_write, camera_buffer_write}, nullptr);
 }
 
+
+void Renderer::AddSubRenderer(SubRenderer *sub_renderer)
+{
+	if(std::find(sub_renderers.begin(), sub_renderers.end(), sub_renderer) != sub_renderers.end())
+		return;
+
+	sub_renderers.push_back(sub_renderer);
+
+	for(auto material : materials)
+		sub_renderer->AddMaterial(material);
+}
+
+void Renderer::RemoveSubRenderer(SubRenderer *sub_renderer)
+{
+	auto it = std::find(sub_renderers.begin(), sub_renderers.end(), sub_renderer);
+	if(it == sub_renderers.end())
+		throw std::runtime_error("SubRenderer not in Renderer.");
+
+	for(auto material : materials)
+		sub_renderer->RemoveMaterial(material);
+}
+
 void Renderer::AddMaterial(Material *material)
 {
+	if(std::find(materials.begin(), materials.end(), material) != materials.end())
+		return;
+
+	materials.push_back(material);
 	material_pipeline_manager->AddMaterial(material);
+
+	for(auto sub_renderer : sub_renderers)
+		sub_renderer->AddMaterial(material);
 }
 
 
 void Renderer::RemoveMaterial(Material *material)
 {
+	auto it = std::find(materials.begin(), materials.end(), material);
+	if(it == materials.end())
+		throw std::runtime_error("Material not in Renderer.");
+
 	material_pipeline_manager->RemoveMaterial(material);
+
+	for(auto sub_renderer : sub_renderers)
+		sub_renderer->RemoveMaterial(material);
+
+	materials.erase(it);
 }
 
 
