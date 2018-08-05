@@ -140,8 +140,9 @@ void Update()
 
 void Cleanup()
 {
-	delete asset_container;
 	delete renderer;
+	delete asset_container;
+	delete material;
 }
 
 int main(int argc, const char **argv)
@@ -169,6 +170,7 @@ int main(int argc, const char **argv)
 	}
 
 	Cleanup();
+	delete app;
 
 	return EXIT_SUCCESS;
 }
