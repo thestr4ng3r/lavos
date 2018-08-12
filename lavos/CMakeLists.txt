@@ -103,7 +103,9 @@ set(SOURCE_FILES
 		include/lavos/sub_renderer.h
 		src/sub_renderer.cpp
 		include/lavos/spot_light_shadow_renderer.h
-		src/spot_light_shadow_renderer.cpp)
+		src/spot_light_shadow_renderer.cpp
+		include/lavos/log.h
+		src/log.cpp)
 
 set(GLSL_FILES
 		material/unlit.vert
