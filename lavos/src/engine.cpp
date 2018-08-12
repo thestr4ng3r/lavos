@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include "lavos/engine.h"
+#include "lavos/log.h"
 
 using namespace lavos;
 
@@ -44,7 +45,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugReportFlagsEXT flags,
 													uint64_t obj, size_t location, int32_t code,
 													const char *layerPrefix, const char *msg, void *userData)
 {
-	std::cerr << "vulkan: " << msg << std::endl;
+	LAVOS_LOGF(LogLevel::Warning, "Vulkan: %s", msg);
 	return VK_FALSE;
 }
 
@@ -123,15 +124,12 @@ std::vector<const char *> Engine::EnableValidationLayers()
 			layers_requested.push_back(LAVOS_VK_LAYER_RENDERDOC_Capture);
 	}
 
-
-	//std::cout << "Available Layers:" << std::endl;
-
+	
 	auto layers_available = vk::enumerateInstanceLayerProperties();
 
-	/*for(const auto &layer_props : layers_available)
-	{
-		std::cout << "\t" << layer_props.layerName << std::endl;
-	}*/
+	LAVOS_LOG(LogLevel::Debug, "Available Layers:");
+	for(const auto &layer_props : layers_available)
+		LAVOS_LOGF(LogLevel::Debug, "\t%s", layer_props.layerName);
 
 	for(auto layer_name : layers_requested)
 	{
@@ -148,7 +146,7 @@ std::vector<const char *> Engine::EnableValidationLayers()
 		}
 
 		if(!layer_found)
-			std::cerr << "Layer " << layer_name << " requested but not available." << std::endl;
+			LAVOS_LOGF(LogLevel::Error, "Layer %s requested, but not available.", layer_name);
 	}
 
 	return layers_enabled;
@@ -167,9 +165,9 @@ void Engine::CreateInstance()
 	// extensions
 
 	auto extensions_available = vk::enumerateInstanceExtensionProperties();
-	std::cout << "Available Extensions:" << std::endl;
+	LAVOS_LOG(LogLevel::Debug, "Available Extensions:");
 	for(const auto &extension : extensions_available)
-		std::cout << "\t" << extension.extensionName << std::endl;
+		LAVOS_LOGF(LogLevel::Debug, "\t%s", extension.extensionName);
 
 	auto required_extensions = GetRequiredInstanceExtensions();
 	create_info.setEnabledExtensionCount(static_cast<uint32_t>(required_extensions.size()));
@@ -278,11 +276,11 @@ void Engine::PickPhysicalDevice(vk::SurfaceKHR surface)
 		throw std::runtime_error("failed to find GPUs with Vulkan support!");
 
 
-	std::cout << "Available Physical Devices:" << std::endl;
+	LAVOS_LOG(LogLevel::Debug, "Available Physical Devices:");
 	for(const auto &physical_device : physical_devices)
 	{
 		auto props = physical_device.getProperties();
-		std::cout << "\t" << props.deviceName << std::endl;
+		LAVOS_LOGF(LogLevel::Debug, "\t%s", props.deviceName);
 	}
 
 	for(const auto &physical_device : physical_devices)
