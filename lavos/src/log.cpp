@@ -1,6 +1,7 @@
 
 #include "lavos/log.h"
-#include <stdio.h>
+#include <cstdio>
+#include <cstdarg>
 #include <cstring>
 
 using namespace lavos;
