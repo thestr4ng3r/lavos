@@ -22,34 +22,46 @@ static const std::vector<const char *> validation_layers = {
 };
 
 
-
-
-VkResult vkCreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
-										const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
+VkResult vkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+		const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger)
 {
-	auto func = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr)
-		return func(instance, pCreateInfo, pAllocator, pCallback);
+		return func(instance, pCreateInfo, pAllocator, pMessenger);
 	else
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
-void vkDestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
+void vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks* pAllocator)
 {
-	auto func = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
+	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != nullptr)
-		func(instance, callback, pAllocator);
+		func(instance, messenger, pAllocator);
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType,
-													uint64_t obj, size_t location, int32_t code,
-													const char *layerPrefix, const char *msg, void *userData)
+
+static VkBool32 DebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+									 VkDebugUtilsMessageTypeFlagsEXT messageType,
+									 const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+									 void *pUserData)
 {
-	LAVOS_LOGF(LogLevel::Warning, "Vulkan: %s", msg);
+	LogLevel level;
+	if((int)messageSeverity <= (int)vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo)
+		level = LogLevel::Info;
+	else if((int)messageSeverity <= (int)vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning)
+		level = LogLevel::Warning;
+	else
+		level = LogLevel::Error;
+
+	char type[4];
+	type[0] = (messageType & (VkFlags)vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral) ? 'g' : '-';
+	type[1] = (messageType & (VkFlags)vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation) ? 'v' : '-';
+	type[2] = (messageType & (VkFlags)vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance) ? 'p' : '-';
+	type[3] = '\0';
+
+	LAVOS_LOGF(level, "VULKAN [%s]: %s", type, pCallbackData->pMessage);
 	return VK_FALSE;
 }
-
-
 
 
 Engine::Engine(const CreateInfo &info)
@@ -68,8 +80,8 @@ Engine::~Engine()
 
 	device.destroy();
 
-	if(debug_report_callback)
-		instance.destroyDebugReportCallbackEXT(debug_report_callback);
+	if(debug_utils_messenger)
+		instance.destroyDebugUtilsMessengerEXT(debug_utils_messenger);
 
 	instance.destroy(nullptr);
 }
@@ -83,7 +95,7 @@ std::vector<const char *> Engine::GetRequiredInstanceExtensions()
 		extensions.push_back(extension.c_str());
 
 	if(info.enable_validation_layers)
-		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
 	return extensions;
 }
@@ -124,7 +136,7 @@ std::vector<const char *> Engine::EnableValidationLayers()
 			layers_requested.push_back(LAVOS_VK_LAYER_RENDERDOC_Capture);
 	}
 
-	
+
 	auto layers_available = vk::enumerateInstanceLayerProperties();
 
 	LAVOS_LOG(LogLevel::Debug, "Available Layers:");
@@ -187,10 +199,15 @@ void Engine::SetupDebugCallback()
 	if(!info.enable_validation_layers)
 		return;
 
-	vk::DebugReportCallbackCreateInfoEXT create_info(vk::DebugReportFlagBitsEXT::eError
-													 | vk::DebugReportFlagBitsEXT::eWarning,
-													 DebugCallback, this);
-	debug_report_callback = instance.createDebugReportCallbackEXT(create_info);
+	debug_utils_messenger = instance.createDebugUtilsMessengerEXT(vk::DebugUtilsMessengerCreateInfoEXT()
+		.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
+			| vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
+			/*| vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo*/
+			/*| vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose*/)
+		.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+			| vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
+			| vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance)
+		.setPfnUserCallback(DebugUtilsMessengerCallback));
 }
 
 

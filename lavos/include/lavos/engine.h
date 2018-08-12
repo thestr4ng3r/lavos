@@ -45,7 +45,7 @@ class Engine
 		QueueFamilyIndices queue_family_indices;
 
 		vk::Instance instance;
-		vk::DebugReportCallbackEXT debug_report_callback;
+		vk::DebugUtilsMessengerEXT debug_utils_messenger;
 
 		vk::PhysicalDevice physical_device;
 		vk::Device device;
