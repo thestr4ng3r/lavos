@@ -32,7 +32,7 @@ void lavos::LogF(LogLevel level, const char *file, int line, const char *functio
 	else
 		filename++;
 
-	printf("[%s %16.16s:%d - %-20.20s] ", level_str, filename, line, function);
+	printf("[%s %16.16s:%-4d - %-20.20s] ", level_str, filename, line, function);
 	va_list ap;
 	va_start (ap, fmt);
 	vprintf(fmt, ap);
