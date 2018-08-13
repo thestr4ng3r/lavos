@@ -35,30 +35,28 @@ PhongMaterial::~PhongMaterial()
 
 void PhongMaterial::CreateDescriptorSetLayouts()
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings = {
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setDescriptorCount(1)
-			.setPImmutableSamplers(nullptr)
-			.setStageFlags(vk::ShaderStageFlagBits::eFragment),
+	CreateDescriptorSetLayout(DescriptorSetLayoutIdDefault, {
+			vk::DescriptorSetLayoutBinding()
+					.setBinding(0)
+					.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+					.setDescriptorCount(1)
+					.setPImmutableSamplers(nullptr)
+					.setStageFlags(vk::ShaderStageFlagBits::eFragment),
 
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(1)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
-			.setPImmutableSamplers(nullptr)
-			.setStageFlags(vk::ShaderStageFlagBits::eFragment),
+			vk::DescriptorSetLayoutBinding()
+					.setBinding(1)
+					.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+					.setDescriptorCount(1)
+					.setPImmutableSamplers(nullptr)
+					.setStageFlags(vk::ShaderStageFlagBits::eFragment),
 
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(2)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
-			.setPImmutableSamplers(nullptr)
-			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
-	};
-
-	CreateDescriptorSetLayout(DescriptorSetLayoutIdDefault, bindings);
+			vk::DescriptorSetLayoutBinding()
+					.setBinding(2)
+					.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+					.setDescriptorCount(1)
+					.setPImmutableSamplers(nullptr)
+					.setStageFlags(vk::ShaderStageFlagBits::eFragment)
+	});
 }
 
 std::vector<vk::PipelineShaderStageCreateInfo> PhongMaterial::GetShaderStageCreateInfos(Material::RenderMode render_mode) const

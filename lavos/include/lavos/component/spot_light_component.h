@@ -3,6 +3,7 @@
 #define LAVOS_SPOT_LIGHT_COMPONENT_H
 
 #include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/gtc/constants.hpp>
 
 #include "component.h"
@@ -38,6 +39,9 @@ class SpotLightComponent: public Component
 
 		glm::vec3 GetIntensity() const 					{ return intensity; }
 		void SetIntensity(const glm::vec3 &intensity)	{ this->intensity = intensity; }
+
+		glm::mat4 GetModelViewMatrix();
+		glm::mat4 GetProjectionMatrix(float near_clip, float far_clip);
 
 		void InitShadow(Engine *engine, SpotLightShadowRenderer *renderer);
 		void DestroyShadow();

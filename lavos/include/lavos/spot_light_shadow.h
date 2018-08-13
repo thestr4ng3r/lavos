@@ -31,16 +31,23 @@ class SpotLightShadow
 		vk::Semaphore semaphore;
 
 		lavos::Buffer *matrix_uniform_buffer = nullptr;
+		vk::DescriptorPool descriptor_pool; // TODO: can we make this more global?
+		vk::DescriptorSet descriptor_set;
 
 		void CreateImage();
 		void CreateFramebuffer();
 		void CreateUniformBuffer();
+		void CreateDescriptorPool();
+		void CreateDescriptorSet();
+		void UpdateMatrixUniformBuffer();
 
 	public:
 		SpotLightShadow(Engine *engine, SpotLightComponent *light, SpotLightShadowRenderer *renderer);
 		~SpotLightShadow();
 
-		void BuildCommandBuffer(Renderer *renderer);
+		vk::CommandBuffer BuildCommandBuffer(Renderer *renderer);
+
+		vk::Semaphore GetSemaphore()		{ return semaphore; }
 };
 
 }

@@ -115,19 +115,6 @@ MaterialPipeline MaterialPipelineManager::CreateMaterialPipeline(Material *mater
 			.setDepthBoundsTestEnable(VK_FALSE)
 			.setStencilTestEnable(VK_FALSE);
 
-
-	auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
-			.setColorWriteMask(vk::ColorComponentFlagBits::eR
-							   | vk::ColorComponentFlagBits::eG
-							   | vk::ColorComponentFlagBits::eB
-							   | vk::ColorComponentFlagBits::eA)
-			.setBlendEnable(VK_FALSE);
-
-	auto color_blend_info = vk::PipelineColorBlendStateCreateInfo()
-			.setLogicOpEnable(VK_FALSE)
-			.setAttachmentCount(1)
-			.setPAttachments(&color_blend_attachment);
-
 	auto pipeline_info = vk::GraphicsPipelineCreateInfo()
 			.setStageCount(static_cast<uint32_t>(shader_stages.size()))
 			.setPStages(shader_stages.data())
@@ -137,7 +124,7 @@ MaterialPipeline MaterialPipelineManager::CreateMaterialPipeline(Material *mater
 			.setPRasterizationState(&rasterizer_info)
 			.setPMultisampleState(&multisample_info)
 			.setPDepthStencilState(&depth_stencil_info)
-			.setPColorBlendState(&color_blend_info)
+			.setPColorBlendState(&config.color_blend_state_info.Get())
 			.setPDynamicState(nullptr)
 			.setLayout(pipeline.pipeline_layout)
 			.setRenderPass(config.render_pass)
@@ -172,7 +159,7 @@ void MaterialPipelineManager::AddMaterial(Material *material)
 			return;
 	}
 
-	material_pipelines.push_back(CreateMaterialPipeline(material, Material::DefaultRenderMode::ColorForward));
+	material_pipelines.push_back(CreateMaterialPipeline(material, config.render_mode));
 }
 
 void MaterialPipelineManager::RemoveMaterial(Material *material)
@@ -194,7 +181,7 @@ void MaterialPipelineManager::RecreateAllMaterialPipelines()
 	{
 		auto material = material_pipeline.material;
 		DestroyMaterialPipeline(material_pipeline);
-		material_pipeline = CreateMaterialPipeline(material, Material::DefaultRenderMode::ColorForward);
+		material_pipeline = CreateMaterialPipeline(material, config.render_mode);
 	}
 }
 

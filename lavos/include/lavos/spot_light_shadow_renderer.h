@@ -34,10 +34,13 @@ class SpotLightShadowRenderer : public SubRenderer
 		SpotLightShadowRenderer(lavos::Engine *engine, std::uint32_t width, std::uint32_t height);
 		~SpotLightShadowRenderer() override;
 
-		std::uint32_t GetWidth() const			{ return width; }
-		std::uint32_t GetHeight() const			{ return height; }
-		vk::Format GetFormat() const			{ return format; }
-		vk::RenderPass GetRenderPass() const	{ return render_pass; }
+		std::uint32_t GetWidth() const							{ return width; }
+		std::uint32_t GetHeight() const							{ return height; }
+		vk::Format GetFormat() const							{ return format; }
+		vk::RenderPass GetRenderPass() const					{ return render_pass; }
+		vk::DescriptorSetLayout GetDescriptorSetLayout() const	{ return descriptor_set_layout; }
+
+		MaterialPipelineManager *GetMaterialPipelineManager() const { return material_pipeline_manager; }
 
 		void AddMaterial(Material *material) override;
 		void RemoveMaterial(Material *material) override;

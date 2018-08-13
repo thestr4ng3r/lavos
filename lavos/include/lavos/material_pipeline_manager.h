@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "material/material.h"
+#include "vk_util.h"
 
 namespace lavos
 {
@@ -32,13 +33,19 @@ struct MaterialPipelineConfiguration
 	vk::Extent2D extent;
 	vk::DescriptorSetLayout renderer_descriptor_set_layout;
 	vk::RenderPass render_pass;
+	Material::RenderMode  render_mode;
+	vk_util::PipelineColorBlendStateCreateInfo color_blend_state_info;
 
 	MaterialPipelineConfiguration(vk::Extent2D extent,
 			vk::DescriptorSetLayout renderer_descriptor_set_layout,
-			vk::RenderPass render_pass)
+			vk::RenderPass render_pass,
+			Material::RenderMode render_mode,
+			const vk_util::PipelineColorBlendStateCreateInfo &color_blend_state_info)
 			: extent(extent),
 			renderer_descriptor_set_layout(renderer_descriptor_set_layout),
-			render_pass(render_pass) {}
+			render_pass(render_pass),
+			render_mode(render_mode),
+			color_blend_state_info(color_blend_state_info) {}
 };
 
 static inline bool operator==(const MaterialPipelineConfiguration &a, const MaterialPipelineConfiguration &b)

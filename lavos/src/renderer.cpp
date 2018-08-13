@@ -11,6 +11,7 @@
 #include "lavos/vertex.h"
 #include "lavos/component/mesh_component.h"
 #include "lavos/sub_renderer.h"
+#include "lavos/vk_util.h"
 
 using namespace lavos;
 
@@ -61,10 +62,22 @@ Renderer::~Renderer()
 
 MaterialPipelineConfiguration Renderer::CreateMaterialPipelineConfiguration()
 {
+	auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
+			.setColorWriteMask(vk::ColorComponentFlagBits::eR
+							   | vk::ColorComponentFlagBits::eG
+							   | vk::ColorComponentFlagBits::eB
+							   | vk::ColorComponentFlagBits::eA)
+			.setBlendEnable(VK_FALSE);
+
+	auto color_blend_state_info = vk_util::PipelineColorBlendStateCreateInfo()
+			.SetAttachments({ color_blend_attachment });
+
 	return MaterialPipelineConfiguration(
 			color_render_target->GetExtent(),
 			descriptor_set_layout,
-			render_pass);
+			render_pass,
+			Material::DefaultRenderMode::ColorForward,
+			color_blend_state_info);
 }
 
 void Renderer::CreateFramebuffers()
@@ -415,7 +428,10 @@ void Renderer::CleanupRenderCommandBuffer()
 	engine->GetVkDevice().freeCommandBuffers(engine->GetRenderCommandPool(), render_command_buffer);
 }
 
-void Renderer::RecordRenderables(vk::CommandBuffer command_buffer, Material::RenderMode render_mode)
+void Renderer::RecordRenderables(vk::CommandBuffer command_buffer,
+		Material::RenderMode render_mode,
+		MaterialPipelineManager *material_pipeline_manager,
+		vk::DescriptorSet renderer_descriptor_set)
 {
 	std::multimap<Material *, std::set<std::pair<Node *, Renderable *>>> material_primitives;
 
@@ -444,7 +460,6 @@ void Renderer::RecordRenderables(vk::CommandBuffer command_buffer, Material::Ren
 		auto material = entry.first;
 		auto &renderables = entry.second;
 
-		// TODO: Allow getting the MaterialPipelines from somewhere else for other RenderModes
 		MaterialPipeline *pipeline = material_pipeline_manager->GetMaterialPipeline(material);
 		if(!pipeline)
 			continue;
@@ -456,7 +471,7 @@ void Renderer::RecordRenderables(vk::CommandBuffer command_buffer, Material::Ren
 		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 										  pipeline_layout,
 										  static_cast<uint32_t>(pipeline->renderer_descriptor_set_index),
-										  descriptor_set,
+										  renderer_descriptor_set,
 										  nullptr);
 
 
@@ -506,17 +521,44 @@ void Renderer::RecordRenderables(vk::CommandBuffer command_buffer, Material::Ren
 void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> wait_semaphores,
 						 std::vector<vk::PipelineStageFlags> wait_stages, std::vector<vk::Semaphore> signal_semaphores)
 {
+	if(scene == nullptr)
+		throw std::runtime_error("renderer has no scene.");
+
+	if(camera == nullptr)
+		throw std::runtime_error("renderer has no camera.");
+
+	UpdateMatrixUniformBuffer();
+	UpdateLightingUniformBuffer();
+	UpdateCameraUniformBuffer();
+
 	std::vector<SpotLightComponent *> spot_lights = scene->GetRootNode()->GetComponentsInChildren<SpotLightComponent>();
 	std::vector<SpotLightShadow *> spot_light_shadows;
+
+	std::vector<vk::Semaphore> wait_semaphores_internal;
 
 	for(SpotLightComponent *spot_light : spot_lights)
 	{
 		auto shadow = spot_light->GetShadow();
 		if(!shadow)
 			continue;
-		shadow->BuildCommandBuffer(this);
+		auto command_buffer = shadow->BuildCommandBuffer(this);
 		spot_light_shadows.push_back(shadow);
+		wait_semaphores_internal.push_back(shadow->GetSemaphore());
+
+		engine->GetVkDevice().waitIdle();
+		engine->GetGraphicsQueue().submit(
+			vk::SubmitInfo()
+				.setWaitSemaphoreCount(0)
+				.setPWaitSemaphores(nullptr)
+				.setPWaitDstStageMask(nullptr)
+				.setCommandBufferCount(1)
+				.setPCommandBuffers(&command_buffer)
+				.setSignalSemaphoreCount(0)
+				.setPSignalSemaphores(nullptr),
+			nullptr);
 	}
+
+	engine->GetVkDevice().waitIdle();
 
 	render_command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 	DrawFrameRecord(render_command_buffer, dst_framebuffers[image_index]);
@@ -536,16 +578,6 @@ void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> w
 
 void Renderer::DrawFrameRecord(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer)
 {
-	if(scene == nullptr)
-		throw std::runtime_error("renderer has no scene.");
-
-	if(camera == nullptr)
-		throw std::runtime_error("renderer has no camera.");
-
-	UpdateMatrixUniformBuffer();
-	UpdateLightingUniformBuffer();
-	UpdateCameraUniformBuffer();
-
 	std::array<vk::ClearValue, 2> clear_values = {
 			vk::ClearColorValue(std::array<float, 4>{{0.0f, 0.0f, 0.0f, 1.0f }}),
 			vk::ClearDepthStencilValue(1.0f, 0)
@@ -562,7 +594,10 @@ void Renderer::DrawFrameRecord(vk::CommandBuffer command_buffer, vk::Framebuffer
 					.setPClearValues(clear_values.data()),
 			vk::SubpassContents::eInline);
 
-	RecordRenderables(command_buffer, Material::DefaultRenderMode::ColorForward);
+	RecordRenderables(command_buffer,
+			Material::DefaultRenderMode::ColorForward,
+			material_pipeline_manager,
+			descriptor_set);
 
 	command_buffer.endRenderPass();
 }

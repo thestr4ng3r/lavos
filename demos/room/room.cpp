@@ -19,6 +19,7 @@
 #include <lavos/component/directional_light_component.h>
 #include <lavos/component/spot_light_component.h>
 #include <lavos/component/fp_controller_component.h>
+#include <lavos/spot_light_shadow_renderer.h>
 
 #include <window_application.h>
 
@@ -47,7 +48,9 @@ void Init(std::string gltf_filename)
 {
 	material = new lavos::PhongMaterial(app->GetEngine());
 
-	auto render_config = lavos::RenderConfigBuilder().Build();
+	auto render_config = lavos::RenderConfigBuilder()
+			.SetShadowEnabled(true)
+			.Build();
 
 	renderer = new lavos::Renderer(app->GetEngine(), render_config, app->GetSwapchain(), app->GetDepthRenderTarget());
 	renderer->AddMaterial(material);
@@ -94,6 +97,10 @@ void Init(std::string gltf_filename)
 	//light_node->AddComponent(light);
 	lavos::SpotLightComponent *light = new lavos::SpotLightComponent();
 	light_node->AddComponent(light);
+
+	auto shadow_renderer = new lavos::SpotLightShadowRenderer(app->GetEngine(), 512, 512);
+	renderer->AddSubRenderer(shadow_renderer);
+	light->InitShadow(app->GetEngine(), shadow_renderer);
 
 	renderer->SetCamera(camera);
 

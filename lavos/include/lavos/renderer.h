@@ -175,7 +175,10 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 					   std::vector<vk::Semaphore> signal_semaphores);
 
 		void DrawFrameRecord(vk::CommandBuffer command_buffer, vk::Framebuffer dst_framebuffer);
-		void RecordRenderables(vk::CommandBuffer command_buffer, Material::RenderMode render_mode);
+		void RecordRenderables(vk::CommandBuffer command_buffer,
+							   Material::RenderMode render_mode,
+							   MaterialPipelineManager *material_pipeline_manager,
+							   vk::DescriptorSet renderer_descriptor_set);
 };
 
 }

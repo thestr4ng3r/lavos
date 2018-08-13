@@ -29,7 +29,9 @@ MaterialPipelineConfiguration SpotLightShadowRenderer::CreateMaterialPipelineCon
 	return MaterialPipelineConfiguration(
 			vk::Extent2D(width, height),
 			descriptor_set_layout,
-			render_pass);
+			render_pass,
+			Material::DefaultRenderMode::Shadow,
+			vk_util::PipelineColorBlendStateCreateInfo());
 }
 
 void SpotLightShadowRenderer::CreateRenderPass()
@@ -60,7 +62,7 @@ void SpotLightShadowRenderer::CreateRenderPass()
 			.setDstSubpass(0)
 			.setSrcStageMask(vk::PipelineStageFlagBits::eBottomOfPipe)
 			.setDstStageMask(vk::PipelineStageFlagBits::eLateFragmentTests)
-			.setSrcAccessMask(vk::AccessFlagBits::eShaderRead)
+			.setSrcAccessMask(static_cast<vk::AccessFlags>(0))
 			.setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
 			.setDependencyFlags(vk::DependencyFlagBits::eByRegion);
 

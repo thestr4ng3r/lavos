@@ -15,10 +15,14 @@ SpotLightShadow::SpotLightShadow(Engine *engine, SpotLightComponent *light, Spot
 	CreateImage();
 	CreateFramebuffer();
 	CreateUniformBuffer();
+	CreateDescriptorPool();
+	CreateDescriptorSet();
 }
 
 SpotLightShadow::~SpotLightShadow()
 {
+	engine->GetVkDevice().free(descriptor_pool, descriptor_set);
+	engine->GetVkDevice().destroy(descriptor_pool);
 	delete matrix_uniform_buffer;
 }
 
@@ -80,9 +84,64 @@ void SpotLightShadow::CreateUniformBuffer()
 												 VMA_MEMORY_USAGE_CPU_ONLY);
 }
 
-void SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
+void SpotLightShadow::CreateDescriptorPool()
+{
+	std::array<vk::DescriptorPoolSize, 1> pool_sizes = {
+		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 1)
+	};
+
+	auto create_info = vk::DescriptorPoolCreateInfo()
+			.setPoolSizeCount(static_cast<uint32_t>(pool_sizes.size()))
+			.setPPoolSizes(pool_sizes.data())
+			.setMaxSets(1);
+
+	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
+}
+
+void SpotLightShadow::CreateDescriptorSet()
+{
+	vk::DescriptorSetLayout layouts[] = { renderer->GetDescriptorSetLayout() };
+
+	auto alloc_info = vk::DescriptorSetAllocateInfo()
+			.setDescriptorPool(descriptor_pool)
+			.setDescriptorSetCount(1)
+			.setPSetLayouts(layouts);
+
+	descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
+
+	auto matrix_buffer_info = vk::DescriptorBufferInfo()
+			.setBuffer(matrix_uniform_buffer->GetVkBuffer())
+			.setOffset(0)
+			.setRange(sizeof(MatrixUniformBuffer));
+
+	auto matrix_buffer_write = vk::WriteDescriptorSet()
+			.setDstSet(descriptor_set)
+			.setDstBinding(0)
+			.setDstArrayElement(0)
+			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setDescriptorCount(1)
+			.setPBufferInfo(&matrix_buffer_info);
+
+	engine->GetVkDevice().updateDescriptorSets(matrix_buffer_write, nullptr);
+}
+
+void SpotLightShadow::UpdateMatrixUniformBuffer()
+{
+	MatrixUniformBuffer matrix_ubo;
+	matrix_ubo.modelview = light->GetModelViewMatrix();
+	matrix_ubo.projection = light->GetProjectionMatrix(0.1f, 100.0f); // TODO: make configurable
+	matrix_ubo.projection[1][1] *= -1.0f;
+
+	memcpy(matrix_uniform_buffer->Map(), &matrix_ubo, sizeof(matrix_ubo));
+	matrix_uniform_buffer->UnMap();
+}
+
+
+vk::CommandBuffer SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
 {
 	const vk::Device &device = engine->GetVkDevice();
+
+	UpdateMatrixUniformBuffer(); // TODO: Do this only if the contents really changed
 
 	if(!command_buffer)
 	{
@@ -118,9 +177,14 @@ void SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
 
 	command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
 
-	// TODO: render stuff
+	renderer->RecordRenderables(command_buffer,
+			Material::DefaultRenderMode::Shadow,
+			this->renderer->GetMaterialPipelineManager(),
+			descriptor_set);
 
 	command_buffer.endRenderPass();
 
 	command_buffer.end();
+
+	return command_buffer;
 }
