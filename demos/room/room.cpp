@@ -35,10 +35,13 @@ lavos::MaterialInstance *material_instance;
 
 lavos::Scene *scene;
 
+bool mouse_caught;
 double last_cursor_x, last_cursor_y;
 lavos::FirstPersonControllerComponent *fp_controller;
 
 
+void UpdateMouseSettings();
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 void Init(std::string gltf_filename)
 {
@@ -97,11 +100,34 @@ void Init(std::string gltf_filename)
 	material_instance = asset_container->material_instances.front();
 
 
-	GLFWwindow *window = app->GetWindow();
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwGetCursorPos(window, &last_cursor_x, &last_cursor_y);
+	mouse_caught = false;
+	UpdateMouseSettings();
+
+	glfwSetKeyCallback(app->GetWindow(), KeyCallback);
 }
 
+
+void UpdateMouseSettings()
+{
+	if(mouse_caught)
+	{
+		glfwSetInputMode(app->GetWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		glfwGetCursorPos(app->GetWindow(), &last_cursor_x, &last_cursor_y);
+	}
+	else
+	{
+		glfwSetInputMode(app->GetWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
+}
+
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
+	{
+		mouse_caught = !mouse_caught;
+		UpdateMouseSettings();
+	}
+}
 
 
 
@@ -128,11 +154,14 @@ void Update()
 
 	fp_controller->SetVelocity(cam_vel * 10.0f);
 
-	double cursor_x, cursor_y;
-	glfwGetCursorPos(window, &cursor_x, &cursor_y);
-	fp_controller->Rotate(glm::vec2(cursor_x - last_cursor_x, cursor_y - last_cursor_y) * 0.003f);
-	last_cursor_x = cursor_x;
-	last_cursor_y = cursor_y;
+	if(mouse_caught)
+	{
+		double cursor_x, cursor_y;
+		glfwGetCursorPos(window, &cursor_x, &cursor_y);
+		fp_controller->Rotate(glm::vec2(cursor_x - last_cursor_x, cursor_y - last_cursor_y) * 0.003f);
+		last_cursor_x = cursor_x;
+		last_cursor_y = cursor_y;
+	}
 
 	scene->Update(app->GetDeltaTime());
 }
