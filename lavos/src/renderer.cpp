@@ -43,6 +43,9 @@ Renderer::~Renderer()
 {
 	color_render_target->RemoveChangedCallback(this);
 
+	for(auto sub_renderer : sub_renderers)
+		delete sub_renderer;
+
 	auto &device = engine->GetVkDevice();
 
 	device.destroyDescriptorSetLayout(descriptor_set_layout);

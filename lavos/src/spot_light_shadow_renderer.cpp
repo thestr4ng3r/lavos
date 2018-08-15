@@ -19,6 +19,7 @@ SpotLightShadowRenderer::SpotLightShadowRenderer(Engine *engine, std::uint32_t w
 
 SpotLightShadowRenderer::~SpotLightShadowRenderer()
 {
+	delete material_pipeline_manager;
 	const auto &device = engine->GetVkDevice();
 	device.destroyDescriptorSetLayout(descriptor_set_layout);
 	device.destroyRenderPass(render_pass);
@@ -83,6 +84,7 @@ void SpotLightShadowRenderer::CreateRenderPass()
 			.setPDependencies(dependencies.data());
 
 	render_pass = engine->GetVkDevice().createRenderPass(create_info);
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), render_pass, "SpotLightShadowRenderer");
 }
 
 void SpotLightShadowRenderer::CreateDescriptorSetLayout()
@@ -101,6 +103,7 @@ void SpotLightShadowRenderer::CreateDescriptorSetLayout()
 			.setPBindings(bindings.data());
 
 	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), descriptor_set_layout, "SpotLightShadowRenderer");
 }
 
 void SpotLightShadowRenderer::AddMaterial(Material *material)

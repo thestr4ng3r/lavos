@@ -47,8 +47,16 @@ glm::mat4 SpotLightShadow::GetProjectionMatrix()
 
 SpotLightShadow::~SpotLightShadow()
 {
+	auto device = engine->GetVkDevice();
+
+	device.free(engine->GetRenderCommandPool(), command_buffer);
+	device.destroy(semaphore);
 	engine->GetVkDevice().destroy(descriptor_pool);
 	delete matrix_uniform_buffer;
+	device.destroy(framebuffer);
+	device.destroy(sampler);
+	device.destroy(image_view);
+	engine->DestroyImage(image);
 }
 
 void SpotLightShadow::CreateImage()
@@ -64,6 +72,7 @@ void SpotLightShadow::CreateImage()
 			.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled);
 
 	image = engine->CreateImage(image_create_info, VMA_MEMORY_USAGE_GPU_ONLY);
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), image.image, "SpotLightShadow");
 
 	auto image_view_create_info = vk::ImageViewCreateInfo()
 			.setViewType(vk::ImageViewType::e2D)
@@ -72,6 +81,7 @@ void SpotLightShadow::CreateImage()
 			.setImage(image.image);
 
 	image_view = engine->GetVkDevice().createImageView(image_view_create_info);
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), image_view, "SpotLightShadow");
 
 	auto sampler_create_info = vk::SamplerCreateInfo()
 			.setMagFilter(mag_filter)
@@ -87,6 +97,7 @@ void SpotLightShadow::CreateImage()
 			.setBorderColor(vk::BorderColor::eFloatOpaqueWhite);
 
 	sampler = engine->GetVkDevice().createSampler(sampler_create_info);
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), sampler, "SpotLightShadow");
 }
 
 void SpotLightShadow::CreateFramebuffer()
@@ -100,6 +111,7 @@ void SpotLightShadow::CreateFramebuffer()
 			.setLayers(1);
 
 	framebuffer = engine->GetVkDevice().createFramebuffer(create_info);
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), framebuffer, "SpotLightShadow");
 }
 
 void SpotLightShadow::CreateUniformBuffer()
@@ -107,6 +119,7 @@ void SpotLightShadow::CreateUniformBuffer()
 	matrix_uniform_buffer = engine->CreateBuffer(sizeof(ShadowMatrixUniformBuffer),
 												 vk::BufferUsageFlagBits::eUniformBuffer,
 												 VMA_MEMORY_USAGE_CPU_ONLY);
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), matrix_uniform_buffer->GetVkBuffer(), "SpotLightShadow");
 }
 
 void SpotLightShadow::CreateDescriptorPool()
@@ -121,6 +134,7 @@ void SpotLightShadow::CreateDescriptorPool()
 			.setMaxSets(1);
 
 	descriptor_pool = engine->GetVkDevice().createDescriptorPool(create_info);
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), descriptor_pool, "SpotLightShadow");
 }
 
 void SpotLightShadow::CreateDescriptorSet()
@@ -133,6 +147,7 @@ void SpotLightShadow::CreateDescriptorSet()
 			.setPSetLayouts(layouts);
 
 	descriptor_set = *engine->GetVkDevice().allocateDescriptorSets(alloc_info).begin();
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), descriptor_set, "SpotLightShadow");
 
 	auto matrix_buffer_info = vk::DescriptorBufferInfo()
 			.setBuffer(matrix_uniform_buffer->GetVkBuffer())
@@ -171,11 +186,13 @@ vk::CommandBuffer SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
 				vk::CommandBufferAllocateInfo(engine->GetRenderCommandPool(),
 											  vk::CommandBufferLevel::ePrimary,
 											  1)).begin();
+		vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), command_buffer, "SpotLightShadow");
 	}
 
 	if(!semaphore)
 	{
 		semaphore = device.createSemaphore(vk::SemaphoreCreateInfo());
+		vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), semaphore, "SpotLightShadow");
 	}
 
 	auto clear_value = vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0));
