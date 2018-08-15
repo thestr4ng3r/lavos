@@ -110,17 +110,42 @@ std::vector<const char *> Engine::GetRequiredDeviceExtensions()
 	return extensions;
 }
 
+#ifdef LAVOS_ENABLE_RENDERDOC
 #define LAVOS_VK_LAYER_RENDERDOC_Capture "VK_LAYER_RENDERDOC_Capture"
+#endif
 
 std::vector<const char *> Engine::EnableValidationLayers()
 {
+	auto layers_available = vk::enumerateInstanceLayerProperties();
+
+	LAVOS_LOG(LogLevel::Debug, "Available Layers:");
+	for(const auto &layer_props : layers_available)
+		LAVOS_LOGF(LogLevel::Debug, "\t%s", layer_props.layerName);
+
+
+
+
 	std::vector<const char *> layers_requested;
 	std::vector<const char *> layers_enabled;
 
 	if(info.enable_validation_layers)
 		std::copy(validation_layers.begin(), validation_layers.end(), std::back_inserter(layers_requested));
 
-	if(info.enable_renderdoc)
+#if LAVOS_ENABLE_RENDERDOC
+	bool enable_renderdoc = info.enable_renderdoc;
+	if(!info.enable_renderdoc)
+	{
+		char *renderdoc_env = std::getenv("LAVOS_ENABLE_RENDERDOC");
+		enable_renderdoc = renderdoc_env && strcmp(renderdoc_env, "1") == 0;
+		if(enable_renderdoc)
+		LAVOS_LOG(LogLevel::Debug, "RenderDoc enabled from LAVOS_ENABLE_RENDERDOC environment variable.");
+	}
+	else
+	{
+		LAVOS_LOG(LogLevel::Debug, "RenderDoc enabled.");
+	}
+
+	if(enable_renderdoc)
 	{
 		bool already_inserted = false;
 		for(auto layer_name : layers_requested)
@@ -135,13 +160,7 @@ std::vector<const char *> Engine::EnableValidationLayers()
 		if(!already_inserted)
 			layers_requested.push_back(LAVOS_VK_LAYER_RENDERDOC_Capture);
 	}
-
-
-	auto layers_available = vk::enumerateInstanceLayerProperties();
-
-	LAVOS_LOG(LogLevel::Debug, "Available Layers:");
-	for(const auto &layer_props : layers_available)
-		LAVOS_LOGF(LogLevel::Debug, "\t%s", layer_props.layerName);
+#endif
 
 	for(auto layer_name : layers_requested)
 	{

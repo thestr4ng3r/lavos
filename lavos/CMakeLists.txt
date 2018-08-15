@@ -4,6 +4,8 @@ option(LAVOS_IMPLEMENT_TINYGLTF "Compile implementation of tinygltf inside lavos
 option(LAVOS_IMPLEMENT_STB_IMAGE "Compile implementation of stb_image inside lavos." ON)
 option(LAVOS_IMPLEMENT_VMA "Compile implementation of Vulkan Memory Allocator inside lavos." ON)
 
+option(LAVOS_ENABLE_RENDERDOC "Enable RenderDoc integration." OFF)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(Shaderc REQUIRED)
@@ -133,6 +135,10 @@ endif()
 
 if(LAVOS_IMPLEMENT_VMA)
 	add_definitions(-DLAVOS_IMPLEMENT_VMA)
+endif()
+
+if(LAVOS_ENABLE_RENDERDOC)
+	add_definitions(-DLAVOS_ENABLE_RENDERDOC)
 endif()
 
 
