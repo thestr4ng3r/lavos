@@ -47,7 +47,6 @@ glm::mat4 SpotLightShadow::GetProjectionMatrix()
 
 SpotLightShadow::~SpotLightShadow()
 {
-	engine->GetVkDevice().free(descriptor_pool, descriptor_set);
 	engine->GetVkDevice().destroy(descriptor_pool);
 	delete matrix_uniform_buffer;
 }
