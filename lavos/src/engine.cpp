@@ -1,7 +1,7 @@
 
-#include <iostream>
 #include "lavos/engine.h"
 #include "lavos/log.h"
+#include "lavos/vk_util.h"
 
 using namespace lavos;
 
@@ -39,6 +39,15 @@ void vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerE
 		func(instance, messenger, pAllocator);
 }
 
+VkResult vkSetDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo)
+{
+	auto func = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(device, "vkSetDebugUtilsObjectNameEXT");
+	if (func != nullptr)
+		return func(device, pNameInfo);
+	else
+		return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+
 
 static VkBool32 DebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 									 VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -60,6 +69,31 @@ static VkBool32 DebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsE
 	type[3] = '\0';
 
 	LAVOS_LOGF(level, "VULKAN [%s]: %s", type, pCallbackData->pMessage);
+	const char *padding = "              ";
+
+
+	bool print_names = false;
+	for(uint32_t i=0; i<pCallbackData->objectCount; i++)
+	{
+		if(pCallbackData->pObjects[i].pObjectName)
+		{
+			print_names = true;
+			break;
+		}
+	}
+
+	if(print_names)
+	{
+		LAVOS_LOGF(level, "%s  Named Objects:", padding);
+		for(uint32_t i=0; i<pCallbackData->objectCount; i++)
+		{
+			auto &object = pCallbackData->pObjects[i];
+			if(!object.pObjectName)
+				continue;
+			LAVOS_LOGF(level, "%s    %#lx = %s", padding, object.objectHandle, object.pObjectName);
+		}
+	}
+
 	return VK_FALSE;
 }
 

@@ -5,6 +5,7 @@ option(LAVOS_IMPLEMENT_STB_IMAGE "Compile implementation of stb_image inside lav
 option(LAVOS_IMPLEMENT_VMA "Compile implementation of Vulkan Memory Allocator inside lavos." ON)
 
 option(LAVOS_ENABLE_RENDERDOC "Enable RenderDoc integration." OFF)
+option(LAVOS_ENABLE_VK_NAMES "Enable naming vulkan objects for debugging." OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -139,6 +140,10 @@ endif()
 
 if(LAVOS_ENABLE_RENDERDOC)
 	add_definitions(-DLAVOS_ENABLE_RENDERDOC)
+endif()
+
+if(LAVOS_ENABLE_VK_NAMES)
+	add_definitions(-DLAVOS_ENABLE_VK_NAMES)
 endif()
 
 
