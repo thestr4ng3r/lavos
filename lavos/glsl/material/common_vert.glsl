@@ -6,8 +6,12 @@
 
 layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = 0) uniform MatrixBuffer
 {
+#ifdef COMMON_VERT_MATRIX_COMPACT
+    mat4 modelview_projection;
+#else
 	mat4 modelview;
 	mat4 projection;
+#endif
 } matrix_uni;
 
 layout(push_constant) uniform TransformPushConstant
@@ -23,8 +27,13 @@ layout(location = 4) in vec3 bitang_in;
 
 vec4 CalculateVertexPosition()
 {
-	return matrix_uni.projection
+	return
+#ifdef COMMON_VERT_MATRIX_COMPACT
+		matrix_uni.modelview_projection
+#else
+		matrix_uni.projection
 		* matrix_uni.modelview
+#endif
 		* transform_push_constant.transform
 		* vec4(position_in, 1.0);
 }

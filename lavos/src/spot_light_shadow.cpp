@@ -6,8 +6,17 @@
 
 using namespace lavos;
 
-SpotLightShadow::SpotLightShadow(Engine *engine, SpotLightComponent *light, SpotLightShadowRenderer *renderer)
-		: engine(engine), light(light), renderer(renderer)
+
+struct ShadowMatrixUniformBuffer
+{
+	glm::mat4 modelview_projection;
+};
+
+static_assert(sizeof(ShadowMatrixUniformBuffer) == 64, "ShadowMatrixUniformBuffer memory layout");
+
+
+SpotLightShadow::SpotLightShadow(Engine *engine, SpotLightComponent *light, SpotLightShadowRenderer *renderer, float near_clip, float far_clip)
+		: engine(engine), light(light), renderer(renderer), near_clip(near_clip), far_clip(far_clip)
 {
 	min_filter = vk::Filter::eLinear;
 	mag_filter = vk::Filter::eLinear;
@@ -17,6 +26,23 @@ SpotLightShadow::SpotLightShadow(Engine *engine, SpotLightComponent *light, Spot
 	CreateUniformBuffer();
 	CreateDescriptorPool();
 	CreateDescriptorSet();
+}
+
+glm::mat4 SpotLightShadow::GetModelViewMatrix()
+{
+	auto transform_component = light->GetNode()->GetTransformComponent();
+	if(transform_component == nullptr)
+		throw std::runtime_error("node with a spot light component does not have a transform component.");
+
+	glm::mat4 transform_mat = transform_component->GetMatrixWorld();
+	return glm::inverse(transform_mat);
+}
+
+glm::mat4 SpotLightShadow::GetProjectionMatrix()
+{
+	auto r = glm::perspective(light->GetAngle(), 1.0f, near_clip, far_clip);
+	r[1][1] *= -1.0f;
+	return r;
 }
 
 SpotLightShadow::~SpotLightShadow()
@@ -79,7 +105,7 @@ void SpotLightShadow::CreateFramebuffer()
 
 void SpotLightShadow::CreateUniformBuffer()
 {
-	matrix_uniform_buffer = engine->CreateBuffer(sizeof(MatrixUniformBuffer),
+	matrix_uniform_buffer = engine->CreateBuffer(sizeof(ShadowMatrixUniformBuffer),
 												 vk::BufferUsageFlagBits::eUniformBuffer,
 												 VMA_MEMORY_USAGE_CPU_ONLY);
 }
@@ -112,7 +138,7 @@ void SpotLightShadow::CreateDescriptorSet()
 	auto matrix_buffer_info = vk::DescriptorBufferInfo()
 			.setBuffer(matrix_uniform_buffer->GetVkBuffer())
 			.setOffset(0)
-			.setRange(sizeof(MatrixUniformBuffer));
+			.setRange(sizeof(ShadowMatrixUniformBuffer));
 
 	auto matrix_buffer_write = vk::WriteDescriptorSet()
 			.setDstSet(descriptor_set)
@@ -127,11 +153,8 @@ void SpotLightShadow::CreateDescriptorSet()
 
 void SpotLightShadow::UpdateMatrixUniformBuffer()
 {
-	MatrixUniformBuffer matrix_ubo;
-	matrix_ubo.modelview = light->GetModelViewMatrix();
-	matrix_ubo.projection = light->GetProjectionMatrix(0.1f, 100.0f); // TODO: make configurable
-	matrix_ubo.projection[1][1] *= -1.0f;
-
+	ShadowMatrixUniformBuffer matrix_ubo;
+	matrix_ubo.modelview_projection = GetModelViewProjectionMatrix();
 	memcpy(matrix_uniform_buffer->Map(), &matrix_ubo, sizeof(matrix_ubo));
 	matrix_uniform_buffer->UnMap();
 }

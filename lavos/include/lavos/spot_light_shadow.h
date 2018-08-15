@@ -19,6 +19,9 @@ class SpotLightShadow
 		SpotLightComponent * const light;
 		SpotLightShadowRenderer * const renderer;
 
+		float near_clip;
+		float far_clip;
+
 		vk::Filter mag_filter;
 		vk::Filter min_filter;
 
@@ -34,6 +37,9 @@ class SpotLightShadow
 		vk::DescriptorPool descriptor_pool; // TODO: can we make this more global?
 		vk::DescriptorSet descriptor_set;
 
+		glm::mat4 GetModelViewMatrix();
+		glm::mat4 GetProjectionMatrix();
+
 		void CreateImage();
 		void CreateFramebuffer();
 		void CreateUniformBuffer();
@@ -42,12 +48,14 @@ class SpotLightShadow
 		void UpdateMatrixUniformBuffer();
 
 	public:
-		SpotLightShadow(Engine *engine, SpotLightComponent *light, SpotLightShadowRenderer *renderer);
+		SpotLightShadow(Engine *engine, SpotLightComponent *light, SpotLightShadowRenderer *renderer, float near_clip, float far_clip);
 		~SpotLightShadow();
 
 		vk::CommandBuffer BuildCommandBuffer(Renderer *renderer);
 
 		vk::Semaphore GetSemaphore()		{ return semaphore; }
+
+		glm::mat4 GetModelViewProjectionMatrix()	{ return GetProjectionMatrix() * GetModelViewMatrix(); }
 };
 
 }

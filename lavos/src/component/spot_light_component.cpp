@@ -16,25 +16,10 @@ SpotLightComponent::~SpotLightComponent()
 	DestroyShadow();
 }
 
-glm::mat4 SpotLightComponent::GetModelViewMatrix()
-{
-	auto transform_component = GetNode()->GetTransformComponent();
-	if(transform_component == nullptr)
-		throw std::runtime_error("node with a spot light component does not have a transform component.");
-
-	glm::mat4 transform_mat = transform_component->GetMatrixWorld();
-	return glm::inverse(transform_mat);
-}
-
-glm::mat4 SpotLightComponent::GetProjectionMatrix(float near_clip, float far_clip)
-{
-	return glm::perspective(angle, 1.0f, near_clip, far_clip);
-}
-
-void SpotLightComponent::InitShadow(Engine *engine, SpotLightShadowRenderer *renderer)
+void SpotLightComponent::InitShadow(Engine *engine, SpotLightShadowRenderer *renderer, float near_clip, float far_clip)
 {
 	DestroyShadow();
-	shadow = new SpotLightShadow(engine, this, renderer);
+	shadow = new SpotLightShadow(engine, this, renderer, near_clip, far_clip);
 }
 
 void SpotLightComponent::DestroyShadow()

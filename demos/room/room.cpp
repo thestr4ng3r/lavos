@@ -90,12 +90,14 @@ void Init(std::string gltf_filename)
 	scene->GetRootNode()->AddChild(light_node);
 
 	light_node->AddComponent(new lavos::TransformComponent());
-	light_node->GetTransformComponent()->translation = glm::vec3(0.0f, 1.0f, 3.0f);
-	light_node->GetTransformComponent()->SetLookAt(glm::vec3(2.0f, -1.0f, 0.0f));
+	//light_node->GetTransformComponent()->translation = glm::vec3(0.0f, 1.0f, 3.0f);
+	//light_node->GetTransformComponent()->SetLookAt(glm::vec3(2.0f, -1.0f, 0.0f));
+	light_node->GetTransformComponent()->translation = glm::vec3(0.0f, 2.0f, 0.0f);
+	light_node->GetTransformComponent()->SetLookAt(glm::vec3(3.0f, 2.0f, 0.0f));
 
 	//lavos::DirectionalLightComponent *light = new lavos::DirectionalLightComponent();
 	//light_node->AddComponent(light);
-	lavos::SpotLightComponent *light = new lavos::SpotLightComponent();
+	lavos::SpotLightComponent *light = new lavos::SpotLightComponent(glm::vec3(1.0f, 1.0f, 1.0f), glm::pi<float>() * 0.8f);
 	light_node->AddComponent(light);
 
 	auto shadow_renderer = new lavos::SpotLightShadowRenderer(app->GetEngine(), 512, 512);

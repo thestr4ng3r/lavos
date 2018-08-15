@@ -240,7 +240,7 @@ void Renderer::UpdateLightingUniformBuffer()
 		glm::mat4 transform_mat = spot_light->GetNode()->GetTransformComponent()->GetMatrixWorld();
 		spot_light_buffers[i].position = transform_mat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		spot_light_buffers[i].direction = transform_mat * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
-		spot_light_buffers[i].angle_cos = cosf(spot_light->GetAngle());
+		spot_light_buffers[i].angle_cos = cosf(spot_light->GetAngle() * 0.5f);
 	}
 
 	std::uint8_t *data = static_cast<std::uint8_t *>(lighting_uniform_buffer->Map());
