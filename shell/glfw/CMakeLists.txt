@@ -5,4 +5,5 @@ set(SOURCE_FILES
 
 add_library(lavos_shell_glfw ${SOURCE_FILES})
 target_include_directories(lavos_shell_glfw PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(lavos_shell_glfw lavos)
+target_link_libraries(lavos_shell_glfw PUBLIC lavos)
+target_link_libraries(lavos_shell_glfw PUBLIC glfw)
