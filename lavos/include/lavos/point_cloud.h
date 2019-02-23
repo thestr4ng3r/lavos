@@ -24,7 +24,7 @@ class PointCloud
 
 		lavos::Buffer *vertex_buffer = nullptr;
 
-		PointCloud(Engine *engine);
+		explicit PointCloud(Engine *engine);
 		~PointCloud();
 
 		void CreateVertexBuffer();

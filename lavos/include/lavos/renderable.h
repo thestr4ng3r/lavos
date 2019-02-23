@@ -2,8 +2,8 @@
 #ifndef LAVOS_RENDERABLE_COMPONENT_H
 #define LAVOS_RENDERABLE_COMPONENT_H
 
-#include "lavos/component/component.h"
-#include "lavos/material/material_instance.h"
+#include "component/component.h"
+#include "material/material_instance.h"
 
 namespace lavos
 {

@@ -1,5 +1,4 @@
 
-
 option(LAVOS_IMPLEMENT_TINYGLTF "Compile implementation of tinygltf inside lavos." ON)
 option(LAVOS_IMPLEMENT_STB_IMAGE "Compile implementation of stb_image inside lavos." ON)
 option(LAVOS_IMPLEMENT_VMA "Compile implementation of Vulkan Memory Allocator inside lavos." ON)
@@ -8,38 +7,6 @@ option(LAVOS_ENABLE_RENDERDOC "Enable RenderDoc integration." OFF)
 option(LAVOS_ENABLE_VK_NAMES "Enable naming vulkan objects for debugging." OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
-find_package(Shaderc REQUIRED)
-
-function(parse_make_deps OUTPUT_VAR MAKE_DEPS)
-	if("${MAKE_DEPS}" MATCHES "^[^:]+:*(.*)$")
-		string(STRIP "${CMAKE_MATCH_1}" DEPS)
-		string(REPLACE " " ";" DEPS "${DEPS}")
-		set("${OUTPUT_VAR}" "${DEPS}" PARENT_SCOPE)
-	else()
-		set("${OUTPUT_VAR}" "" PARENT_SCOPE)
-	endif()
-endfunction()
-
-macro(add_spirv_shaders SPIRV_FILES_VAR GLSL_FILES_VAR)
-	set(${SPIRV_FILES_VAR} "")
-	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/shader")
-	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/shader/material")
-	foreach(glsl_file ${${GLSL_FILES_VAR}})
-		set(spirv_file "${CMAKE_CURRENT_BINARY_DIR}/shader/${glsl_file}.spv")
-		set(glsl_file "${CMAKE_CURRENT_SOURCE_DIR}/glsl/${glsl_file}")
-		list(APPEND ${SPIRV_FILES_VAR} "${spirv_file}")
-
-		execute_process(COMMAND "${Shaderc_GLSLC}" -M "${glsl_file}"
-				OUTPUT_VARIABLE GLSL_MAKE_DEPS)
-		parse_make_deps(GLSL_DEPS "${GLSL_MAKE_DEPS}")
-
-		add_custom_command(OUTPUT "${spirv_file}"
-				COMMAND "${Shaderc_GLSLC}" "${glsl_file}" -o "${spirv_file}"
-				MAIN_DEPENDENCY "${glsl_file}"
-				DEPENDS ${GLSL_DEPS})
-	endforeach()
-endmacro()
 
 set(SOURCE_FILES
 		src/thirdparty_impl.cpp
@@ -146,8 +113,12 @@ if(LAVOS_ENABLE_VK_NAMES)
 	add_definitions(-DLAVOS_ENABLE_VK_NAMES)
 endif()
 
+include(ShaderResources)
 
-add_spirv_shaders(SPIRV_FILES GLSL_FILES)
+add_spirv_shaders(VAR SPIRV_FILES
+		BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/glsl"
+		TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/shader"
+		${GLSL_FILES})
 
 set(RESOURCES_SRC_DIR "${CMAKE_CURRENT_BINARY_DIR}/spirv_resources")
 set(RESOURCES_HEADER "${RESOURCES_SRC_DIR}/spirv_resources.h")
@@ -166,7 +137,6 @@ target_include_directories(lavos PUBLIC
 
 # resources
 
-include(ResourceGenerator)
 
 file(MAKE_DIRECTORY ${RESOURCES_SRC_DIR})
 include_directories(${RESOURCES_SRC_DIR})
