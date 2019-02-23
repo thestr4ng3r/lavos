@@ -124,24 +124,9 @@ set(RESOURCES_SRC_DIR "${CMAKE_CURRENT_BINARY_DIR}/spirv_resources")
 set(RESOURCES_HEADER "${RESOURCES_SRC_DIR}/spirv_resources.h")
 set(RESOURCES_SRC "${RESOURCES_SRC_DIR}/spirv_resources.cpp")
 set(RESOURCES_RELATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/shader")
-
-
-
-add_library(lavos SHARED ${SOURCE_FILES} ${RESOURCES_HEADERS} ${RESOURCES_SRC})
-target_link_libraries(lavos ${Vulkan_LIBRARIES})
-target_include_directories(lavos PUBLIC
-		"${CMAKE_CURRENT_SOURCE_DIR}/include"
-		"${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/vma/src")
-
-
-
-# resources
-
-
 file(MAKE_DIRECTORY ${RESOURCES_SRC_DIR})
 include_directories(${RESOURCES_SRC_DIR})
-
-set(GENERATE_RESOURCES_ARGS
+generate_resources(SETUP GENERATE_HEADER
 		BINARY
 		RELATIVE_PATH ${RESOURCES_RELATIVE_PATH}
 		HEADER_FILE ${RESOURCES_HEADER}
@@ -151,17 +136,12 @@ set(GENERATE_RESOURCES_ARGS
 		INCLUDE_GUARD "SPIRV_RESOURCES"
 		FILES ${SPIRV_FILES})
 
-generate_resources(GENERATE_HEADER ${GENERATE_RESOURCES_ARGS})
 
-set(RESOURCE_GENERATOR_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ResourceGenerator.cmake")
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/generate_resources_src.cmake.in"
-		"${CMAKE_CURRENT_BINARY_DIR}/generate_resources_src.cmake")
+add_library(lavos SHARED ${SOURCE_FILES} ${RESOURCES_HEADERS} ${RESOURCES_SRC})
+target_link_libraries(lavos ${Vulkan_LIBRARIES})
+target_include_directories(lavos PUBLIC
+		"${CMAKE_CURRENT_SOURCE_DIR}/include"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/vma/src")
 
-add_custom_command(OUTPUT ${RESOURCES_SRC}
-		COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/generate_resources_src.cmake"
-		DEPENDS ${SPIRV_FILES})
-
-add_custom_target(resources DEPENDS ${RESOURCES_HEADERS} ${RESOURCES_SRC})
-add_dependencies(lavos resources)
 
 
