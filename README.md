@@ -1,6 +1,6 @@
 # Lavos
 
-[![Build Status](https://travis-ci.com/thestr4ng3r/lavos.svg?branch=master)](https://travis-ci.com/thestr4ng3r/lavos)
+![CI](https://github.com/thestr4ng3r/lavos/workflows/CI/badge.svg)
 
 Lavos is a 3D engine framework based on the Vulkan graphics API.
 
