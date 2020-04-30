@@ -15,7 +15,7 @@ static const std::vector<const char *> validation_layers = {
 		"VK_LAYER_LUNARG_parameter_validation",
 		"VK_LAYER_GOOGLE_unique_objects"
 #else
-	"VK_LAYER_LUNARG_standard_validation",
+	"VK_LAYER_KHRONOS_validation",
 
 	/*"VK_LAYER_RENDERDOC_Capture",*/
 #endif
@@ -154,10 +154,7 @@ std::vector<const char *> Engine::EnableValidationLayers()
 
 	LAVOS_LOG(LogLevel::Debug, "Available Layers:");
 	for(const auto &layer_props : layers_available)
-		LAVOS_LOGF(LogLevel::Debug, "\t%s", layer_props.layerName);
-
-
-
+		LAVOS_LOGF(LogLevel::Debug, "\t%s", layer_props.layerName.data());
 
 	std::vector<const char *> layers_requested;
 	std::vector<const char *> layers_enabled;
@@ -232,7 +229,7 @@ void Engine::CreateInstance()
 	auto extensions_available = vk::enumerateInstanceExtensionProperties();
 	LAVOS_LOG(LogLevel::Debug, "Available Extensions:");
 	for(const auto &extension : extensions_available)
-		LAVOS_LOGF(LogLevel::Debug, "\t%s", extension.extensionName);
+		LAVOS_LOGF(LogLevel::Debug, "\t%s", extension.extensionName.data());
 
 	auto required_extensions = GetRequiredInstanceExtensions();
 	create_info.setEnabledExtensionCount(static_cast<uint32_t>(required_extensions.size()));
@@ -273,7 +270,7 @@ bool Engine::CheckDeviceExtensionSupport(vk::PhysicalDevice physical_device)
 	std::set<std::string> required_extensions(device_extensions.begin(), device_extensions.end());
 
 	for(const auto &extension : available_extensions)
-		required_extensions.erase(extension.extensionName);
+		required_extensions.erase(extension.extensionName.data());
 
 	return required_extensions.empty();
 }
@@ -350,7 +347,7 @@ void Engine::PickPhysicalDevice(vk::SurfaceKHR surface)
 	for(const auto &physical_device : physical_devices)
 	{
 		auto props = physical_device.getProperties();
-		LAVOS_LOGF(LogLevel::Debug, "\t%s", props.deviceName);
+		LAVOS_LOGF(LogLevel::Debug, "\t%s", props.deviceName.data());
 	}
 
 	for(const auto &physical_device : physical_devices)

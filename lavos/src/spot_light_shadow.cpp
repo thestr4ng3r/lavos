@@ -207,10 +207,10 @@ vk::CommandBuffer SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
 	command_buffer.begin(vk::CommandBufferBeginInfo());
 
 	auto viewport = vk::Viewport(0, 0, this->renderer->GetWidth(), this->renderer->GetHeight(), 0.0f, 1.0f);
-	command_buffer.setViewport(0, 1, &viewport);
+	command_buffer.setViewport(0, 1, (const vk::Viewport *)&viewport);
 
 	auto scissor = vk::Rect2D(vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(this->renderer->GetWidth(), this->renderer->GetHeight())));
-	command_buffer.setScissor(0, 1, &scissor);
+	command_buffer.setScissor(0, 1, (const vk::Rect2D *)&scissor);
 
 	// TODO command_buffer.setDepthBias()
 

@@ -107,8 +107,8 @@ template<> inline vk::ObjectType GetObjectType<vk::SwapchainKHR>()				{ return v
 template<> inline vk::ObjectType GetObjectType<vk::DisplayKHR>()				{ return vk::ObjectType::eDisplayKHR; }
 template<> inline vk::ObjectType GetObjectType<vk::DisplayModeKHR>()			{ return vk::ObjectType::eDisplayModeKHR; }
 template<> inline vk::ObjectType GetObjectType<vk::DebugReportCallbackEXT>()	{ return vk::ObjectType::eDebugReportCallbackEXT; }
-template<> inline vk::ObjectType GetObjectType<vk::ObjectTableNVX>()			{ return vk::ObjectType::eObjectTableNVX; }
-template<> inline vk::ObjectType GetObjectType<vk::IndirectCommandsLayoutNVX>()	{ return vk::ObjectType::eIndirectCommandsLayoutNVX; }
+//template<> inline vk::ObjectType GetObjectType<vk::ObjectTableNVX>()			{ return vk::ObjectType::eObjectTableNVX; }
+//template<> inline vk::ObjectType GetObjectType<vk::IndirectCommandsLayoutNVX>()	{ return vk::ObjectType::eIndirectCommandsLayoutNVX; }
 template<> inline vk::ObjectType GetObjectType<vk::DebugUtilsMessengerEXT>()	{ return vk::ObjectType::eDebugUtilsMessengerEXT; }
 template<> inline vk::ObjectType GetObjectType<vk::ValidationCacheEXT>()		{ return vk::ObjectType::eValidationCacheEXT; }
 
@@ -148,8 +148,8 @@ template<> inline uint64_t GetHandle<vk::SwapchainKHR>(vk::SwapchainKHR object)	
 template<> inline uint64_t GetHandle<vk::DisplayKHR>(vk::DisplayKHR object)									{ return reinterpret_cast<uint64_t>(static_cast<VkDisplayKHR>(object)); }
 template<> inline uint64_t GetHandle<vk::DisplayModeKHR>(vk::DisplayModeKHR object)							{ return reinterpret_cast<uint64_t>(static_cast<VkDisplayModeKHR>(object)); }
 template<> inline uint64_t GetHandle<vk::DebugReportCallbackEXT>(vk::DebugReportCallbackEXT object)			{ return reinterpret_cast<uint64_t>(static_cast<VkDebugReportCallbackEXT>(object)); }
-template<> inline uint64_t GetHandle<vk::ObjectTableNVX>(vk::ObjectTableNVX object)							{ return reinterpret_cast<uint64_t>(static_cast<VkObjectTableNVX>(object)); }
-template<> inline uint64_t GetHandle<vk::IndirectCommandsLayoutNVX>(vk::IndirectCommandsLayoutNVX object)	{ return reinterpret_cast<uint64_t>(static_cast<VkIndirectCommandsLayoutNVX>(object)); }
+//template<> inline uint64_t GetHandle<vk::ObjectTableNVX>(vk::ObjectTableNVX object)							{ return reinterpret_cast<uint64_t>(static_cast<VkObjectTableNVX>(object)); }
+//template<> inline uint64_t GetHandle<vk::IndirectCommandsLayoutNVX>(vk::IndirectCommandsLayoutNVX object)	{ return reinterpret_cast<uint64_t>(static_cast<VkIndirectCommandsLayoutNVX>(object)); }
 template<> inline uint64_t GetHandle<vk::DebugUtilsMessengerEXT>(vk::DebugUtilsMessengerEXT object)			{ return reinterpret_cast<uint64_t>(static_cast<VkDebugUtilsMessengerEXT>(object)); }
 template<> inline uint64_t GetHandle<vk::ValidationCacheEXT>(vk::ValidationCacheEXT object)					{ return reinterpret_cast<uint64_t>(static_cast<VkValidationCacheEXT>(object)); }
 
