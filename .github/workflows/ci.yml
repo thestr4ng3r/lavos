@@ -1,0 +1,18 @@
+name: CI
+on: [push]
+
+jobs:
+  build:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Checkout submodules
+        run: |
+            git submodule init
+            git submodule update
+      - name: Docker Build
+        run: docker build -t lavos .
+      - name: Build Lavos
+        run: docker run --rm -v "`pwd`:/build" -t lavos /bin/bash -c "cd /build && ./ci-script"
+
