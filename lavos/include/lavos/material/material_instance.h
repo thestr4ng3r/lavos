@@ -10,6 +10,10 @@
 #include "material.h"
 #include "../render_config.h"
 
+#include "../glm_config.h"
+#include <glm/ext/vector_float2.hpp>
+#include <glm/ext/vector_float3.hpp>
+
 namespace lavos
 {
 

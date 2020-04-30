@@ -2,7 +2,7 @@
 #ifndef LAVOS_DIRECTIONAL_LIGHT_COMPONENT_H
 #define LAVOS_DIRECTIONAL_LIGHT_COMPONENT_H
 
-#include <glm/vec3.hpp>
+#include <glm/ext/vector_float3.hpp>
 
 #include "component.h"
 

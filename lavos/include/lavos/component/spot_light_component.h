@@ -3,8 +3,8 @@
 #define LAVOS_SPOT_LIGHT_COMPONENT_H
 
 #include "../glm_config.h"
-#include <glm/vec3.hpp>
-#include <glm/mat4x4.hpp>
+#include <glm/ext/vector_float3.hpp>
+#include <glm/ext/matrix_float4x4.hpp>
 #include <glm/gtc/constants.hpp>
 
 #include "component.h"

@@ -4,6 +4,9 @@
 
 #include "material.h"
 
+#include "../glm_config.h"
+#include <glm/ext/vector_float3.hpp>
+
 namespace lavos
 {
 

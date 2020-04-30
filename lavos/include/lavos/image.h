@@ -6,6 +6,7 @@
 #include "vk_mem_alloc.h"
 
 #include "glm_config.h"
+#include <glm/ext/vector_float4.hpp>
 
 namespace lavos
 {

@@ -9,6 +9,4 @@
 // TODO: remove when not necessary anymore
 #define GLM_ENABLE_EXPERIMENTAL
 
-#include <glm/glm.hpp>
-
 #endif //VULKAN_GLM_CONFIG_H

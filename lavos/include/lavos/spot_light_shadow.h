@@ -5,6 +5,9 @@
 #include "image.h"
 #include "buffer.h"
 
+#include "glm_config.h"
+#include <glm/ext/matrix_float4x4.hpp>
+
 namespace lavos
 {
 

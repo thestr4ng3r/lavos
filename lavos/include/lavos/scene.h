@@ -3,6 +3,7 @@
 #define LAVOS_SCENE_H
 
 #include "glm_config.h"
+#include <glm/ext/vector_float3.hpp>
 
 #include "node.h"
 
