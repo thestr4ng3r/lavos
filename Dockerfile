@@ -8,11 +8,6 @@ RUN pacman --noconfirm -Syu \
 	shaderc \
 	cmake \
 	vulkan-icd-loader \
-	libx11 \
-	libxrandr \
-	libxinerama \
-	libxcursor \
-	libxi \
-	mesa
+	glfw-x11
 
 CMD []
