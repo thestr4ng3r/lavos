@@ -108,7 +108,7 @@ function(generate_resources)
 
 		add_custom_command(OUTPUT "${RESOURCE_GENERATOR_SOURCE_FILE}"
 				COMMAND "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/generate_resources_src.cmake"
-				DEPENDS ${FILES})
+				DEPENDS ${RESOURCE_GENERATOR_FILES})
 	endif()
 
 endfunction(generate_resources)
