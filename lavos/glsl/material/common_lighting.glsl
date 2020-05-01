@@ -4,8 +4,6 @@
 
 #include "common.glsl"
 
-#define MAX_SPOT_LIGHTS_COUNT 16
-
 struct SpotLight
 {
     vec3 position;
@@ -13,7 +11,7 @@ struct SpotLight
     vec3 direction;
 };
 
-layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = 1, std140) uniform LightingBuffer
+layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = DESCRIPTOR_SET_COMMON_BINDING_LIGHTING_BUFFER, std140) uniform LightingBuffer
 {
 	vec3 ambient_intensity;
 
@@ -25,5 +23,7 @@ layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = 1, std140) uniform LightingB
 
 	SpotLight spot_lights[MAX_SPOT_LIGHTS_COUNT];
 } lighting_uni;
+
+layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = DESCRIPTOR_SET_COMMON_BINDING_SPOT_LIGHT_SHADOW_TEX) uniform sampler2D spot_light_shadow_tex_uni[MAX_SPOT_LIGHTS_COUNT];
 
 #endif

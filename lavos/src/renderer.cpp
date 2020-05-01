@@ -13,6 +13,8 @@
 #include "lavos/sub_renderer.h"
 #include "lavos/vk_util.h"
 
+#include "../glsl/common_glsl_cpp.h"
+
 using namespace lavos;
 
 Renderer::Renderer(Engine *engine,
@@ -134,21 +136,21 @@ void Renderer::CreateDescriptorSetLayout()
 	std::array<vk::DescriptorSetLayoutBinding, 3> bindings = {
 		// matrix
 		vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
+			.setBinding(DESCRIPTOR_SET_COMMON_BINDING_MATRIX_BUFFER)
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eVertex),
 
 		// lighting
 		vk::DescriptorSetLayoutBinding()
-			.setBinding(1)
+			.setBinding(DESCRIPTOR_SET_COMMON_BINDING_LIGHTING_BUFFER)
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),
 
 		// camera
 		vk::DescriptorSetLayoutBinding()
-			.setBinding(2)
+			.setBinding(DESCRIPTOR_SET_COMMON_BINDING_CAMERA_BUFFER)
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
@@ -270,7 +272,7 @@ void Renderer::CreateDescriptorSet()
 
 	auto matrix_buffer_write = vk::WriteDescriptorSet()
 		.setDstSet(descriptor_set)
-		.setDstBinding(0)
+		.setDstBinding(DESCRIPTOR_SET_COMMON_BINDING_MATRIX_BUFFER)
 		.setDstArrayElement(0)
 		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 		.setDescriptorCount(1)
@@ -284,7 +286,7 @@ void Renderer::CreateDescriptorSet()
 
 	auto lighting_buffer_write = vk::WriteDescriptorSet()
 		.setDstSet(descriptor_set)
-		.setDstBinding(1)
+		.setDstBinding(DESCRIPTOR_SET_COMMON_BINDING_LIGHTING_BUFFER)
 		.setDstArrayElement(0)
 		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 		.setDescriptorCount(1)
@@ -298,7 +300,7 @@ void Renderer::CreateDescriptorSet()
 
 	auto camera_buffer_write = vk::WriteDescriptorSet()
 		.setDstSet(descriptor_set)
-		.setDstBinding(2)
+		.setDstBinding(DESCRIPTOR_SET_COMMON_BINDING_CAMERA_BUFFER)
 		.setDstArrayElement(0)
 		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 		.setDescriptorCount(1)
@@ -408,6 +410,8 @@ void Renderer::CreateRenderPasses()
 			.setPSubpasses(&subpass)
 			.setDependencyCount(1)
 			.setPDependencies(&subpass_dependency));
+
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), render_pass, "Renderer RenderPass");
 }
 
 void Renderer::CleanupRenderPasses()
@@ -561,7 +565,7 @@ void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> w
 			nullptr);
 	}
 
-	engine->GetVkDevice().waitIdle();
+	engine->GetVkDevice().waitIdle(); // TODO
 
 	render_command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 	DrawFrameRecord(render_command_buffer, dst_framebuffers[image_index]);

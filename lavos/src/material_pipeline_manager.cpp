@@ -4,6 +4,8 @@
 #include "lavos/material_pipeline_manager.h"
 #include "lavos/renderer.h"
 
+#include "../glsl/common_glsl_cpp.h"
+
 using namespace lavos;
 
 MaterialPipelineManager::MaterialPipelineManager(Engine *engine, const MaterialPipelineConfiguration &config)
@@ -38,19 +40,22 @@ MaterialPipeline MaterialPipelineManager::CreateMaterialPipeline(Material *mater
 		config.renderer_descriptor_set_layout
 	};
 
-	pipeline.renderer_descriptor_set_index = 0;
+	static_assert(DESCRIPTOR_SET_INDEX_COMMON == 0, "descriptor set index mismatch");
+	pipeline.renderer_descriptor_set_index = DESCRIPTOR_SET_INDEX_COMMON;
 
 	auto descriptor_set_layout_id = material->GetDescriptorSetId(render_mode);
 	auto material_descriptor_set_layout = material->GetDescriptorSetLayout(descriptor_set_layout_id);
 	if(material_descriptor_set_layout)
 	{
+		static_assert(DESCRIPTOR_SET_INDEX_MATERIAL == 1, "descriptor set index mismatch");
 		descriptor_set_layouts.push_back(material_descriptor_set_layout->layout);
-		pipeline.material_descriptor_set_index = 1;
+		pipeline.material_descriptor_set_index = DESCRIPTOR_SET_INDEX_MATERIAL;
 	}
 	else
 	{
 		pipeline.material_descriptor_set_index = -1;
 	}
+
 
 
 	auto push_constant_range = vk::PushConstantRange()

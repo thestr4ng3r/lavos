@@ -4,7 +4,7 @@
 
 #include "common.glsl"
 
-layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = 2, std140) uniform CameraBuffer
+layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = DESCRIPTOR_SET_COMMON_BINDING_CAMERA_BUFFER, std140) uniform CameraBuffer
 {
 	vec3 position;
 } camera_uni;

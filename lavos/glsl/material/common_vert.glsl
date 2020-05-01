@@ -4,7 +4,7 @@
 
 #include "common.glsl"
 
-layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = 0) uniform MatrixBuffer
+layout(set = DESCRIPTOR_SET_INDEX_COMMON, binding = DESCRIPTOR_SET_COMMON_BINDING_MATRIX_BUFFER) uniform MatrixBuffer
 {
 #ifdef COMMON_VERT_MATRIX_COMPACT
     mat4 modelview_projection;
