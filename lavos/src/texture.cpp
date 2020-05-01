@@ -1,6 +1,7 @@
 
 #include "lavos/texture.h"
 #include "lavos/engine.h"
+#include "lavos/vk_util.h"
 
 using namespace lavos;
 
@@ -14,7 +15,7 @@ Texture Texture::CreateColor(Engine *engine, vk::Format format, glm::vec4 color)
 		.setImage(image.image)
 		.setViewType(vk::ImageViewType::e2D)
 		.setFormat(image.format)
-		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+		.setSubresourceRange(vk::ImageSubresourceRange(vk_util::GetFormatIsDepth(format) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
 
 	auto image_view = device.createImageView(image_view_info);
 

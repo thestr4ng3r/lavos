@@ -45,7 +45,7 @@ void SpotLightShadowRenderer::CreateRenderPass()
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 			.setInitialLayout(vk::ImageLayout::eUndefined)
-			.setFinalLayout(vk::ImageLayout::eDepthStencilReadOnlyOptimal);
+			.setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
 	auto depth_reference = vk::AttachmentReference()
 			.setAttachment(0)

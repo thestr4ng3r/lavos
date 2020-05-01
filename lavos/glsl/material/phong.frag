@@ -55,7 +55,8 @@ void main()
 	    if(ndotl < spot.angle_cos)
 	        continue;
 
-	    color += base_color.rgb * LightingPhong(normal, light_dir, cam_dir, material_uni.phong_params.specular_exponent);
+		float shadow = EvaluateSpotLightShadow(i, position_in);
+	    color += base_color.rgb * shadow * LightingPhong(normal, light_dir, cam_dir, material_uni.phong_params.specular_exponent);
 	}
 
 	out_color = vec4(color, base_color.a);

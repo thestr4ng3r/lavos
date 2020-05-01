@@ -20,6 +20,7 @@ namespace lavos
 class SpotLight;
 class SpotLightShadow;
 class SubRenderer;
+class LightCollection;
 
 struct MatrixUniformBuffer
 {
@@ -46,10 +47,11 @@ struct LightingUniformBufferSpotLight
 	float angle_cos;
 	glm::vec3 direction;
 	float unused;
+	glm::mat4 shadow_mvp_matrix;
 };
 
 static_assert(sizeof(LightingUniformBufferFixed) == 48, "LightingUniformBufferFixed memory layout");
-static_assert(sizeof(LightingUniformBufferSpotLight) == 32, "LightingUniformBufferSpotLight memory layout");
+static_assert(sizeof(LightingUniformBufferSpotLight) == 96, "LightingUniformBufferSpotLight memory layout");
 
 
 struct CameraUniformBuffer
@@ -91,6 +93,8 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		std::vector<vk::Framebuffer> dst_framebuffers;
 
 		MaterialPipelineManager *material_pipeline_manager;
+
+		Texture spot_light_shadow_default;
 
 		vk::RenderPass render_pass;
 
@@ -160,7 +164,8 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 
 		void UpdateMatrixUniformBuffer();
 		void UpdateCameraUniformBuffer();
-		void UpdateLightingUniformBuffer();
+		void UpdateLightingUniformBuffer(LightCollection *light_collection);
+		void UpdateShadowDescriptors(LightCollection *light_collection);
 
 		//MaterialPipeline GetMaterialPipeline(int index)		{ return material_pipelines[index]; }
 

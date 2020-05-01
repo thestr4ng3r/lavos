@@ -124,9 +124,9 @@ class Engine
 
 		Image Create2DImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, VmaMemoryUsage vma_usage, vk::SharingMode sharing_mode = vk::SharingMode::eExclusive);
 
-		void TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout old_layout, vk::ImageLayout new_layout);
+		void TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout old_layout, vk::ImageLayout new_layout, vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor);
 
-		void CopyBufferTo2DImage(vk::Buffer src_buffer, vk::Image dst_image, uint32_t width, uint32_t height);
+		void CopyBufferTo2DImage(vk::Buffer src_buffer, vk::Image dst_image, uint32_t width, uint32_t height, vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor);
 };
 
 }

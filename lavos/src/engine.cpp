@@ -640,7 +640,7 @@ Image Engine::Create2DImage(uint32_t width, uint32_t height, vk::Format format, 
 }
 
 void Engine::TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout old_layout,
-								   vk::ImageLayout new_layout)
+								   vk::ImageLayout new_layout, vk::ImageAspectFlags aspect_mask)
 {
 	auto command_buffer = BeginSingleTimeCommandBuffer();
 
@@ -650,7 +650,7 @@ void Engine::TransitionImageLayout(vk::Image image, vk::Format format, vk::Image
 		.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 		.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 		.setImage(image)
-		.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+		.setSubresourceRange(vk::ImageSubresourceRange(aspect_mask, 0, 1, 0, 1));
 
 	vk::PipelineStageFlags src_stage;
 	vk::PipelineStageFlags dst_stage;
@@ -694,7 +694,7 @@ void Engine::TransitionImageLayout(vk::Image image, vk::Format format, vk::Image
 	EndSingleTimeCommandBuffer(command_buffer);
 }
 
-void Engine::CopyBufferTo2DImage(vk::Buffer src_buffer, vk::Image dst_image, uint32_t width, uint32_t height)
+void Engine::CopyBufferTo2DImage(vk::Buffer src_buffer, vk::Image dst_image, uint32_t width, uint32_t height, vk::ImageAspectFlags aspect_mask)
 {
 	auto command_buffer = BeginSingleTimeCommandBuffer();
 
@@ -702,7 +702,7 @@ void Engine::CopyBufferTo2DImage(vk::Buffer src_buffer, vk::Image dst_image, uin
 		.setBufferOffset(0)
 		.setBufferRowLength(0)
 		.setBufferImageHeight(0)
-		.setImageSubresource(vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1))
+		.setImageSubresource(vk::ImageSubresourceLayers(aspect_mask, 0, 0, 1))
 		.setImageOffset(vk::Offset3D(0, 0, 0))
 		.setImageExtent(vk::Extent3D(width, height, 1));
 

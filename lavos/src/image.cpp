@@ -2,38 +2,12 @@
 #include <lavos/engine.h>
 #include <glm/ext/vector_float3.hpp>
 #include "lavos/image.h"
+#include "lavos/vk_util.h"
 
 #include "stb_image.h"
 
 using namespace lavos;
-
-
-inline unsigned int GetComponentsCount(vk::Format format)
-{
-	switch(format)
-	{
-		case vk::Format::eR8Unorm:				return 1;
-		case vk::Format::eR8G8Unorm:			return 2;
-		case vk::Format::eR8G8B8Unorm:			return 3;
-		case vk::Format::eR8G8B8A8Unorm:		return 4;
-		default:
-			throw std::runtime_error("unsupported format.");
-	}
-}
-
-inline size_t GetComponentSize(vk::Format format)
-{
-	switch(format)
-	{
-		case vk::Format::eR8Unorm:				return 1;
-		case vk::Format::eR8G8Unorm:			return 1;
-		case vk::Format::eR8G8B8Unorm:			return 1;
-		case vk::Format::eR8G8B8A8Unorm:		return 1;
-		default:
-			throw std::runtime_error("unsupported format.");
-	}
-}
-
+using namespace lavos::vk_util;
 
 unsigned char *ReformatImageData(unsigned int src_components, unsigned int dst_components,
 								 size_t pixel_count, unsigned char *pixels,
@@ -54,7 +28,6 @@ unsigned char *ReformatImageData(unsigned int src_components, unsigned int dst_c
 	return dst_pixels;
 }
 
-
 Image Image::LoadFromPixelData(Engine *engine, vk::Format format, uint32_t width, uint32_t height, unsigned char *pixels)
 {
 	vk::Format actual_format = format;
@@ -65,7 +38,7 @@ Image Image::LoadFromPixelData(Engine *engine, vk::Format format, uint32_t width
 													vk::FormatFeatureFlagBits::eSampledImage);
 	}
 
-	vk::DeviceSize image_size = static_cast<vk::DeviceSize>(width * height * GetComponentsCount(actual_format));
+	vk::DeviceSize image_size = static_cast<vk::DeviceSize>(width * height * GetComponentsCount(actual_format) * GetComponentSize(actual_format));
 
 	unsigned char *image_pixels = pixels;
 	if(actual_format != format)
@@ -83,16 +56,15 @@ Image Image::LoadFromPixelData(Engine *engine, vk::Format format, uint32_t width
 	if(image_pixels != pixels)
 		delete [] image_pixels;
 
-
 	Image image = engine->Create2DImage(width, height, actual_format, vk::ImageTiling::eOptimal,
 										vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 										VMA_MEMORY_USAGE_GPU_ONLY);
 
 
-	engine->TransitionImageLayout(image.image, actual_format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-	engine->CopyBufferTo2DImage(staging_buffer->GetVkBuffer(), image.image, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-	engine->TransitionImageLayout(image.image, actual_format, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
-
+	vk::ImageAspectFlags aspect_mask = GetFormatIsDepth(format) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
+	engine->TransitionImageLayout(image.image, actual_format, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, aspect_mask);
+	engine->CopyBufferTo2DImage(staging_buffer->GetVkBuffer(), image.image, static_cast<uint32_t>(width), static_cast<uint32_t>(height), aspect_mask);
+	engine->TransitionImageLayout(image.image, actual_format, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, aspect_mask);
 
 	delete staging_buffer;
 
@@ -133,19 +105,26 @@ Image Image::LoadFromMemory(Engine *engine, unsigned char *data, size_t size)
 
 Image Image::CreateColor(Engine *engine, vk::Format format, glm::vec4 color)
 {
-	unsigned int components = GetComponentsCount(format);
+	size_t components = GetComponentsCount(format);
 	size_t component_size = GetComponentSize(format);
 
-	if(component_size != 1)
+	// TODO: this all won't work if the format isn't uint
+	uint8_t *pixels = new uint8_t[components * component_size];
+	if(component_size == 1)
+	{
+		for(size_t i=0; i<components; i++)
+			pixels[i] = static_cast<unsigned char>(color[i] * 255.0f);
+	}
+	else if(component_size == 2)
+	{
+		for(size_t i=0; i<components; i++)
+			*((uint16_t *)pixels + i) = static_cast<unsigned char>(color[i] * 255.0f);
+	}
+	else
 	{
 		// TODO: add support for more formats
 		throw std::runtime_error("unsupported format for creating single color image.");
 	}
-
-	unsigned char *pixels = new unsigned char[components * component_size];
-
-	for(unsigned int i=0; i<components; i++)
-		pixels[i] = static_cast<unsigned char>(color[i] * 255.0f);
 
 	Image image = LoadFromPixelData(engine, format, 1, 1, pixels);
 

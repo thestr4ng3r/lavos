@@ -168,6 +168,49 @@ inline void SetDebugUtilsObjectName(vk::Device device, T object, const char *nam
 #endif
 }
 
+inline size_t GetComponentsCount(vk::Format format)
+{
+	switch(format)
+	{
+		case vk::Format::eR8Unorm:				return 1;
+		case vk::Format::eR8G8Unorm:			return 2;
+		case vk::Format::eR8G8B8Unorm:			return 3;
+		case vk::Format::eR8G8B8A8Unorm:		return 4;
+		case vk::Format::eD16Unorm:				return 1;
+		default:
+			throw std::runtime_error("unsupported format.");
+	}
+}
+
+inline size_t GetComponentSize(vk::Format format)
+{
+	switch(format)
+	{
+		case vk::Format::eR8Unorm:				return 1;
+		case vk::Format::eR8G8Unorm:			return 1;
+		case vk::Format::eR8G8B8Unorm:			return 1;
+		case vk::Format::eR8G8B8A8Unorm:		return 1;
+		case vk::Format::eD16Unorm:				return 2;
+		default:
+			throw std::runtime_error("unsupported format.");
+	}
+}
+
+inline bool GetFormatIsDepth(vk::Format format)
+{
+	switch(format)
+	{
+		case vk::Format::eR8Unorm:
+		case vk::Format::eR8G8Unorm:
+		case vk::Format::eR8G8B8Unorm:
+		case vk::Format::eR8G8B8A8Unorm:
+			return false;
+		case vk::Format::eD16Unorm:
+			return true;
+		default:
+			throw std::runtime_error("unsupported format.");
+	}
+}
 
 }}
 

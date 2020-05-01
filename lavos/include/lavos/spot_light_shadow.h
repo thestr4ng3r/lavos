@@ -56,9 +56,10 @@ class SpotLightShadow
 
 		vk::CommandBuffer BuildCommandBuffer(Renderer *renderer);
 
-		vk::Semaphore GetSemaphore()		{ return semaphore; }
-
+		vk::Semaphore GetSemaphore()				{ return semaphore; }
 		glm::mat4 GetModelViewProjectionMatrix()	{ return GetProjectionMatrix() * GetModelViewMatrix(); }
+		vk::ImageView GetImageView()				{ return image_view; }
+		vk::Sampler GetSampler()					{ return sampler; }
 };
 
 }

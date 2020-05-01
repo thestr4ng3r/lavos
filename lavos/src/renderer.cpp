@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "lavos/glm_config.h"
+#include "lavos/light_collection.h"
 #include "lavos/component/directional_light.h"
 #include "lavos/component/spot_light.h"
 #include "lavos/spot_light_shadow.h"
@@ -38,6 +39,8 @@ Renderer::Renderer(Engine *engine,
 
 	material_pipeline_manager = new MaterialPipelineManager(engine, CreateMaterialPipelineConfiguration());
 
+	spot_light_shadow_default = Texture::CreateColor(engine, vk::Format::eD16Unorm, glm::vec4(1.0f));
+
 	CreateRenderCommandBuffer();
 }
 
@@ -55,6 +58,8 @@ Renderer::~Renderer()
 	delete material_pipeline_manager;
 
 	device.destroyDescriptorPool(descriptor_pool);
+
+	engine->DestroyTexture(spot_light_shadow_default);
 
 	delete matrix_uniform_buffer;
 	delete lighting_uniform_buffer;
@@ -120,7 +125,8 @@ void Renderer::CleanupFramebuffers()
 void Renderer::CreateDescriptorPool()
 {
 	std::vector<vk::DescriptorPoolSize> pool_sizes = {
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 3)
+		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 3),
+		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, MAX_SPOT_LIGHTS_COUNT)
 	};
 
 	auto create_info = vk::DescriptorPoolCreateInfo()
@@ -133,7 +139,7 @@ void Renderer::CreateDescriptorPool()
 
 void Renderer::CreateDescriptorSetLayout()
 {
-	std::array<vk::DescriptorSetLayoutBinding, 3> bindings = {
+	std::array<vk::DescriptorSetLayoutBinding, 4> bindings = {
 		// matrix
 		vk::DescriptorSetLayoutBinding()
 			.setBinding(DESCRIPTOR_SET_COMMON_BINDING_MATRIX_BUFFER)
@@ -153,7 +159,14 @@ void Renderer::CreateDescriptorSetLayout()
 			.setBinding(DESCRIPTOR_SET_COMMON_BINDING_CAMERA_BUFFER)
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDescriptorCount(1)
-			.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+			.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),
+
+		// spot light shadow tex
+		vk::DescriptorSetLayoutBinding()
+			.setBinding(DESCRIPTOR_SET_COMMON_BINDING_SPOT_LIGHT_SHADOW_TEX)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(MAX_SPOT_LIGHTS_COUNT)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
 	};
 
 	auto create_info = vk::DescriptorSetLayoutCreateInfo()
@@ -210,21 +223,19 @@ void Renderer::UpdateCameraUniformBuffer()
 	camera_uniform_buffer->UnMap();
 }
 
-
-void Renderer::UpdateLightingUniformBuffer()
+void Renderer::UpdateLightingUniformBuffer(LightCollection *light_collection)
 {
 	LightingUniformBufferFixed fixed;
 	memset(&fixed, 0, sizeof(fixed));
 
 	fixed.ambient_intensity = scene->GetAmbientLightIntensity();
 
-	auto dir_light = scene->GetRootNode()->GetComponentInChildren<DirectionalLight>();
-	if(dir_light != nullptr)
+	if(light_collection->dir_light)
 	{
 		fixed.directional_light_enabled = 1;
-		fixed.directional_light_dir = glm::normalize(dir_light->GetNode()->GetTransformComp()->GetMatrixWorld()
+		fixed.directional_light_dir = glm::normalize(light_collection->dir_light->GetNode()->GetTransformComp()->GetMatrixWorld()
 													 * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
-		fixed.directional_light_intensity = dir_light->GetIntensity();
+		fixed.directional_light_intensity = light_collection->dir_light->GetIntensity();
 	}
 	else
 	{
@@ -235,23 +246,60 @@ void Renderer::UpdateLightingUniformBuffer()
 	std::vector<LightingUniformBufferSpotLight> spot_light_buffers(max_spot_lights);
 	memset(spot_light_buffers.data(), 0, sizeof(LightingUniformBufferSpotLight) * spot_light_buffers.size());
 
-	auto spot_lights = scene->GetRootNode()->GetComponentsInChildren<SpotLight>();
+	fixed.spot_lights_count = static_cast<uint32_t>(light_collection->spot_lights.size());
 
-	fixed.spot_lights_count = static_cast<uint32_t>(spot_lights.size());
-
-	for(unsigned int i=0; i<std::min(spot_lights.size(), spot_light_buffers.size()); i++)
+	for(unsigned int i=0; i<std::min(light_collection->spot_lights.size(), spot_light_buffers.size()); i++)
 	{
-		auto spot_light = spot_lights[i];
+		auto spot_light = light_collection->spot_lights[i];
 		glm::mat4 transform_mat = spot_light->GetNode()->GetTransformComp()->GetMatrixWorld();
 		spot_light_buffers[i].position = transform_mat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		spot_light_buffers[i].direction = transform_mat * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
 		spot_light_buffers[i].angle_cos = cosf(spot_light->GetAngle() * 0.5f);
+		SpotLightShadow *shadow = spot_light->GetShadow();
+		if(shadow)
+			spot_light_buffers[i].shadow_mvp_matrix = shadow->GetModelViewProjectionMatrix();
 	}
 
 	std::uint8_t *data = static_cast<std::uint8_t *>(lighting_uniform_buffer->Map());
 	memcpy(data, &fixed, sizeof(fixed));
 	memcpy(data + 48, spot_light_buffers.data(), sizeof(LightingUniformBufferSpotLight) * spot_light_buffers.size());
 	lighting_uniform_buffer->UnMap();
+}
+
+void Renderer::UpdateShadowDescriptors(LightCollection *light_collection)
+{
+	std::array<vk::DescriptorImageInfo, MAX_SPOT_LIGHTS_COUNT> image_infos;
+
+	for(size_t i = 0; i < MAX_SPOT_LIGHTS_COUNT; i++)
+	{
+		vk::ImageView image_view;
+		vk::Sampler sampler;
+		if(i < light_collection->spot_lights.size())
+		{
+			SpotLightShadow *shadow = light_collection->spot_lights[i]->GetShadow();
+			image_view = shadow->GetImageView();
+			sampler = shadow->GetSampler();
+		}
+		else
+		{
+			image_view = spot_light_shadow_default.image_view;
+			sampler = spot_light_shadow_default.sampler;
+		}
+		image_infos[i] = vk::DescriptorImageInfo()
+				.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+				.setImageView(image_view)
+				.setSampler(sampler);
+	}
+
+	auto write = vk::WriteDescriptorSet()
+			.setDstSet(descriptor_set)
+			.setDstBinding(DESCRIPTOR_SET_COMMON_BINDING_SPOT_LIGHT_SHADOW_TEX)
+			.setDstArrayElement(0)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(MAX_SPOT_LIGHTS_COUNT)
+			.setPImageInfo(image_infos.data());
+
+	engine->GetVkDevice().updateDescriptorSets({write}, nullptr);
 }
 
 void Renderer::CreateDescriptorSet()
@@ -534,8 +582,11 @@ void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> w
 	if(camera == nullptr)
 		throw std::runtime_error("renderer has no camera.");
 
+	LightCollection light_collection = LightCollection::EverythingInScene(scene);
+
 	UpdateMatrixUniformBuffer();
-	UpdateLightingUniformBuffer();
+	UpdateLightingUniformBuffer(&light_collection);
+	UpdateShadowDescriptors(&light_collection);
 	UpdateCameraUniformBuffer();
 
 	std::vector<SpotLight *> spot_lights = scene->GetRootNode()->GetComponentsInChildren<SpotLight>();
