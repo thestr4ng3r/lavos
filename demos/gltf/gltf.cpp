@@ -13,8 +13,8 @@
 #include <lavos/component/mesh_component.h>
 #include <lavos/material/phong_material.h>
 #include <lavos/material/unlit_material.h>
-#include <lavos/component/directional_light_component.h>
-#include <lavos/component/fp_controller_component.h>
+#include <lavos/component/directional_light.h>
+#include <lavos/component/fp_controller.h>
 #include <lavos/asset_container.h>
 
 #include <window_application.h>
@@ -32,7 +32,7 @@ lavos::MaterialInstance *material_instance;
 lavos::Scene *scene;
 
 double last_cursor_x, last_cursor_y;
-lavos::FirstPersonControllerComponent *fp_controller;
+lavos::FirstPersonController *fp_controller;
 
 
 void Init(std::string gltf_filename)
@@ -51,19 +51,19 @@ void Init(std::string gltf_filename)
 
 	renderer->SetScene(scene);
 
-	lavos::CameraComponent *camera = scene->GetRootNode()->GetComponentInChildren<lavos::CameraComponent>();
+	lavos::Camera *camera = scene->GetRootNode()->GetComponentInChildren<lavos::Camera>();
 
 	if(camera == nullptr)
 	{
 		lavos::Node *camera_node = new lavos::Node();
 		scene->GetRootNode()->AddChild(camera_node);
 
-		camera_node->AddComponent(new lavos::TransformComponent());
+		camera_node->AddComponent(new lavos::TransformComp());
 
-		camera_node->GetTransformComponent()->translation = glm::vec3(5.0f, 5.0f, 5.0f);
-		camera_node->GetTransformComponent()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera_node->GetTransformComp()->translation = glm::vec3(5.0f, 5.0f, 5.0f);
+		camera_node->GetTransformComp()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
 
-		camera = new lavos::CameraComponent();
+		camera = new lavos::Camera();
 		camera->SetNearClip(0.01f);
 		camera_node->AddComponent(camera);
 	}
@@ -71,10 +71,10 @@ void Init(std::string gltf_filename)
 	lavos::Node *light_node = new lavos::Node();
 	scene->GetRootNode()->AddChild(light_node);
 
-	light_node->AddComponent(new lavos::TransformComponent());
-	light_node->GetTransformComponent()->SetLookAt(glm::vec3(-1.0f, -1.0f, -1.0f));
+	light_node->AddComponent(new lavos::TransformComp());
+	light_node->GetTransformComp()->SetLookAt(glm::vec3(-1.0f, -1.0f, -1.0f));
 
-	lavos::DirectionalLightComponent *light = new lavos::DirectionalLightComponent();
+	lavos::DirectionalLight *light = new lavos::DirectionalLight();
 	light_node->AddComponent(light);
 
 	renderer->SetCamera(camera);

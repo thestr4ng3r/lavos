@@ -10,14 +10,14 @@ namespace lavos
 {
 
 template<class Point>
-class PointCloudComponent: public Component, public Renderable, public Renderable::Primitive
+class PointCloudComp: public Component, public Renderable, public Renderable::Primitive
 {
 	private:
 		PointCloud<Point> *point_cloud;
 		MaterialInstance *material_instance;
 
 	public:
-		PointCloudComponent(PointCloud<Point> *point_cloud = nullptr)	{ SetPointCloud(point_cloud); }
+		PointCloudComp(PointCloud<Point> *point_cloud = nullptr)	{ SetPointCloud(point_cloud); }
 
 		void SetPointCloud(PointCloud<Point> *point_cloud)	{ this->point_cloud = point_cloud; }
 		PointCloud<Point> *GetPointCloud() const 			{ return point_cloud; }

@@ -9,13 +9,13 @@
 namespace lavos
 {
 
-class MeshComponent: public Component, public Renderable
+class MeshComp: public Component, public Renderable
 {
 	private:
 		Mesh *mesh;
 
 	public:
-		MeshComponent(Mesh *mesh = nullptr);
+		MeshComp(Mesh *mesh = nullptr);
 
 		void SetMesh(Mesh *mesh)				{ this->mesh = mesh; }
 		Mesh *GetMesh() const 					{ return mesh; }

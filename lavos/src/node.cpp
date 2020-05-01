@@ -37,7 +37,7 @@ void Node::AddComponent(lavos::Component *component)
 
 	component->node = this;
 
-	auto transform_component = dynamic_cast<TransformComponent *>(component);
+	auto transform_component = dynamic_cast<TransformComp *>(component);
 	if(transform_component != nullptr)
 		this->transform_component = transform_component;
 }

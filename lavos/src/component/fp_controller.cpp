@@ -1,11 +1,11 @@
 
-#include "lavos/component/fp_controller_component.h"
+#include "lavos/component/fp_controller.h"
 
 using namespace lavos;
 
-void FirstPersonControllerComponent::Update(float delta_time)
+void FirstPersonController::Update(float delta_time)
 {
-	TransformComponent *transform = GetNode()->GetTransformComponent();
+	TransformComp *transform = GetNode()->GetTransformComp();
 
 	transform->rotation = glm::quat(glm::vec3(-rotation.y, -rotation.x, 0.0f));
 
@@ -13,12 +13,12 @@ void FirstPersonControllerComponent::Update(float delta_time)
 	transform->translation += glm::vec3(mat * glm::vec4(velocity.x * delta_time, 0.0f, -velocity.y * delta_time, 0.0f));
 }
 
-void FirstPersonControllerComponent::Rotate(glm::vec2 rot)
+void FirstPersonController::Rotate(glm::vec2 rot)
 {
 	rotation += rot;
 }
 
-void FirstPersonControllerComponent::SetVelocity(glm::vec2 velocity)
+void FirstPersonController::SetVelocity(glm::vec2 velocity)
 {
 	this->velocity = velocity;
 }

@@ -1,7 +1,7 @@
 
 
 #include <lavos/engine.h>
-#include <lavos/component/directional_light_component.h>
+#include <lavos/component/directional_light.h>
 #include <lavos/material/phong_material.h>
 #include <lavos/renderer.h>
 #include <lavos/asset_container.h>
@@ -30,19 +30,19 @@ void LavosWindowRenderer::InitializeSwapchainResources(lavos::shell::qt::LavosWi
 	scene = asset_container->scenes[0];
 	scene->SetAmbientLightIntensity(glm::vec3(0.3f, 0.3f, 0.3f));
 
-	camera = scene->GetRootNode()->GetComponentInChildren<lavos::CameraComponent>();
+	camera = scene->GetRootNode()->GetComponentInChildren<lavos::Camera>();
 
 	if(camera == nullptr)
 	{
 		lavos::Node *camera_node = new lavos::Node();
 		scene->GetRootNode()->AddChild(camera_node);
 
-		camera_node->AddComponent(new lavos::TransformComponent());
+		camera_node->AddComponent(new lavos::TransformComp());
 
-		camera_node->GetTransformComponent()->translation = glm::vec3(5.0f, 5.0f, 5.0f);
-		camera_node->GetTransformComponent()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+		camera_node->GetTransformComp()->translation = glm::vec3(5.0f, 5.0f, 5.0f);
+		camera_node->GetTransformComp()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
 
-		camera = new lavos::CameraComponent();
+		camera = new lavos::Camera();
 		camera->SetNearClip(0.01f);
 		camera_node->AddComponent(camera);
 	}
@@ -50,10 +50,10 @@ void LavosWindowRenderer::InitializeSwapchainResources(lavos::shell::qt::LavosWi
 	lavos::Node *light_node = new lavos::Node();
 	scene->GetRootNode()->AddChild(light_node);
 
-	light_node->AddComponent(new lavos::TransformComponent());
-	light_node->GetTransformComponent()->SetLookAt(glm::vec3(-1.0f, -1.0f, -1.0f));
+	light_node->AddComponent(new lavos::TransformComp());
+	light_node->GetTransformComp()->SetLookAt(glm::vec3(-1.0f, -1.0f, -1.0f));
 
-	lavos::DirectionalLightComponent *light = new lavos::DirectionalLightComponent();
+	lavos::DirectionalLight *light = new lavos::DirectionalLight();
 	light_node->AddComponent(light);
 
 	renderer = new lavos::Renderer(engine, render_config, window->GetSwapchain(), window->GetDepthRenderTarget());

@@ -10,7 +10,7 @@
 namespace lavos
 {
 
-class TransformComponent;
+class TransformComp;
 
 class Node
 {
@@ -23,7 +23,7 @@ class Node
 		std::vector<Component *> components;
 		std::vector<Node *> children;
 
-		TransformComponent *transform_component = nullptr;
+		TransformComp *transform_component = nullptr;
 
 	public:
 		Node();
@@ -41,7 +41,7 @@ class Node
 		template<class T>
 		std::vector<T *> GetComponentsInChildren() const;
 
-		TransformComponent *GetTransformComponent() const	{ return transform_component; }
+		TransformComp *GetTransformComp() const	{ return transform_component; }
 
 
 		const std::vector<Node *> &GetChildren() const		{ return children; }

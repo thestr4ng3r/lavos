@@ -13,7 +13,7 @@ class LavosWindowRenderer : public lavos::shell::qt::LavosWindow::Renderer
 
 		lavos::PhongMaterial *material = nullptr;
 		lavos::Scene *scene = nullptr;
-		lavos::CameraComponent *camera = nullptr;
+		lavos::Camera *camera = nullptr;
 
 		lavos::Renderer *renderer = nullptr;
 

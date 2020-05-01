@@ -5,7 +5,7 @@
 #include <map>
 #include <memory>
 
-#include "component/camera_component.h"
+#include "lavos/component/camera.h"
 #include "engine.h"
 #include "material/material.h"
 #include "mesh.h"
@@ -17,7 +17,7 @@
 namespace lavos
 {
 
-class SpotLightComponent;
+class SpotLight;
 class SpotLightShadow;
 class SubRenderer;
 
@@ -79,7 +79,7 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		const RenderConfig config;
 
 		Scene *scene = nullptr;
-		CameraComponent *camera = nullptr;
+		Camera *camera = nullptr;
 
 		bool auto_set_camera_aspect = true;
 
@@ -141,7 +141,7 @@ class Renderer: public ColorRenderTarget::ChangedCallback
 		//vk::DescriptorPool GetDescriptorPool() const 		{ return descriptor_pool; }
 
 		void SetScene(Scene *scene)							{ this->scene = scene; }
-		void SetCamera(CameraComponent *camera)				{ this->camera = camera; }
+		void SetCamera(Camera *camera)				{ this->camera = camera; }
 
 		/**
 		 * Adds a SubRenderer to the Renderer.

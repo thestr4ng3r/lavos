@@ -12,8 +12,8 @@
 
 #include <lavos/component/point_cloud_component.h>
 #include <lavos/material/point_cloud_material.h>
-#include <lavos/component/directional_light_component.h>
-#include <lavos/component/fp_controller_component.h>
+#include <lavos/component/directional_light.h>
+#include <lavos/component/fp_controller.h>
 #include <lavos/asset_container.h>
 #include <lavos/point_cloud.h>
 

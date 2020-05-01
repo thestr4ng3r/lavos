@@ -1,6 +1,6 @@
 
-#ifndef LAVOS_CAMERA_COMPONENT_H
-#define LAVOS_CAMERA_COMPONENT_H
+#ifndef LAVOS_CAMERA_H
+#define LAVOS_CAMERA_H
 
 #include "component.h"
 #include "transform_component.h"
@@ -15,7 +15,7 @@
 namespace lavos
 {
 
-class CameraComponent: public Component
+class Camera: public Component
 {
 	public:
 		enum class Type { PERSPECTIVE, ORTHOGRAPHIC } ;
@@ -69,7 +69,7 @@ class CameraComponent: public Component
 
 		glm::mat4 GetModelViewMatrix()
 		{
-			auto transform_component = GetNode()->GetTransformComponent();
+			auto transform_component = GetNode()->GetTransformComp();
 			if(transform_component == nullptr)
 				throw std::runtime_error("node with a camera component does not have a transform component.");
 

@@ -13,7 +13,7 @@
 namespace lavos
 {
 
-class TransformComponent: public Component
+class TransformComp: public Component
 {
 	public:
 		glm::vec3 translation = glm::vec3(0.0f);
@@ -33,7 +33,7 @@ class TransformComponent: public Component
 			if(parent == nullptr)
 				return m;
 
-			TransformComponent *parent_transform = parent->GetTransformComponent();
+			TransformComp *parent_transform = parent->GetTransformComp();
 			if(parent_transform == nullptr)
 				return m;
 

@@ -46,12 +46,12 @@ set(SOURCE_FILES
 		include/lavos/component/mesh_component.h
 		include/lavos/component/transform_component.h
 		src/component/transform_component.cpp
-		include/lavos/component/camera_component.h
+		include/lavos/component/camera.h
 		src/glm_stream.h
-		src/component/directional_light_component.cpp
-		include/lavos/component/directional_light_component.h
-		src/component/fp_controller_component.cpp
-		include/lavos/component/fp_controller_component.h
+		src/component/directional_light.cpp
+		include/lavos/component/directional_light.h
+		src/component/fp_controller.cpp
+		include/lavos/component/fp_controller.h
 		include/lavos/render_target.h
 		src/render_target.cpp
 		include/lavos/swapchain.h
@@ -61,8 +61,8 @@ set(SOURCE_FILES
 		include/lavos/point_cloud.h
 		include/lavos/component/point_cloud_component.h
 		include/lavos/renderable.h
-		include/lavos/component/spot_light_component.h
-		src/component/spot_light_component.cpp
+		include/lavos/component/spot_light.h
+		src/component/spot_light.cpp
 		include/lavos/spot_light_shadow.h
 		src/spot_light_shadow.cpp
 		src/buffer.cpp

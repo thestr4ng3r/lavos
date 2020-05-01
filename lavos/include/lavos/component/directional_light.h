@@ -1,6 +1,6 @@
 
-#ifndef LAVOS_DIRECTIONAL_LIGHT_COMPONENT_H
-#define LAVOS_DIRECTIONAL_LIGHT_COMPONENT_H
+#ifndef LAVOS_DIRECTIONAL_LIGHT_H
+#define LAVOS_DIRECTIONAL_LIGHT_H
 
 #include <glm/ext/vector_float3.hpp>
 
@@ -9,14 +9,14 @@
 namespace lavos
 {
 
-class DirectionalLightComponent: public Component
+class DirectionalLight: public Component
 {
 	private:
 		glm::vec3 intensity;
 
 	public:
-		DirectionalLightComponent(glm::vec3 intensity = glm::vec3(1.0f, 1.0f, 1.0f));
-		~DirectionalLightComponent();
+		DirectionalLight(glm::vec3 intensity = glm::vec3(1.0f, 1.0f, 1.0f));
+		~DirectionalLight();
 
 		glm::vec3 GetIntensity() const 					{ return intensity; }
 		void SetIntensity(const glm::vec3 &intensity)	{ this->intensity = intensity; }

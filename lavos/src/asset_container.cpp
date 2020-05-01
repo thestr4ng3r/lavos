@@ -3,7 +3,7 @@
 #include "lavos/material/material.h"
 #include "lavos/asset_container.h"
 #include "lavos/component/mesh_component.h"
-#include "lavos/component/camera_component.h"
+#include "lavos/component/camera.h"
 
 #include <tiny_gltf.h>
 #include <iostream>
@@ -317,7 +317,7 @@ static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *pa
 		LoadNode(container, model, current_node, gltf_child_node_index);
 	}
 
-	auto transform_component = new TransformComponent();
+	auto transform_component = new TransformComp();
 
 	if(gltf_node.translation.size() >= 3)
 	{
@@ -364,13 +364,13 @@ static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *pa
 	if(gltf_node.mesh >= 0)
 	{
 		auto mesh = container.meshes[gltf_node.mesh];
-		current_node->AddComponent(new MeshComponent(mesh));
+		current_node->AddComponent(new MeshComp(mesh));
 	}
 
 	if(gltf_node.camera >= 0)
 	{
 		auto gltf_camera = model.cameras[gltf_node.camera];
-		auto camera = new CameraComponent();
+		auto camera = new Camera();
 
 		if(gltf_camera.type == "orthographic")
 		{
@@ -378,7 +378,7 @@ static void LoadNode(AssetContainer &container, tinygltf::Model &model, Node *pa
 		}
 		else
 		{
-			camera->SetType(CameraComponent::Type::PERSPECTIVE);
+			camera->SetType(Camera::Type::PERSPECTIVE);
 
 			// TODO: parameters
 		}

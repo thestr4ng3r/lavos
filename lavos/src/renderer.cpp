@@ -3,8 +3,8 @@
 #include <iostream>
 
 #include "lavos/glm_config.h"
-#include "lavos/component/directional_light_component.h"
-#include "lavos/component/spot_light_component.h"
+#include "lavos/component/directional_light.h"
+#include "lavos/component/spot_light.h"
 #include "lavos/spot_light_shadow.h"
 #include "lavos/renderer.h"
 #include "lavos/shader_load.h"
@@ -187,7 +187,7 @@ void Renderer::UpdateMatrixUniformBuffer()
 {
 	auto extent = color_render_target->GetExtent();
 
-	if(auto_set_camera_aspect && camera->GetType() == CameraComponent::Type::PERSPECTIVE)
+	if(auto_set_camera_aspect && camera->GetType() == Camera::Type::PERSPECTIVE)
 		camera->SetPerspectiveAspect((float)extent.width / (float)extent.height);
 
 	MatrixUniformBuffer matrix_ubo;
@@ -202,7 +202,7 @@ void Renderer::UpdateMatrixUniformBuffer()
 void Renderer::UpdateCameraUniformBuffer()
 {
 	CameraUniformBuffer ubo;
-	ubo.position = camera->GetNode()->GetTransformComponent()->GetMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	ubo.position = camera->GetNode()->GetTransformComp()->GetMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 	memcpy(camera_uniform_buffer->Map(), &ubo, sizeof(ubo));
 	camera_uniform_buffer->UnMap();
@@ -216,11 +216,11 @@ void Renderer::UpdateLightingUniformBuffer()
 
 	fixed.ambient_intensity = scene->GetAmbientLightIntensity();
 
-	auto dir_light = scene->GetRootNode()->GetComponentInChildren<DirectionalLightComponent>();
+	auto dir_light = scene->GetRootNode()->GetComponentInChildren<DirectionalLight>();
 	if(dir_light != nullptr)
 	{
 		fixed.directional_light_enabled = 1;
-		fixed.directional_light_dir = glm::normalize(dir_light->GetNode()->GetTransformComponent()->GetMatrixWorld()
+		fixed.directional_light_dir = glm::normalize(dir_light->GetNode()->GetTransformComp()->GetMatrixWorld()
 													 * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f));
 		fixed.directional_light_intensity = dir_light->GetIntensity();
 	}
@@ -233,14 +233,14 @@ void Renderer::UpdateLightingUniformBuffer()
 	std::vector<LightingUniformBufferSpotLight> spot_light_buffers(max_spot_lights);
 	memset(spot_light_buffers.data(), 0, sizeof(LightingUniformBufferSpotLight) * spot_light_buffers.size());
 
-	auto spot_lights = scene->GetRootNode()->GetComponentsInChildren<SpotLightComponent>();
+	auto spot_lights = scene->GetRootNode()->GetComponentsInChildren<SpotLight>();
 
 	fixed.spot_lights_count = static_cast<uint32_t>(spot_lights.size());
 
 	for(unsigned int i=0; i<std::min(spot_lights.size(), spot_light_buffers.size()); i++)
 	{
 		auto spot_light = spot_lights[i];
-		glm::mat4 transform_mat = spot_light->GetNode()->GetTransformComponent()->GetMatrixWorld();
+		glm::mat4 transform_mat = spot_light->GetNode()->GetTransformComp()->GetMatrixWorld();
 		spot_light_buffers[i].position = transform_mat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		spot_light_buffers[i].direction = transform_mat * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
 		spot_light_buffers[i].angle_cos = cosf(spot_light->GetAngle() * 0.5f);
@@ -483,7 +483,7 @@ void Renderer::RecordRenderables(vk::CommandBuffer command_buffer,
 			auto node = renderable_entry.first;
 			auto renderable = renderable_entry.second;
 
-			auto transform_component = node->GetTransformComponent();
+			auto transform_component = node->GetTransformComp();
 			TransformPushConstant transform_push_constant;
 			if(transform_component != nullptr)
 				transform_push_constant.transform = transform_component->GetMatrixWorld();
@@ -534,12 +534,12 @@ void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> w
 	UpdateLightingUniformBuffer();
 	UpdateCameraUniformBuffer();
 
-	std::vector<SpotLightComponent *> spot_lights = scene->GetRootNode()->GetComponentsInChildren<SpotLightComponent>();
+	std::vector<SpotLight *> spot_lights = scene->GetRootNode()->GetComponentsInChildren<SpotLight>();
 	std::vector<SpotLightShadow *> spot_light_shadows;
 
 	std::vector<vk::Semaphore> wait_semaphores_internal;
 
-	for(SpotLightComponent *spot_light : spot_lights)
+	for(SpotLight *spot_light : spot_lights)
 	{
 		auto shadow = spot_light->GetShadow();
 		if(!shadow)

@@ -11,7 +11,7 @@
 namespace lavos
 {
 
-class SpotLightComponent;
+class SpotLight;
 class Renderer;
 class SpotLightShadowRenderer;
 
@@ -19,7 +19,7 @@ class SpotLightShadow
 {
 	private:
 		Engine * const engine;
-		SpotLightComponent * const light;
+		SpotLight * const light;
 		SpotLightShadowRenderer * const renderer;
 
 		float near_clip;
@@ -51,7 +51,7 @@ class SpotLightShadow
 		void UpdateMatrixUniformBuffer();
 
 	public:
-		SpotLightShadow(Engine *engine, SpotLightComponent *light, SpotLightShadowRenderer *renderer, float near_clip, float far_clip);
+		SpotLightShadow(Engine *engine, SpotLight *light, SpotLightShadowRenderer *renderer, float near_clip, float far_clip);
 		~SpotLightShadow();
 
 		vk::CommandBuffer BuildCommandBuffer(Renderer *renderer);

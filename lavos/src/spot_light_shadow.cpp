@@ -1,6 +1,6 @@
 
 #include "lavos/spot_light_shadow.h"
-#include "lavos/component/spot_light_component.h"
+#include "lavos/component/spot_light.h"
 #include "lavos/renderer.h"
 #include "lavos/spot_light_shadow_renderer.h"
 
@@ -15,7 +15,7 @@ struct ShadowMatrixUniformBuffer
 static_assert(sizeof(ShadowMatrixUniformBuffer) == 64, "ShadowMatrixUniformBuffer memory layout");
 
 
-SpotLightShadow::SpotLightShadow(Engine *engine, SpotLightComponent *light, SpotLightShadowRenderer *renderer, float near_clip, float far_clip)
+SpotLightShadow::SpotLightShadow(Engine *engine, SpotLight *light, SpotLightShadowRenderer *renderer, float near_clip, float far_clip)
 		: engine(engine), light(light), renderer(renderer), near_clip(near_clip), far_clip(far_clip)
 {
 	min_filter = vk::Filter::eLinear;
@@ -30,7 +30,7 @@ SpotLightShadow::SpotLightShadow(Engine *engine, SpotLightComponent *light, Spot
 
 glm::mat4 SpotLightShadow::GetModelViewMatrix()
 {
-	auto transform_component = light->GetNode()->GetTransformComponent();
+	auto transform_component = light->GetNode()->GetTransformComp();
 	if(transform_component == nullptr)
 		throw std::runtime_error("node with a spot light component does not have a transform component.");
 

@@ -1,6 +1,6 @@
 
-#ifndef LAVOS_SPOT_LIGHT_COMPONENT_H
-#define LAVOS_SPOT_LIGHT_COMPONENT_H
+#ifndef LAVOS_SPOT_LIGHT_H
+#define LAVOS_SPOT_LIGHT_H
 
 #include "../glm_config.h"
 #include <glm/ext/vector_float3.hpp>
@@ -16,7 +16,7 @@ class Engine;
 class SpotLightShadow;
 class SpotLightShadowRenderer;
 
-class SpotLightComponent: public Component
+class SpotLight: public Component
 {
 	private:
 		glm::vec3 intensity;
@@ -25,8 +25,8 @@ class SpotLightComponent: public Component
 		SpotLightShadow *shadow = nullptr;
 
 	public:
-		SpotLightComponent(glm::vec3 intensity = glm::vec3(1.0f, 1.0f, 1.0f), float angle = glm::half_pi<float>());
-		~SpotLightComponent();
+		SpotLight(glm::vec3 intensity = glm::vec3(1.0f, 1.0f, 1.0f), float angle = glm::half_pi<float>());
+		~SpotLight();
 
 		/**
 		 * in radians

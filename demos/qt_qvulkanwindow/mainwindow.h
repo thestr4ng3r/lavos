@@ -85,7 +85,7 @@ class MainWindowRenderer: public QVulkanWindowRenderer
 
 		lavos::PhongMaterial *material = nullptr;
 		lavos::Scene *scene = nullptr;
-		lavos::CameraComponent *camera = nullptr;
+		lavos::Camera *camera = nullptr;
 
 		QVulkanWindowColorRenderTarget *color_render_target = nullptr;
 		QVulkanWindowDepthRenderTarget *depth_render_target = nullptr;

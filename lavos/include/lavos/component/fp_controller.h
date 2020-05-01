@@ -8,7 +8,7 @@
 namespace lavos
 {
 
-class FirstPersonControllerComponent : public Component
+class FirstPersonController : public Component
 {
 	private:
 		glm::vec2 rotation;

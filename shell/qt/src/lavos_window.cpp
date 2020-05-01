@@ -1,6 +1,6 @@
 
 #include <lavos/engine.h>
-#include <lavos/component/directional_light_component.h>
+#include <lavos/component/directional_light.h>
 #include <lavos/material/phong_material.h>
 #include <lavos/renderer.h>
 #include <lavos/asset_container.h>
