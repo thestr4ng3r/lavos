@@ -62,19 +62,31 @@ SpotLightShadow::~SpotLightShadow()
 		device.destroy(shadow_image_view);
 		engine->DestroyImage(shadow_image);
 	}
+	if(resolve_image)
+	{
+		device.destroy(resolve_image_view);
+		engine->DestroyImage(resolve_image);
+	}
 }
 
 void SpotLightShadow::CreateImage()
 {
+	bool have_shadow_tex = renderer->GetShadowFormat() != vk::Format::eUndefined;
+	bool use_multisampling = renderer->GetSamples() != vk::SampleCountFlagBits::e1;
+
+	vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+	if(!have_shadow_tex)
+		usage |= vk::ImageUsageFlagBits::eSampled;
+
 	auto image_create_info = vk::ImageCreateInfo()
 			.setImageType(vk::ImageType::e2D)
 			.setExtent(vk::Extent3D(renderer->GetWidth(), renderer->GetHeight(), 1))
 			.setMipLevels(1)
 			.setArrayLayers(1)
-			.setSamples(vk::SampleCountFlagBits::e1)
+			.setSamples(renderer->GetSamples())
 			.setTiling(vk::ImageTiling::eOptimal)
 			.setFormat(renderer->GetDepthFormat())
-			.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled);
+			.setUsage(usage);
 
 	depth_image = engine->CreateImage(image_create_info, VMA_MEMORY_USAGE_GPU_ONLY);
 	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), depth_image.image, "SpotLightShadow Depth Image");
@@ -88,18 +100,25 @@ void SpotLightShadow::CreateImage()
 	depth_image_view = engine->GetVkDevice().createImageView(image_view_create_info);
 	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), depth_image_view, "SpotLightShadow Depth ImageView");
 
-	if(renderer->GetShadowFormat() != vk::Format::eUndefined)
+	if(have_shadow_tex)
 	{
+		usage = vk::ImageUsageFlagBits::eColorAttachment;
+		if(!use_multisampling)
+			usage |= vk::ImageUsageFlagBits::eSampled;
+		else
+			usage |= vk::ImageUsageFlagBits::eTransientAttachment;
+
 		image_create_info = vk::ImageCreateInfo()
 				.setImageType(vk::ImageType::e2D)
 				.setExtent(vk::Extent3D(renderer->GetWidth(), renderer->GetHeight(), 1))
 				.setMipLevels(1)
 				.setArrayLayers(1)
-				.setSamples(vk::SampleCountFlagBits::e1)
+				.setSamples(renderer->GetSamples())
 				.setTiling(vk::ImageTiling::eOptimal)
 				.setFormat(renderer->GetShadowFormat())
-				.setUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+				.setUsage(usage);
 
+		// TODO: use VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED if multisampling and available
 		shadow_image = engine->CreateImage(image_create_info, VMA_MEMORY_USAGE_GPU_ONLY);
 		vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), shadow_image.image, "SpotLightShadow Shadow Image");
 
@@ -111,6 +130,31 @@ void SpotLightShadow::CreateImage()
 
 		shadow_image_view = engine->GetVkDevice().createImageView(image_view_create_info);
 		vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), shadow_image_view, "SpotLightShadow Shadow ImageView");
+
+		if(use_multisampling)
+		{
+			image_create_info = vk::ImageCreateInfo()
+					.setImageType(vk::ImageType::e2D)
+					.setExtent(vk::Extent3D(renderer->GetWidth(), renderer->GetHeight(), 1))
+					.setMipLevels(1)
+					.setArrayLayers(1)
+					.setSamples(vk::SampleCountFlagBits::e1)
+					.setTiling(vk::ImageTiling::eOptimal)
+					.setFormat(renderer->GetShadowFormat())
+					.setUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+
+			resolve_image = engine->CreateImage(image_create_info, VMA_MEMORY_USAGE_GPU_ONLY);
+			vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), resolve_image.image, "SpotLightShadow Resolve Image");
+
+			image_view_create_info = vk::ImageViewCreateInfo()
+					.setViewType(vk::ImageViewType::e2D)
+					.setFormat(renderer->GetShadowFormat())
+					.setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1))
+					.setImage(resolve_image.image);
+
+			resolve_image_view = engine->GetVkDevice().createImageView(image_view_create_info);
+			vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), resolve_image_view, "SpotLightShadow Resolve ImageView");
+		}
 	}
 
 	auto sampler_create_info = vk::SamplerCreateInfo()
@@ -132,11 +176,25 @@ void SpotLightShadow::CreateImage()
 
 void SpotLightShadow::CreateFramebuffer()
 {
-	std::array<vk::ImageView, 2> attachments = { depth_image_view, shadow_image_view };
+	std::array<vk::ImageView, 3> attachments;
+	attachments[0] = depth_image_view;
+	size_t attachment_count = 1;
+
+	if(shadow_image_view)
+	{
+		attachments[1] = { shadow_image_view };
+		attachment_count++;
+
+		if(resolve_image_view)
+		{
+			attachments[2] = { resolve_image_view };
+			attachment_count++;
+		}
+	}
 
 	auto create_info = vk::FramebufferCreateInfo()
 			.setRenderPass(renderer->GetRenderPass())
-			.setAttachmentCount(shadow_image_view ? 2 : 1)
+			.setAttachmentCount(attachment_count)
 			.setPAttachments(attachments.data())
 			.setWidth(renderer->GetWidth())
 			.setHeight(renderer->GetHeight())
@@ -262,7 +320,9 @@ vk::CommandBuffer SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
 
 vk::ImageView SpotLightShadow::GetImageView()
 {
-	return renderer->GetShadowFormat() != vk::Format::eUndefined
-		? shadow_image_view
-		: depth_image_view;
+	if(resolve_image_view)
+		return resolve_image_view;
+	if(shadow_image_view)
+		return shadow_image_view;
+	return depth_image_view;
 }

@@ -84,6 +84,7 @@ MaterialPipelineConfiguration Renderer::CreateMaterialPipelineConfiguration()
 
 	return MaterialPipelineConfiguration(
 			color_render_target->GetExtent(),
+			vk::SampleCountFlagBits::e1,
 			descriptor_set_layout,
 			render_pass,
 			Material::DefaultRenderMode::ColorForward,

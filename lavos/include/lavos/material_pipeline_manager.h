@@ -31,17 +31,20 @@ struct MaterialPipeline
 struct MaterialPipelineConfiguration
 {
 	vk::Extent2D extent;
+	vk::SampleCountFlagBits samples;
 	vk::DescriptorSetLayout renderer_descriptor_set_layout;
 	vk::RenderPass render_pass;
-	Material::RenderMode  render_mode;
+	Material::RenderMode render_mode;
 	vk_util::PipelineColorBlendStateCreateInfo color_blend_state_info;
 
 	MaterialPipelineConfiguration(vk::Extent2D extent,
+			vk::SampleCountFlagBits samples,
 			vk::DescriptorSetLayout renderer_descriptor_set_layout,
 			vk::RenderPass render_pass,
 			Material::RenderMode render_mode,
 			const vk_util::PipelineColorBlendStateCreateInfo &color_blend_state_info)
 			: extent(extent),
+			samples(samples),
 			renderer_descriptor_set_layout(renderer_descriptor_set_layout),
 			render_pass(render_pass),
 			render_mode(render_mode),

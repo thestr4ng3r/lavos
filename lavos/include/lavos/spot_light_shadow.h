@@ -34,6 +34,9 @@ class SpotLightShadow
 		Image shadow_image;
 		vk::ImageView shadow_image_view;
 
+		Image resolve_image;
+		vk::ImageView resolve_image_view;
+
 		vk::Sampler sampler;
 
 		vk::Framebuffer framebuffer;

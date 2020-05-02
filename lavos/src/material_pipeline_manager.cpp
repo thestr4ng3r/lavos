@@ -110,7 +110,7 @@ MaterialPipeline MaterialPipelineManager::CreateMaterialPipeline(Material *mater
 
 	auto multisample_info = vk::PipelineMultisampleStateCreateInfo()
 			.setSampleShadingEnable(VK_FALSE)
-			.setRasterizationSamples(vk::SampleCountFlagBits::e1);
+			.setRasterizationSamples(config.samples);
 
 
 	auto depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo()

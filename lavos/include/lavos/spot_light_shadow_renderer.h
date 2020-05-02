@@ -18,6 +18,7 @@ class SpotLightShadowRenderer : public SubRenderer
 	private:
 		std::uint32_t width;
 		std::uint32_t height;
+		vk::SampleCountFlagBits samples;
 		vk::Format depth_format;
 		vk::Format shadow_format;
 
@@ -32,11 +33,12 @@ class SpotLightShadowRenderer : public SubRenderer
 		void CreateDescriptorSetLayout();
 
 	public:
-		SpotLightShadowRenderer(lavos::Engine *engine, std::uint32_t width, std::uint32_t height);
+		SpotLightShadowRenderer(lavos::Engine *engine, std::uint32_t width, std::uint32_t height, vk::SampleCountFlagBits samples);
 		~SpotLightShadowRenderer() override;
 
 		std::uint32_t GetWidth() const							{ return width; }
 		std::uint32_t GetHeight() const							{ return height; }
+		vk::SampleCountFlagBits GetSamples() const 				{ return samples; }
 		vk::Format GetDepthFormat() const						{ return depth_format; }
 		vk::Format GetShadowFormat() const						{ return shadow_format; }
 		vk::RenderPass GetRenderPass() const					{ return render_pass; }

@@ -6,10 +6,11 @@
 
 using namespace lavos;
 
-SpotLightShadowRenderer::SpotLightShadowRenderer(Engine *engine, std::uint32_t width, std::uint32_t height)
+SpotLightShadowRenderer::SpotLightShadowRenderer(Engine *engine, std::uint32_t width, std::uint32_t height, vk::SampleCountFlagBits samples)
 	: SubRenderer(engine),
 	width(width),
-	height(height)
+	height(height),
+	samples(samples)
 {
 	depth_format = vk::Format::eD16Unorm;
 #if SHADOW_MSM
@@ -50,6 +51,7 @@ MaterialPipelineConfiguration SpotLightShadowRenderer::CreateMaterialPipelineCon
 
 	return MaterialPipelineConfiguration(
 			vk::Extent2D(width, height),
+			samples,
 			descriptor_set_layout,
 			render_pass,
 			Material::DefaultRenderMode::Shadow,
@@ -58,16 +60,18 @@ MaterialPipelineConfiguration SpotLightShadowRenderer::CreateMaterialPipelineCon
 
 void SpotLightShadowRenderer::CreateRenderPass()
 {
-	// whether we use an additional texture instead of just the depth buffer
-	bool have_shadow_tex = shadow_format != vk::Format::eUndefined;
+	bool have_shadow_tex = shadow_format != vk::Format::eUndefined; // whether we use an additional texture instead of just the depth buffer
+	bool use_multisampling = samples != vk::SampleCountFlagBits::e1;
 
-	std::array<vk::AttachmentDescription, 2> attachments;
+	std::array<vk::AttachmentDescription, 3> attachments;
+	size_t attachment_count = 1;
 
 	attachments[0] = vk::AttachmentDescription()
 			.setFormat(depth_format)
-			.setSamples(vk::SampleCountFlagBits::e1)
+			.setSamples(samples)
 			.setLoadOp(vk::AttachmentLoadOp::eClear)
-			.setStoreOp(vk::AttachmentStoreOp::eStore)
+			// if we use a dedicated shadow tex, we don't care about the depth after rendering
+			.setStoreOp(have_shadow_tex ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 			.setInitialLayout(vk::ImageLayout::eUndefined)
@@ -83,25 +87,52 @@ void SpotLightShadowRenderer::CreateRenderPass()
 			.setPDepthStencilAttachment(&depth_reference);
 
 	vk::AttachmentReference shadow_reference;
+	vk::AttachmentReference resolve_reference;
 	if(have_shadow_tex)
 	{
 		attachments[1] = vk::AttachmentDescription()
 				.setFormat(shadow_format)
-				.setSamples(vk::SampleCountFlagBits::e1)
+				.setSamples(samples)
 				.setLoadOp(vk::AttachmentLoadOp::eClear)
-				.setStoreOp(vk::AttachmentStoreOp::eStore)
+				// if we use multisampling, we only care about the resolved texture
+				.setStoreOp(use_multisampling ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
 				.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 				.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 				.setInitialLayout(vk::ImageLayout::eUndefined)
-				.setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+				// if we use multisampling, we don't care about the final layout of this
+				.setFinalLayout(use_multisampling ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		shadow_reference = vk::AttachmentReference()
 				.setAttachment(1)
 				.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
 		subpass_desc
-			.setColorAttachmentCount(1)
-			.setPColorAttachments(&shadow_reference);
+				.setColorAttachmentCount(1)
+				.setPColorAttachments(&shadow_reference);
+
+		attachment_count++;
+
+		if (samples != vk::SampleCountFlagBits::e1)
+		{
+			attachments[2] = vk::AttachmentDescription()
+					.setFormat(shadow_format)
+					.setSamples(vk::SampleCountFlagBits::e1)
+					.setLoadOp(vk::AttachmentLoadOp::eDontCare)
+					.setStoreOp(vk::AttachmentStoreOp::eStore)
+					.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+					.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+					.setInitialLayout(vk::ImageLayout::eUndefined)
+					.setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+			resolve_reference = vk::AttachmentReference()
+					.setAttachment(2)
+					.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+			subpass_desc
+					.setPResolveAttachments(&resolve_reference);
+
+			attachment_count++;
+		}
 	}
 	else
 	{
@@ -128,7 +159,7 @@ void SpotLightShadowRenderer::CreateRenderPass()
 			.setDependencyFlags(vk::DependencyFlagBits::eByRegion);
 
 	auto create_info = vk::RenderPassCreateInfo()
-			.setAttachmentCount(have_shadow_tex ? 2 : 1)
+			.setAttachmentCount(attachment_count)
 			.setPAttachments(attachments.data())
 			.setSubpassCount(1)
 			.setPSubpasses(&subpass_desc)
