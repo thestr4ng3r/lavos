@@ -34,12 +34,26 @@ SpotLightShadowRenderer::~SpotLightShadowRenderer()
 
 MaterialPipelineConfiguration SpotLightShadowRenderer::CreateMaterialPipelineConfiguration()
 {
+	auto color_blend_state = vk_util::PipelineColorBlendStateCreateInfo();
+
+	if(shadow_format != vk::Format::eUndefined)
+	{
+		auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR
+								   | vk::ColorComponentFlagBits::eG
+								   | vk::ColorComponentFlagBits::eB
+								   | vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE);
+
+		color_blend_state.SetAttachments({ color_blend_attachment });
+	}
+
 	return MaterialPipelineConfiguration(
 			vk::Extent2D(width, height),
 			descriptor_set_layout,
 			render_pass,
 			Material::DefaultRenderMode::Shadow,
-			vk_util::PipelineColorBlendStateCreateInfo());
+			color_blend_state);
 }
 
 void SpotLightShadowRenderer::CreateRenderPass()
@@ -58,7 +72,7 @@ void SpotLightShadowRenderer::CreateRenderPass()
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 			.setInitialLayout(vk::ImageLayout::eUndefined)
 			// if we have a dedicated shadow tex, we will use this instead of the depth buffer
-			.setFinalLayout(have_shadow_tex ? vk::ImageLayout::eUndefined : vk::ImageLayout::eShaderReadOnlyOptimal);
+			.setFinalLayout(have_shadow_tex ? vk::ImageLayout::eDepthStencilAttachmentOptimal : vk::ImageLayout::eShaderReadOnlyOptimal);
 
 	auto depth_reference = vk::AttachmentReference()
 			.setAttachment(0)
@@ -114,9 +128,9 @@ void SpotLightShadowRenderer::CreateRenderPass()
 			.setDependencyFlags(vk::DependencyFlagBits::eByRegion);
 
 	auto create_info = vk::RenderPassCreateInfo()
-			.setAttachmentCount(1)
+			.setAttachmentCount(have_shadow_tex ? 2 : 1)
 			.setPAttachments(attachments.data())
-			.setSubpassCount(have_shadow_tex ? 2 : 1)
+			.setSubpassCount(1)
 			.setPSubpasses(&subpass_desc)
 			.setDependencyCount(dependencies.size())
 			.setPDependencies(dependencies.data());

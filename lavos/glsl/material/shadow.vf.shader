@@ -1,5 +1,7 @@
 #version 450
 
+#include "common.glsl"
+
 #ifdef SHADER_VERT
 
 #define COMMON_VERT_MATRIX_COMPACT
@@ -24,7 +26,7 @@ void main()
 }
 
 // -------------------------------------------------
-#elif defined(SHADER_FRAG)
+#elif SHADER_FRAG
 
 #if SHADOW_MSM
 layout(location = 0) in float z_in;

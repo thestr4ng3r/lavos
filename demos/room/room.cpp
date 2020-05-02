@@ -100,7 +100,7 @@ void Init(std::string gltf_filename)
 	lavos::SpotLight *light = new lavos::SpotLight(glm::vec3(1.0f, 1.0f, 1.0f), glm::pi<float>() * 0.8f);
 	light_node->AddComponent(light);
 
-	auto shadow_renderer = new lavos::SpotLightShadowRenderer(app->GetEngine(), 512, 512);
+	auto shadow_renderer = new lavos::SpotLightShadowRenderer(app->GetEngine(), 1024, 1024);
 	renderer->AddSubRenderer(shadow_renderer);
 	light->InitShadow(app->GetEngine(), shadow_renderer);
 

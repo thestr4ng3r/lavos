@@ -28,8 +28,12 @@ class SpotLightShadow
 		vk::Filter mag_filter;
 		vk::Filter min_filter;
 
-		Image image;
-		vk::ImageView image_view;
+		Image depth_image;
+		vk::ImageView depth_image_view;
+
+		Image shadow_image;
+		vk::ImageView shadow_image_view;
+
 		vk::Sampler sampler;
 
 		vk::Framebuffer framebuffer;
@@ -58,7 +62,7 @@ class SpotLightShadow
 
 		vk::Semaphore GetSemaphore()				{ return semaphore; }
 		glm::mat4 GetModelViewProjectionMatrix()	{ return GetProjectionMatrix() * GetModelViewMatrix(); }
-		vk::ImageView GetImageView()				{ return image_view; }
+		vk::ImageView GetImageView();
 		vk::Sampler GetSampler()					{ return sampler; }
 };
 

@@ -45,6 +45,9 @@ class Image
 				   || allocation != rhs.allocation
 				   || format != rhs.format;
 		}
+
+		explicit operator bool() const { return image; }
+		bool operator!() const { return !image; }
 };
 
 
