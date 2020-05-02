@@ -2,6 +2,8 @@
 #include "lavos/spot_light_shadow_renderer.h"
 #include "lavos/engine.h"
 
+#include "../glsl/common_glsl_cpp.h"
+
 using namespace lavos;
 
 SpotLightShadowRenderer::SpotLightShadowRenderer(Engine *engine, std::uint32_t width, std::uint32_t height)
@@ -9,7 +11,12 @@ SpotLightShadowRenderer::SpotLightShadowRenderer(Engine *engine, std::uint32_t w
 	width(width),
 	height(height)
 {
-	format = vk::Format::eD16Unorm;
+	depth_format = vk::Format::eD16Unorm;
+#if SHADOW_MSM
+	shadow_format = vk::Format::eR32G32B32A32Sfloat;
+#else
+	shadow_format = vk::Format::eUndefined;
+#endif
 
 	CreateRenderPass();
 	CreateDescriptorSetLayout();
@@ -37,15 +44,21 @@ MaterialPipelineConfiguration SpotLightShadowRenderer::CreateMaterialPipelineCon
 
 void SpotLightShadowRenderer::CreateRenderPass()
 {
-	auto attachment_desc = vk::AttachmentDescription()
-			.setFormat(format)
+	// whether we use an additional texture instead of just the depth buffer
+	bool have_shadow_tex = shadow_format != vk::Format::eUndefined;
+
+	std::array<vk::AttachmentDescription, 2> attachments;
+
+	attachments[0] = vk::AttachmentDescription()
+			.setFormat(depth_format)
 			.setSamples(vk::SampleCountFlagBits::e1)
 			.setLoadOp(vk::AttachmentLoadOp::eClear)
 			.setStoreOp(vk::AttachmentStoreOp::eStore)
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 			.setInitialLayout(vk::ImageLayout::eUndefined)
-			.setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+			// if we have a dedicated shadow tex, we will use this instead of the depth buffer
+			.setFinalLayout(have_shadow_tex ? vk::ImageLayout::eUndefined : vk::ImageLayout::eShaderReadOnlyOptimal);
 
 	auto depth_reference = vk::AttachmentReference()
 			.setAttachment(0)
@@ -53,8 +66,33 @@ void SpotLightShadowRenderer::CreateRenderPass()
 
 	auto subpass_desc = vk::SubpassDescription()
 			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-			.setColorAttachmentCount(0)
 			.setPDepthStencilAttachment(&depth_reference);
+
+	vk::AttachmentReference shadow_reference;
+	if(have_shadow_tex)
+	{
+		attachments[1] = vk::AttachmentDescription()
+				.setFormat(shadow_format)
+				.setSamples(vk::SampleCountFlagBits::e1)
+				.setLoadOp(vk::AttachmentLoadOp::eClear)
+				.setStoreOp(vk::AttachmentStoreOp::eStore)
+				.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+				.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+				.setInitialLayout(vk::ImageLayout::eUndefined)
+				.setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+		shadow_reference = vk::AttachmentReference()
+				.setAttachment(1)
+				.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+		subpass_desc
+			.setColorAttachmentCount(1)
+			.setPColorAttachments(&shadow_reference);
+	}
+	else
+	{
+		subpass_desc.setColorAttachmentCount(0);
+	}
 
 	std::array<vk::SubpassDependency, 2> dependencies;
 
@@ -77,14 +115,14 @@ void SpotLightShadowRenderer::CreateRenderPass()
 
 	auto create_info = vk::RenderPassCreateInfo()
 			.setAttachmentCount(1)
-			.setPAttachments(&attachment_desc)
-			.setSubpassCount(1)
+			.setPAttachments(attachments.data())
+			.setSubpassCount(have_shadow_tex ? 2 : 1)
 			.setPSubpasses(&subpass_desc)
 			.setDependencyCount(dependencies.size())
 			.setPDependencies(dependencies.data());
 
 	render_pass = engine->GetVkDevice().createRenderPass(create_info);
-	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), render_pass, "SpotLightShadowRenderer");
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), render_pass, "SpotLightShadowRenderer RenderPass");
 }
 
 void SpotLightShadowRenderer::CreateDescriptorSetLayout()
@@ -103,7 +141,7 @@ void SpotLightShadowRenderer::CreateDescriptorSetLayout()
 			.setPBindings(bindings.data());
 
 	descriptor_set_layout = engine->GetVkDevice().createDescriptorSetLayout(create_info);
-	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), descriptor_set_layout, "SpotLightShadowRenderer");
+	vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), descriptor_set_layout, "SpotLightShadowRenderer DescriptorSetLayout");
 }
 
 void SpotLightShadowRenderer::AddMaterial(Material *material)

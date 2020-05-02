@@ -18,7 +18,8 @@ class SpotLightShadowRenderer : public SubRenderer
 	private:
 		std::uint32_t width;
 		std::uint32_t height;
-		vk::Format format;
+		vk::Format depth_format;
+		vk::Format shadow_format;
 
 		vk::DescriptorSetLayout descriptor_set_layout; // TODO: scope of this could be higher (common for all SpotLightShadowRenderers)
 		vk::RenderPass render_pass; // TODO: scope of this could be higher (depends only on format)
@@ -36,7 +37,8 @@ class SpotLightShadowRenderer : public SubRenderer
 
 		std::uint32_t GetWidth() const							{ return width; }
 		std::uint32_t GetHeight() const							{ return height; }
-		vk::Format GetFormat() const							{ return format; }
+		vk::Format GetDepthFormat() const						{ return depth_format; }
+		vk::Format GetShadowFormat() const						{ return shadow_format; }
 		vk::RenderPass GetRenderPass() const					{ return render_pass; }
 		vk::DescriptorSetLayout GetDescriptorSetLayout() const	{ return descriptor_set_layout; }
 
