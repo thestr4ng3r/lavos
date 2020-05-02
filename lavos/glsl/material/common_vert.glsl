@@ -27,13 +27,12 @@ layout(location = 4) in vec3 bitang_in;
 
 vec4 CalculateVertexPosition()
 {
-	return
 #ifdef COMMON_VERT_MATRIX_COMPACT
-		matrix_uni.modelview_projection
+		mat4 mvp = matrix_uni.modelview_projection;
 #else
-		matrix_uni.projection
-		* matrix_uni.modelview
+		mat4 mvp = matrix_uni.projection * matrix_uni.modelview;
 #endif
+	return mvp
 		* transform_push_constant.transform
 		* vec4(position_in, 1.0);
 }

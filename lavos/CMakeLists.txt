@@ -81,16 +81,11 @@ set(SOURCE_FILES
 		src/light_collection.cpp)
 
 set(GLSL_FILES
-		material/unlit.vert
-		material/unlit.frag
-		material/phong.vert
-		material/phong.frag
-		material/gouraud.vert
-		material/gouraud.frag
-		material/point_cloud.vert
-		material/point_cloud.frag
-		material/shadow.vert
-		material/shadow.frag)
+		material/unlit.vf.shader
+		material/phong.vf.shader
+		material/gouraud.vf.shader
+		material/point_cloud.vf.shader
+		material/shadow.vf.shader)
 
 
 
