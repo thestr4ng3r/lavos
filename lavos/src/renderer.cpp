@@ -278,7 +278,7 @@ void Renderer::UpdateShadowDescriptors(LightCollection *light_collection)
 		if(i < light_collection->spot_lights.size())
 		{
 			SpotLightShadow *shadow = light_collection->spot_lights[i]->GetShadow();
-			image_view = shadow->GetImageView();
+			image_view = shadow->GetFinalImageView();
 			sampler = shadow->GetSampler();
 		}
 		else
@@ -593,34 +593,28 @@ void Renderer::DrawFrame(std::uint32_t image_index, std::vector<vk::Semaphore> w
 	std::vector<SpotLight *> spot_lights = scene->GetRootNode()->GetComponentsInChildren<SpotLight>();
 	std::vector<SpotLightShadow *> spot_light_shadows;
 
-	std::vector<vk::Semaphore> wait_semaphores_internal;
+	render_command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse }); // TODO: flags can probably be better
+
+	std::vector<vk::ImageMemoryBarrier> shadow_barriers;
 
 	for(SpotLight *spot_light : spot_lights)
 	{
 		auto shadow = spot_light->GetShadow();
 		if(!shadow)
 			continue;
-		auto command_buffer = shadow->BuildCommandBuffer(this);
+		auto barrier = shadow->Render(render_command_buffer, this);
+		shadow_barriers.push_back(barrier);
 		spot_light_shadows.push_back(shadow);
-		wait_semaphores_internal.push_back(shadow->GetSemaphore());
-
-		engine->GetVkDevice().waitIdle();
-		engine->GetGraphicsQueue().submit(
-			vk::SubmitInfo()
-				.setWaitSemaphoreCount(0)
-				.setPWaitSemaphores(nullptr)
-				.setPWaitDstStageMask(nullptr)
-				.setCommandBufferCount(1)
-				.setPCommandBuffers(&command_buffer)
-				.setSignalSemaphoreCount(0)
-				.setPSignalSemaphores(nullptr),
-			nullptr);
 	}
 
-	engine->GetVkDevice().waitIdle(); // TODO
+//	render_command_buffer.pipelineBarrier(
+//			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+//			vk::PipelineStageFlagBits::eFragmentShader,
+//			vk::DependencyFlags(),
+//			nullptr, nullptr, shadow_barriers);
 
-	render_command_buffer.begin({ vk::CommandBufferUsageFlagBits::eSimultaneousUse });
 	DrawFrameRecord(render_command_buffer, dst_framebuffers[image_index]);
+
 	render_command_buffer.end();
 
 	engine->GetGraphicsQueue().submit(

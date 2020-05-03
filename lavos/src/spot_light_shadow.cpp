@@ -49,8 +49,6 @@ SpotLightShadow::~SpotLightShadow()
 {
 	auto device = engine->GetVkDevice();
 
-	device.free(engine->GetRenderCommandPool(), command_buffer);
-	device.destroy(semaphore);
 	engine->GetVkDevice().destroy(descriptor_pool);
 	delete matrix_uniform_buffer;
 	device.destroy(framebuffer);
@@ -264,26 +262,11 @@ void SpotLightShadow::UpdateMatrixUniformBuffer()
 }
 
 
-vk::CommandBuffer SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
+vk::ImageMemoryBarrier SpotLightShadow::Render(vk::CommandBuffer cmd, Renderer *renderer)
 {
 	const vk::Device &device = engine->GetVkDevice();
 
 	UpdateMatrixUniformBuffer(); // TODO: Do this only if the contents really changed
-
-	if(!command_buffer)
-	{
-		command_buffer = *engine->GetVkDevice().allocateCommandBuffers(
-				vk::CommandBufferAllocateInfo(engine->GetRenderCommandPool(),
-											  vk::CommandBufferLevel::ePrimary,
-											  1)).begin();
-		vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), command_buffer, "SpotLightShadow");
-	}
-
-	if(!semaphore)
-	{
-		semaphore = device.createSemaphore(vk::SemaphoreCreateInfo());
-		vk_util::SetDebugUtilsObjectName(engine->GetVkDevice(), semaphore, "SpotLightShadow");
-	}
 
 	auto clear_value = vk::ClearValue(vk::ClearDepthStencilValue(1.0f, 0));
 
@@ -294,31 +277,44 @@ vk::CommandBuffer SpotLightShadow::BuildCommandBuffer(Renderer *renderer)
 			.setClearValueCount(2) // TODO: really 2?
 			.setPClearValues(&clear_value);
 
-	command_buffer.begin(vk::CommandBufferBeginInfo());
-
 	auto viewport = vk::Viewport(0, 0, this->renderer->GetWidth(), this->renderer->GetHeight(), 0.0f, 1.0f);
-	command_buffer.setViewport(0, 1, (const vk::Viewport *)&viewport);
+	cmd.setViewport(0, 1, (const vk::Viewport *)&viewport);
 
 	auto scissor = vk::Rect2D(vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(this->renderer->GetWidth(), this->renderer->GetHeight())));
-	command_buffer.setScissor(0, 1, (const vk::Rect2D *)&scissor);
+	cmd.setScissor(0, 1, (const vk::Rect2D *)&scissor);
 
 	// TODO command_buffer.setDepthBias()
 
-	command_buffer.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
+	cmd.beginRenderPass(render_pass_begin_info, vk::SubpassContents::eInline);
 
-	renderer->RecordRenderables(command_buffer,
+	renderer->RecordRenderables(cmd,
 			Material::DefaultRenderMode::Shadow,
 			this->renderer->GetMaterialPipelineManager(),
 			descriptor_set);
 
-	command_buffer.endRenderPass();
+	cmd.endRenderPass();
 
-	command_buffer.end();
+	bool have_shadow_tex = this->renderer->GetShadowFormat() != vk::Format::eUndefined;
 
-	return command_buffer;
+	return vk::ImageMemoryBarrier()
+		.setSrcAccessMask(have_shadow_tex ? vk::AccessFlagBits::eColorAttachmentWrite : vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+		.setDstAccessMask(vk::AccessFlagBits::eShaderRead)
+		.setOldLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+		.setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+		.setImage(GetFinalImage().image)
+		.setSubresourceRange(vk::ImageSubresourceRange(have_shadow_tex ? vk::ImageAspectFlagBits::eColor : vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1));
 }
 
-vk::ImageView SpotLightShadow::GetImageView()
+Image SpotLightShadow::GetFinalImage()
+{
+	if(resolve_image_view)
+		return resolve_image;
+	if(shadow_image_view)
+		return shadow_image;
+	return depth_image;
+}
+
+vk::ImageView SpotLightShadow::GetFinalImageView()
 {
 	if(resolve_image_view)
 		return resolve_image_view;

@@ -17,6 +17,7 @@ class FirstPersonController : public Component
 	public:
 		virtual void Update(float delta_time) override;
 
+		void SetRotation(glm::vec2 rotation)	{ this->rotation = rotation; }
 		void Rotate(glm::vec2 rot);
 		void SetVelocity(glm::vec2 velocity);
 };

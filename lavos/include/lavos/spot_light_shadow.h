@@ -40,8 +40,6 @@ class SpotLightShadow
 		vk::Sampler sampler;
 
 		vk::Framebuffer framebuffer;
-		vk::CommandBuffer command_buffer;
-		vk::Semaphore semaphore;
 
 		lavos::Buffer *matrix_uniform_buffer = nullptr;
 		vk::DescriptorPool descriptor_pool; // TODO: can we make this more global?
@@ -61,11 +59,11 @@ class SpotLightShadow
 		SpotLightShadow(Engine *engine, SpotLight *light, SpotLightShadowRenderer *renderer, float near_clip, float far_clip);
 		~SpotLightShadow();
 
-		vk::CommandBuffer BuildCommandBuffer(Renderer *renderer);
+		vk::ImageMemoryBarrier Render(vk::CommandBuffer cmd, Renderer *renderer);
 
-		vk::Semaphore GetSemaphore()				{ return semaphore; }
 		glm::mat4 GetModelViewProjectionMatrix()	{ return GetProjectionMatrix() * GetModelViewMatrix(); }
-		vk::ImageView GetImageView();
+		Image GetFinalImage();
+		vk::ImageView GetFinalImageView();
 		vk::Sampler GetSampler()					{ return sampler; }
 };
 
