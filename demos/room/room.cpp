@@ -79,12 +79,10 @@ void Init(std::string gltf_filename)
 		camera_node = camera->GetNode();
 	}
 
-	camera_node->GetTransformComp()->translation = glm::vec3(0.0f, 1.0f, 0.0f);
-	camera_node->GetTransformComp()->SetLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
-
+	camera_node->GetTransformComp()->translation = glm::vec3(0.0f, 1.5f, 2.5f);
 	fp_controller = new lavos::FirstPersonController();
+	fp_controller->SetRotation(glm::vec2(1.0f, 0.3f));
 	camera_node->AddComponent(fp_controller);
-
 
 	lavos::Node *light_node = new lavos::Node();
 	scene->GetRootNode()->AddChild(light_node);
@@ -174,7 +172,6 @@ void Update()
 
 	scene->Update(app->GetDeltaTime());
 }
-
 
 void Cleanup()
 {
